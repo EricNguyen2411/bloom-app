@@ -1,0 +1,15 @@
+{
+  "name": "bloom.",
+  "short_name": "bloom.",
+  "description": "A little plant that grows with the two of you.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F1E7",
+  "theme_color": "#4F7A4A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
