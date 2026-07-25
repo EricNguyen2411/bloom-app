@@ -194,6 +194,9 @@
     <input type="text" id="logActivity" placeholder="e.g. cooked dinner, watched a movie">
     <label>Minutes together</label>
     <input type="number" id="logMinutes" placeholder="45" min="1">
+    <label>Date</label>
+    <input type="date" id="logDateInput">
+    <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
     <div class="sheet-actions">
       <button class="btn-cancel" id="logCancel">Cancel</button>
       <button class="btn-confirm" id="logSave">Water it</button>
@@ -257,15 +260,28 @@
   }
 
   const logBackdrop = document.getElementById('logBackdrop');
-  document.getElementById('btnLog').onclick = () => logBackdrop.classList.add('open');
+  const logDateInput = document.getElementById('logDateInput');
+  const todayISO = new Date().toISOString().slice(0, 10);
+  logDateInput.max = todayISO; // no future-dating entries
+
+  document.getElementById('btnLog').onclick = () => {
+    logDateInput.value = todayISO; // reset to today each time it's opened
+    logBackdrop.classList.add('open');
+  };
   document.getElementById('logCancel').onclick = () => logBackdrop.classList.remove('open');
   document.getElementById('logSave').onclick = async () => {
     const mins = parseInt(document.getElementById('logMinutes').value) || 15;
-    await logTime(mins);
-    document.getElementById('logActivity').value = '';
-    document.getElementById('logMinutes').value = '';
-    logBackdrop.classList.remove('open');
-    if (!isConfigured) render(latestState);
+    const activity = document.getElementById('logActivity').value.trim();
+    const date = logDateInput.value || todayISO;
+    try {
+      await logTime(mins, activity, date);
+      document.getElementById('logActivity').value = '';
+      document.getElementById('logMinutes').value = '';
+      logBackdrop.classList.remove('open');
+      if (!isConfigured) render(latestState);
+    } catch (err) {
+      // error already shown to the user inside logTime() — just leave the sheet open so they can retry
+    }
   };
 
   const challengeBackdrop = document.getElementById('challengeBackdrop');
