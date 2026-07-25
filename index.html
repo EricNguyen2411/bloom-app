@@ -65,7 +65,7 @@
   .flower{ position:absolute; bottom:222px; left:50%; transform:translateX(-50%) scale(0.2); opacity:0;
     transition: all .8s cubic-bezier(.34,1.4,.4,1); width:90px; height:90px; }
   .petal{ position:absolute; width:34px; height:46px; border-radius:50%/60% 60% 40% 40%;
-    background:linear-gradient(160deg,#EFAF95,var(--coral)); top:22px; left:28px; transform-origin:50% 100%; }
+    background:linear-gradient(160deg,var(--petal-light,#EFAF95),var(--petal-dark,var(--coral))); top:22px; left:28px; transform-origin:50% 100%; }
   .petal:nth-child(1){ transform:rotate(0deg); }
   .petal:nth-child(2){ transform:rotate(72deg); }
   .petal:nth-child(3){ transform:rotate(144deg); }
@@ -109,16 +109,17 @@
   .bar{ height:8px; background:#EDEAE0; border-radius:6px; margin-top:12px; overflow:hidden; }
   .bar-fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--lime),var(--moss)); transition:width .6s ease; width:0%; }
 
-  .actionbar{ display:flex; gap:10px; padding:18px 22px calc(22px + env(safe-area-inset-bottom)); }
-  .action{ flex:1; background:#F6F4EC; border:none; border-radius:18px; padding:14px 8px; cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; gap:6px; transition:transform .1s ease, background .2s ease; }
+  .actionbar{ display:flex; gap:6px; padding:16px 14px calc(18px + env(safe-area-inset-bottom)); overflow-x:auto; }
+  .action{ flex:1; min-width:58px; background:#F6F4EC; border:none; border-radius:16px; padding:10px 4px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:5px; transition:transform .1s ease, background .2s ease; }
   .action:active{ transform:scale(0.96); background:#EFECDF; }
-  .action-icon{ width:34px; height:34px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .action-icon{ width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; }
   .action:nth-child(1) .action-icon{ background:linear-gradient(160deg,var(--lime),var(--moss)); color:#fff; }
   .action:nth-child(2) .action-icon{ background:linear-gradient(160deg,#F0A98D,var(--coral)); color:#fff; }
   .action:nth-child(3) .action-icon{ background:linear-gradient(160deg,#B487A3,var(--plum)); color:#fff; }
-  .action:nth-child(4) .action-icon{ background:linear-gradient(160deg,#F2D488,var(--gold)); color:#fff; }
-  .action-label{ font-size:11.5px; font-weight:600; }
+  .action:nth-child(4) .action-icon{ background:linear-gradient(160deg,#8FB3CC,#5C8BAA); color:#fff; }
+  .action:nth-child(5) .action-icon{ background:linear-gradient(160deg,#F2D488,var(--gold)); color:#fff; }
+  .action-label{ font-size:9.5px; font-weight:600; white-space:nowrap; }
 
   .backdrop{ display:none; position:fixed; inset:0; background:rgba(30,42,32,0.4); z-index:40; align-items:flex-end; justify-content:center; }
   .backdrop.open{ display:flex; }
@@ -190,6 +191,36 @@
   .weekly-recap .box{ flex:1; background:#F6F4EC; border-radius:12px; padding:10px; text-align:center; }
   .weekly-recap .box b{ display:block; font-family:'Bricolage Grotesque',sans-serif; font-size:18px; color:var(--moss); }
   .weekly-recap .box span{ font-size:9.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.5px; }
+
+  .harvest-btn{ margin-top:12px; padding:12px 20px; border-radius:999px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--coral),var(--plum)); color:#fff; font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:700; font-size:14px; box-shadow:0 10px 20px -8px rgba(140,90,120,0.5); display:none; }
+  .harvest-btn.show{ display:inline-block; }
+
+  .bouquet-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+  .bouquet-item{ width:52px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .bouquet-flower{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .bouquet-date{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:var(--ink-soft); }
+  .bouquet-empty{ font-size:12.5px; color:var(--ink-soft); margin-top:6px; }
+
+  .search-input{ width:100%; padding:11px 14px; border:1.5px solid #E4E1D6; border-radius:12px; font-family:'Inter'; font-size:14px; background:#FBFAF6; margin-bottom:10px; }
+
+  .bucket-list{ max-height:50vh; overflow-y:auto; margin-top:6px; }
+  .bucket-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #F0EDE2; }
+  .bucket-item:last-child{ border-bottom:none; }
+  .bucket-check{ width:22px; height:22px; border-radius:7px; border:2px solid #D8D3C3; flex:0 0 22px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; }
+  .bucket-check.done{ background:var(--moss); border-color:var(--moss); }
+  .bucket-text{ flex:1; font-size:14px; }
+  .bucket-text.done{ text-decoration:line-through; color:var(--ink-soft); }
+  .bucket-delete{ background:none; border:none; color:var(--ink-soft); font-size:16px; cursor:pointer; padding:2px 6px; }
+  .bucket-add{ display:flex; gap:8px; margin-top:12px; }
+  .bucket-add input{ flex:1; padding:11px 14px; border:1.5px solid #E4E1D6; border-radius:12px; font-family:'Inter'; font-size:14px; }
+  .bucket-add button{ padding:0 16px; border-radius:12px; border:none; background:var(--moss); color:#fff; font-weight:700; cursor:pointer; }
+  .bucket-empty{ text-align:center; padding:24px 10px; color:var(--ink-soft); font-size:13px; }
+
+  .export-btn{ width:100%; margin-top:14px; padding:12px; border-radius:14px; border:1.5px solid var(--moss); background:none;
+    color:var(--moss); font-family:'Inter'; font-weight:700; font-size:13.5px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -237,12 +268,14 @@
     <div class="stage-name" id="stageName">Seed</div>
     <div class="stage-sub" id="stageSub">loading…</div>
     <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+    <button class="harvest-btn" id="harvestBtn">Add to bouquet 💐</button>
   </div>
 
   <div class="actionbar">
     <button class="action" id="btnLog"><div class="action-icon">＋</div><div class="action-label">Log time</div></button>
     <button class="action" id="btnChallenge"><div class="action-icon">✦</div><div class="action-label">Challenge</div></button>
     <button class="action" id="btnMemories"><div class="action-icon">📷</div><div class="action-label">Memories</div></button>
+    <button class="action" id="btnBucket"><div class="action-icon">💡</div><div class="action-label">Ideas</div></button>
     <button class="action" id="btnMenu"><div class="action-icon">☰</div><div class="action-label">Garden</div></button>
   </div>
 </div>
@@ -253,8 +286,8 @@
     <p>What'd you two do? Real time together is what grows this.</p>
     <label>What you did</label>
     <input type="text" id="logActivity" placeholder="e.g. cooked dinner, watched a movie">
-    <label>Minutes together</label>
-    <input type="number" id="logMinutes" placeholder="45" min="1">
+    <label>Hours together</label>
+    <input type="number" id="logHoursInput" placeholder="1.5" min="0.25" step="0.25">
     <label>Date</label>
     <input type="date" id="logDateInput">
     <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
@@ -275,6 +308,7 @@
   <div class="sheet">
     <h3>Your memories</h3>
     <p>Every logged moment, newest first.</p>
+    <input type="text" class="search-input" id="memorySearch" placeholder="Search memories…">
     <div class="memory-list" id="memoryList"></div>
     <div class="sheet-actions">
       <button class="btn-confirm" id="memoriesClose">Close</button>
@@ -297,6 +331,21 @@
   </div>
 </div>
 
+<div class="backdrop" id="bucketBackdrop">
+  <div class="sheet">
+    <h3>Date ideas</h3>
+    <p>Things you want to do together someday — add them here, check them off when you do.</p>
+    <div class="bucket-list" id="bucketList"></div>
+    <div class="bucket-add">
+      <input type="text" id="bucketInput" placeholder="e.g. weekend trip to the coast">
+      <button id="bucketAddBtn">Add</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-confirm" id="bucketClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="backdrop" id="menuBackdrop">
   <div class="sheet">
     <h3>Your garden</h3>
@@ -307,7 +356,7 @@
     <label>This week</label>
     <div class="weekly-recap">
       <div class="box"><b id="weekNights">0</b><span>Logged</span></div>
-      <div class="box"><b id="weekMinutes">0</b><span>Minutes</span></div>
+      <div class="box"><b id="weekHours">0</b><span>Hours</span></div>
       <div class="box"><b id="weekChallenges">0</b><span>Challenges</span></div>
     </div>
 
@@ -318,6 +367,11 @@
       <div class="txt">Anniversary decoration unlocked — happy anniversary!</div>
     </div>
 
+    <label>Your bouquet</label>
+    <div class="bouquet-grid" id="bouquetGrid"></div>
+
+    <button class="export-btn" id="exportBtn">Export memories as PDF</button>
+
     <div class="sheet-actions">
       <button class="btn-confirm" id="menuClose">Close</button>
     </div>
@@ -325,16 +379,40 @@
 </div>
 
 <script type="module">
-  import { initFirebase, isConfigured, currentStage, todaysChallenge, watchState, watchLogs,
-           logTime, completeChallenge, addNoteToLog, compressImage, findFlashback,
-           STAGES, DECOR_ICONS, ANNIVERSARY_ICON }
+  import { initFirebase, isConfigured, currentStage, currentSpecies, todaysChallenge, watchState, watchLogs,
+           logTime, completeChallenge, addNoteToLog, compressImage, findFlashback, harvestFlower,
+           watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem,
+           STAGES, SPECIES, DECOR_ICONS, ANNIVERSARY_ICON }
     from './app.js';
 
-  let latestState = { points: 0, streak: 0, unlockedDecorations: [0] };
+  let latestState = { points: 0, streak: 0, unlockedDecorations: [0], totalHarvests: 0, bouquet: [] };
   let lastStageKey = null;
   let pendingPhoto = null; // compressed base64 data-url, or null
 
+  // Small synthesized chime — no audio file needed. Falls back silently if
+  // Web Audio isn't available (never throws, never blocks the UI).
+  function playChime(happy = false) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = happy ? [523.25, 659.25, 783.99] : [523.25, 659.25];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + i * 0.09 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.09 + 0.35);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.09);
+        osc.stop(ctx.currentTime + i * 0.09 + 0.4);
+      });
+    } catch (e) { /* silently ignore — sound is a nice-to-have, not critical */ }
+    if (navigator.vibrate) navigator.vibrate(happy ? [30, 40, 30] : 25);
+  }
+
   function celebrateStageUp(name) {
+    playChime(true);
     const toast = document.createElement('div');
     toast.className = 'celebrate-toast';
     toast.textContent = `🎉 Your plant grew to ${name}!`;
@@ -366,15 +444,23 @@
   function render(state) {
     latestState = state;
     const stage = currentStage(state.points || 0);
+    const species = currentSpecies(state.totalHarvests || 0);
 
     if (lastStageKey && stage.key !== lastStageKey) celebrateStageUp(stage.name);
     lastStageKey = stage.key;
 
-    document.getElementById('scene').setAttribute('data-stage', stage.key);
+    const sceneEl = document.getElementById('scene');
+    sceneEl.setAttribute('data-stage', stage.key);
+    sceneEl.style.setProperty('--petal-light', species.light);
+    sceneEl.style.setProperty('--petal-dark', species.dark);
+
     document.getElementById('aura').className = 'aura stage-' + stage.key;
-    document.getElementById('stageName').textContent = stage.name;
+    document.getElementById('stageName').textContent = stage.name + ' · ' + species.name;
     document.getElementById('streakChip').textContent = state.streak || 0;
     document.getElementById('pointsChip').textContent = state.points || 0;
+
+    const harvestBtn = document.getElementById('harvestBtn');
+    harvestBtn.classList.toggle('show', stage.key === 'flourishing');
 
     if (stage.next) {
       const pct = Math.min(100, Math.round(((state.points - stage.min) / (stage.next - stage.min)) * 100));
@@ -383,9 +469,15 @@
       document.getElementById('stageSub').textContent = `${state.points} / ${stage.next} points to ${nextName.toLowerCase()}`;
     } else {
       document.getElementById('barFill').style.width = '100%';
-      document.getElementById('stageSub').textContent = 'Fully grown 🌸';
+      document.getElementById('stageSub').textContent = 'Fully grown — ready to harvest 🌸';
     }
   }
+
+  document.getElementById('harvestBtn').onclick = async () => {
+    await harvestFlower();
+    playChime(true);
+    if (!isConfigured) render(latestState);
+  };
 
   const logBackdrop = document.getElementById('logBackdrop');
   const logDateInput = document.getElementById('logDateInput');
@@ -409,17 +501,17 @@
       photoPickerLabel.textContent = 'Tap to change photo';
     } catch (err) {
       alert('Could not process that photo: ' + err.message);
-      photoPickerLabel.textContent = 'Tap to add a photo from this date';
+      photoPickerLabel.textContent = 'Tap to take a photo or choose from your library';
     }
   };
 
   function resetLogSheet() {
     document.getElementById('logActivity').value = '';
-    document.getElementById('logMinutes').value = '';
+    document.getElementById('logHoursInput').value = '';
     photoInput.value = '';
     photoPreview.classList.remove('show');
     photoPreview.src = '';
-    photoPickerLabel.textContent = 'Tap to add a photo from this date';
+    photoPickerLabel.textContent = 'Tap to take a photo or choose from your library';
     pendingPhoto = null;
   }
 
@@ -429,11 +521,12 @@
   };
   document.getElementById('logCancel').onclick = () => { logBackdrop.classList.remove('open'); resetLogSheet(); };
   document.getElementById('logSave').onclick = async () => {
-    const mins = parseInt(document.getElementById('logMinutes').value) || 15;
+    const hours = parseFloat(document.getElementById('logHoursInput').value) || 1;
     const activity = document.getElementById('logActivity').value.trim();
     const date = logDateInput.value || todayISO;
     try {
-      await logTime(mins, activity, date, pendingPhoto);
+      await logTime(hours, activity, date, pendingPhoto);
+      playChime(false);
       logBackdrop.classList.remove('open');
       resetLogSheet();
       if (!isConfigured) render(latestState);
@@ -449,6 +542,7 @@
   document.getElementById('challengeCancel').onclick = () => challengeBackdrop.classList.remove('open');
   document.getElementById('challengeDone').onclick = async () => {
     await completeChallenge(currentChallengeText);
+    playChime(true);
     challengeBackdrop.classList.remove('open');
     if (!isConfigured) render(latestState);
   };
@@ -478,25 +572,113 @@
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
     const thisWeek = latestLogs.filter((l) => l.date >= weekAgo && l.date <= today);
     document.getElementById('weekNights').textContent = thisWeek.filter((l) => l.type !== 'challenge').length;
-    document.getElementById('weekMinutes').textContent = thisWeek.reduce((sum, l) => sum + (l.minutes || 0), 0);
+    document.getElementById('weekHours').textContent = thisWeek.reduce((sum, l) => sum + (l.hours || 0), 0).toFixed(1).replace(/\.0$/, '');
     document.getElementById('weekChallenges').textContent = thisWeek.filter((l) => l.type === 'challenge').length;
+
+    const bouquetGrid = document.getElementById('bouquetGrid');
+    const bouquet = latestState.bouquet || [];
+    if (!bouquet.length) {
+      bouquetGrid.innerHTML = '<div class="bouquet-empty">Grow your first plant to Flourishing and harvest it to start your bouquet.</div>';
+    } else {
+      bouquetGrid.innerHTML = '';
+      [...bouquet].reverse().forEach((item) => {
+        const sp = SPECIES[item.speciesIndex % SPECIES.length];
+        const el = document.createElement('div');
+        el.className = 'bouquet-item';
+        el.innerHTML = `
+          <div class="bouquet-flower" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">${sp.emoji}</div>
+          <div class="bouquet-date">${item.date}</div>`;
+        bouquetGrid.appendChild(el);
+      });
+    }
 
     menuBackdrop.classList.add('open');
   };
   document.getElementById('menuClose').onclick = () => menuBackdrop.classList.remove('open');
 
+  // ---- Export memories as a PDF keepsake ----
+  document.getElementById('exportBtn').onclick = async () => {
+    const btn = document.getElementById('exportBtn');
+    btn.textContent = 'Building PDF…';
+    btn.disabled = true;
+    try {
+      const { jsPDF } = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.es.min.js');
+      const docPdf = new jsPDF({ unit: 'mm', format: 'a5' });
+      const pageW = docPdf.internal.pageSize.getWidth();
+      const pageH = docPdf.internal.pageSize.getHeight();
+      const margin = 12;
+
+      docPdf.setFontSize(20);
+      docPdf.text('bloom.', margin, 24);
+      docPdf.setFontSize(11);
+      docPdf.text('Our memories, together.', margin, 32);
+      docPdf.addPage();
+
+      const ordered = [...latestLogs].reverse(); // oldest first
+      let y = margin;
+      ordered.forEach((log) => {
+        const blockHeight = log.photo ? 62 : 26;
+        if (y + blockHeight > pageH - margin) { docPdf.addPage(); y = margin; }
+
+        docPdf.setFontSize(9);
+        docPdf.setTextColor(150, 100, 70);
+        docPdf.text(log.date + (log.backfilled ? '  ·  backfilled' : ''), margin, y);
+        y += 5;
+
+        docPdf.setFontSize(13);
+        docPdf.setTextColor(30, 42, 32);
+        docPdf.text(log.activity || 'Time together', margin, y);
+        y += 6;
+
+        if (log.photo) {
+          try {
+            docPdf.addImage(log.photo, 'JPEG', margin, y, 50, 50);
+          } catch (e) { /* skip image if it fails to embed */ }
+          y += 54;
+        }
+
+        if (log.note) {
+          docPdf.setFontSize(10);
+          docPdf.setTextColor(90, 75, 60);
+          const noteLines = docPdf.splitTextToSize(log.note, pageW - margin * 2);
+          docPdf.text(noteLines, margin, y);
+          y += noteLines.length * 5 + 4;
+        }
+        y += 6;
+      });
+
+      docPdf.save('bloom-memories.pdf');
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('Could not build the PDF: ' + err.message);
+    } finally {
+      btn.textContent = 'Export memories as PDF';
+      btn.disabled = false;
+    }
+  };
+
   // ---- Memories gallery ----
   const memoriesBackdrop = document.getElementById('memoriesBackdrop');
   const memoryList = document.getElementById('memoryList');
+  const memorySearch = document.getElementById('memorySearch');
   let latestLogs = [];
 
   function renderMemories(logs) {
     latestLogs = logs;
     renderPhotoDots(logs);
     renderFlashback(logs);
+    renderMemoryList(memorySearch.value.trim().toLowerCase());
+  }
+
+  function renderMemoryList(filterText) {
+    const logs = filterText
+      ? latestLogs.filter((l) =>
+          (l.activity || '').toLowerCase().includes(filterText) ||
+          (l.note || '').toLowerCase().includes(filterText))
+      : latestLogs;
 
     if (!logs.length) {
-      memoryList.innerHTML = '<div class="memory-empty">Nothing logged yet — your first memory will show up here.</div>';
+      memoryList.innerHTML = `<div class="memory-empty">${filterText ? 'No memories match that search.' : 'Nothing logged yet — your first memory will show up here.'}</div>`;
       return;
     }
     memoryList.innerHTML = '';
@@ -516,7 +698,7 @@
         <div class="memory-body">
           <div class="memory-date">${dateStr}${log.backfilled ? ' · backfilled' : ''}</div>
           <div class="memory-activity">${log.activity || 'Time together'}</div>
-          <div class="memory-meta">${log.minutes ? log.minutes + ' min · ' : ''}+${log.points} pts</div>
+          <div class="memory-meta">${log.hours ? log.hours + ' hr' + (log.hours === 1 ? '' : 's') + ' · ' : ''}+${log.points} pts</div>
           <div class="note-slot">${noteHtml}</div>
         </div>`;
       memoryList.appendChild(card);
@@ -544,6 +726,8 @@
     });
   }
 
+  memorySearch.oninput = () => renderMemoryList(memorySearch.value.trim().toLowerCase());
+
   // ---- "On this day" flashback ----
   const flashbackEl = document.getElementById('flashback');
   function renderFlashback(logs) {
@@ -563,11 +747,50 @@
   document.getElementById('btnMemories').onclick = () => memoriesBackdrop.classList.add('open');
   document.getElementById('memoriesClose').onclick = () => memoriesBackdrop.classList.remove('open');
 
+  // ---- Bucket list (shared date ideas) ----
+  const bucketBackdrop = document.getElementById('bucketBackdrop');
+  const bucketListEl = document.getElementById('bucketList');
+  const bucketInput = document.getElementById('bucketInput');
+
+  function renderBucket(items) {
+    if (!items.length) {
+      bucketListEl.innerHTML = '<div class="bucket-empty">No ideas yet — add the first one below.</div>';
+      return;
+    }
+    bucketListEl.innerHTML = '';
+    items.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'bucket-item';
+      row.innerHTML = `
+        <div class="bucket-check ${item.done ? 'done' : ''}" data-id="${item.id}">${item.done ? '✓' : ''}</div>
+        <div class="bucket-text ${item.done ? 'done' : ''}">${item.text}</div>
+        <button class="bucket-delete" data-id="${item.id}">✕</button>`;
+      bucketListEl.appendChild(row);
+    });
+    bucketListEl.querySelectorAll('.bucket-check').forEach((el) => {
+      el.onclick = () => toggleBucketItem(el.dataset.id, !el.classList.contains('done'));
+    });
+    bucketListEl.querySelectorAll('.bucket-delete').forEach((el) => {
+      el.onclick = () => deleteBucketItem(el.dataset.id);
+    });
+  }
+
+  document.getElementById('btnBucket').onclick = () => bucketBackdrop.classList.add('open');
+  document.getElementById('bucketClose').onclick = () => bucketBackdrop.classList.remove('open');
+  document.getElementById('bucketAddBtn').onclick = async () => {
+    const text = bucketInput.value.trim();
+    if (!text) return;
+    await addBucketItem(text);
+    bucketInput.value = '';
+  };
+  bucketInput.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('bucketAddBtn').click(); };
+
   async function boot() {
     await initFirebase();
     if (!isConfigured) document.getElementById('configBanner').classList.add('show');
     watchState(render);
     watchLogs(renderMemories);
+    watchBucketList(renderBucket);
   }
   boot();
 

@@ -55,7 +55,7 @@ see the same plant grow in real time — no refresh needed, updates appear live.
 ## How the mechanics work (for reference / tuning)
 
 - **Growth stages**: seed (0) → sprout (20) → budding (50) → blooming (100) → flourishing (200+) points.
-- **Logging time**: 4–12 points depending on minutes logged (10 min ≈ 4 pts, 100+ min ≈ 12 pts, capped).
+- **Logging time**: 4–12 points depending on hours logged (0.5 hr ≈ 4 pts, 2+ hrs ≈ 12 pts, capped).
 - **Streak**: increments if you log again the next calendar day; resets if you skip a day. Stored per-couple, not per-person, since either of you logging keeps it alive. Backfilled (past-dated) entries never affect the streak — only today's entries do.
 - **Backfilling**: the Log Time sheet has a date field (defaults to today, capped so you can't pick the future). Logging an earlier date still grows the plant, since it really happened — it just can't be used to fake a longer streak.
 - **Photos**: compressed client-side to a small JPEG and stored directly in Firestore (no Firebase Storage / no billing card needed). Shows as thumbnails in the Memories gallery and as small floating dots around the plant.
@@ -64,7 +64,12 @@ see the same plant grow in real time — no refresh needed, updates appear live.
 - **Daily challenge**: deterministic by date (`day-of-month % challenge list length`), so you both see the *same* prompt automatically. Completing it once per day adds 15 points, unlocks the next decoration, and logs itself into the Memories feed. Edit the `DEFAULT_CHALLENGES` array in `app.js` to swap in your own.
 - **Decorations**: 7 emoji placeholders (🦋✨🌈🕯️🐝🌙☀️) unlocked in order as challenges are completed, visible in the Garden menu.
 - **Anniversary decoration**: optional — set `ANNIVERSARY_MD` in `firebase-config.js` to a date like `"08-09"`. On that date each year, a special 💍 decoration unlocks automatically plus a 50-point bonus, shown in the Garden menu.
-- **Weekly recap**: in the Garden menu — logged entries, total minutes, and challenges completed in the last 7 days.
+- **Weekly recap**: in the Garden menu — logged entries, total hours, and challenges completed in the last 7 days.
+- **Bouquet & species**: once the plant reaches Flourishing (200+ points), a "Add to bouquet 💐" button appears. Harvesting it adds that flower to your permanent bouquet (shown in the Garden menu), keeps any leftover points, and starts a *new* plant growing — cycling through 5 flower species (Rose, Violet, Marigold, Aster, Poppy) so each round looks different.
+- **Date ideas / bucket list**: the 💡 button — a shared running list you both add to and check off, separate from the logged-past-dates gallery.
+- **Memory search**: a search box at the top of the Memories gallery filters by activity text or notes.
+- **Export as PDF**: in the Garden menu, "Export memories as PDF" builds a downloadable keepsake booklet from everything logged (dates, activities, notes, and photos), oldest first.
+- **Sound & haptics**: a small synthesized chime plays on logging time, completing a challenge, and harvesting a bouquet (with a subtle vibration on Android — iOS Safari doesn't support vibration, so it's silent-but-fine there).
 
 ### A note on photo storage
 Photos live inside Firestore documents as compressed JPEGs (roughly 40–150 KB each depending on the photo), not in a separate file storage service. That keeps everything on Firestore's free tier with zero billing setup. At that size you could log several thousand photos before approaching Firestore's 1 GB free storage limit — more than enough for a project like this. If you ever want full-resolution photos instead, that would mean switching to Firebase Storage, which requires linking a billing card (Google's free allowance still applies, but the card is mandatory to enable it) — worth asking for if you want to go that route later.
