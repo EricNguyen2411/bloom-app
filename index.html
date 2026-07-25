@@ -117,6 +117,7 @@
   .action:nth-child(1) .action-icon{ background:linear-gradient(160deg,var(--lime),var(--moss)); color:#fff; }
   .action:nth-child(2) .action-icon{ background:linear-gradient(160deg,#F0A98D,var(--coral)); color:#fff; }
   .action:nth-child(3) .action-icon{ background:linear-gradient(160deg,#B487A3,var(--plum)); color:#fff; }
+  .action:nth-child(4) .action-icon{ background:linear-gradient(160deg,#F2D488,var(--gold)); color:#fff; }
   .action-label{ font-size:11.5px; font-weight:600; }
 
   .backdrop{ display:none; position:fixed; inset:0; background:rgba(30,42,32,0.4); z-index:40; align-items:flex-end; justify-content:center; }
@@ -139,6 +140,56 @@
   .decor-item.locked{ opacity:0.3; filter:grayscale(1); }
   .stat-row{ display:flex; justify-content:space-between; font-size:14px; margin:8px 0; }
   .stat-row b{ color:var(--moss); }
+
+  .photo-picker{ margin-top:6px; border:1.5px dashed #D8D3C3; border-radius:14px; padding:14px; text-align:center; cursor:pointer; background:#FBFAF6; }
+  .photo-picker input{ display:none; }
+  .photo-picker-label{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
+  .photo-preview{ margin-top:10px; width:100%; max-height:160px; object-fit:cover; border-radius:12px; display:none; }
+  .photo-preview.show{ display:block; }
+
+  .memory-list{ max-height:60vh; overflow-y:auto; margin-top:6px; }
+  .memory-card{ display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #F0EDE2; }
+  .memory-card:last-child{ border-bottom:none; }
+  .memory-thumb{ width:56px; height:56px; border-radius:12px; object-fit:cover; flex:0 0 56px; background:#F1EEE3; }
+  .memory-thumb-empty{ width:56px; height:56px; border-radius:12px; flex:0 0 56px; background:linear-gradient(160deg,var(--lime),var(--moss));
+    display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .memory-body{ flex:1; min-width:0; }
+  .memory-date{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--coral); letter-spacing:0.5px; }
+  .memory-activity{ font-size:14px; font-weight:600; margin-top:2px; }
+  .memory-meta{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+  .memory-empty{ text-align:center; padding:30px 10px; color:var(--ink-soft); font-size:13px; }
+
+  .celebrate-toast{ position:fixed; top:calc(env(safe-area-inset-top) + 16px); left:50%; transform:translateX(-50%) translateY(-20px);
+    background:var(--ink); color:#fff; padding:12px 20px; border-radius:999px; font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:700; font-size:14px; z-index:60; opacity:0; transition:all .4s cubic-bezier(.3,.9,.4,1); box-shadow:0 12px 24px -8px rgba(0,0,0,0.3); }
+  .celebrate-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .flashback{ margin:0 22px 6px; background:linear-gradient(135deg,#FBF6E8,#F3ECD9); border-radius:18px; padding:12px 14px;
+    display:none; gap:12px; align-items:center; cursor:pointer; border:1px solid #EDE6D2; }
+  .flashback.show{ display:flex; }
+  .flashback img{ width:44px; height:44px; border-radius:10px; object-fit:cover; flex:0 0 44px; }
+  .flashback-icon{ width:44px; height:44px; border-radius:10px; flex:0 0 44px; background:linear-gradient(160deg,var(--gold),#D19A2E);
+    display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .flashback-tag{ font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:1px; color:var(--coral); text-transform:uppercase; }
+  .flashback-text{ font-size:12.5px; font-weight:600; margin-top:1px; }
+
+  .photo-dot{ position:absolute; width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #fff;
+    box-shadow:0 6px 14px -6px rgba(30,42,32,0.4); opacity:0; transition:opacity .6s ease .3s; }
+  .scene-wrap.has-photos .photo-dot{ opacity:1; }
+
+  .memory-note{ font-size:12px; color:var(--ink); background:#F6F4EC; border-radius:8px; padding:6px 9px; margin-top:5px; }
+  .memory-add-note{ font-size:11px; color:var(--moss); font-weight:700; margin-top:5px; cursor:pointer; background:none; border:none; padding:0; }
+  .memory-note-input{ display:flex; gap:6px; margin-top:5px; }
+  .memory-note-input input{ flex:1; padding:7px 10px; border:1.5px solid #E4E1D6; border-radius:8px; font-family:'Inter'; font-size:12.5px; }
+  .memory-note-input button{ padding:0 12px; border-radius:8px; border:none; background:var(--moss); color:#fff; font-weight:700; font-size:11.5px; cursor:pointer; }
+
+  .anniversary-row{ display:flex; align-items:center; gap:10px; background:linear-gradient(135deg,#FBF0E0,#F5E2C4); border-radius:12px; padding:10px 12px; margin-top:10px; }
+  .anniversary-row .icon{ font-size:20px; }
+  .anniversary-row .txt{ font-size:12px; color:var(--ink-soft); }
+  .weekly-recap{ display:flex; gap:8px; margin-top:8px; }
+  .weekly-recap .box{ flex:1; background:#F6F4EC; border-radius:12px; padding:10px; text-align:center; }
+  .weekly-recap .box b{ display:block; font-family:'Bricolage Grotesque',sans-serif; font-size:18px; color:var(--moss); }
+  .weekly-recap .box span{ font-size:9.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.5px; }
 </style>
 </head>
 <body>
@@ -154,7 +205,7 @@
     </div>
   </div>
 
-  <div class="scene-wrap">
+  <div class="scene-wrap" id="sceneWrap">
     <div class="aura stage-seed" id="aura"></div>
     <div class="scene" data-stage="seed" id="scene">
       <div class="pot"></div>
@@ -171,6 +222,15 @@
       </div>
       <div class="sparkle s1"></div><div class="sparkle s2"></div><div class="sparkle s3"></div>
     </div>
+    <div id="photoDots"></div>
+  </div>
+
+  <div class="flashback" id="flashback">
+    <div id="flashbackThumbWrap"></div>
+    <div>
+      <div class="flashback-tag" id="flashbackTag">ON THIS DAY</div>
+      <div class="flashback-text" id="flashbackText"></div>
+    </div>
   </div>
 
   <div class="progress-wrap">
@@ -182,6 +242,7 @@
   <div class="actionbar">
     <button class="action" id="btnLog"><div class="action-icon">＋</div><div class="action-label">Log time</div></button>
     <button class="action" id="btnChallenge"><div class="action-icon">✦</div><div class="action-label">Challenge</div></button>
+    <button class="action" id="btnMemories"><div class="action-icon">📷</div><div class="action-label">Memories</div></button>
     <button class="action" id="btnMenu"><div class="action-icon">☰</div><div class="action-label">Garden</div></button>
   </div>
 </div>
@@ -197,9 +258,26 @@
     <label>Date</label>
     <input type="date" id="logDateInput">
     <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
+    <label>Photo (optional)</label>
+    <div class="photo-picker" id="photoPicker">
+      <input type="file" id="logPhotoInput" accept="image/*">
+      <span class="photo-picker-label" id="photoPickerLabel">Tap to take a photo or choose from your library</span>
+      <img class="photo-preview" id="photoPreview">
+    </div>
     <div class="sheet-actions">
       <button class="btn-cancel" id="logCancel">Cancel</button>
       <button class="btn-confirm" id="logSave">Water it</button>
+    </div>
+  </div>
+</div>
+
+<div class="backdrop" id="memoriesBackdrop">
+  <div class="sheet">
+    <h3>Your memories</h3>
+    <p>Every logged moment, newest first.</p>
+    <div class="memory-list" id="memoryList"></div>
+    <div class="sheet-actions">
+      <button class="btn-confirm" id="memoriesClose">Close</button>
     </div>
   </div>
 </div>
@@ -225,8 +303,21 @@
     <div class="stat-row"><span>Current stage</span><b id="menuStage">Seed</b></div>
     <div class="stat-row"><span>Total growth points</span><b id="menuPoints">0</b></div>
     <div class="stat-row"><span>Streak</span><b id="menuStreak">0 days</b></div>
+
+    <label>This week</label>
+    <div class="weekly-recap">
+      <div class="box"><b id="weekNights">0</b><span>Logged</span></div>
+      <div class="box"><b id="weekMinutes">0</b><span>Minutes</span></div>
+      <div class="box"><b id="weekChallenges">0</b><span>Challenges</span></div>
+    </div>
+
     <label>Unlocked decorations</label>
     <div class="decor-grid" id="decorGrid"></div>
+    <div class="anniversary-row" id="anniversaryRow" style="display:none;">
+      <div class="icon">💍</div>
+      <div class="txt">Anniversary decoration unlocked — happy anniversary!</div>
+    </div>
+
     <div class="sheet-actions">
       <button class="btn-confirm" id="menuClose">Close</button>
     </div>
@@ -234,14 +325,51 @@
 </div>
 
 <script type="module">
-  import { initFirebase, isConfigured, currentStage, todaysChallenge, watchState, logTime, completeChallenge, STAGES, DECOR_ICONS }
+  import { initFirebase, isConfigured, currentStage, todaysChallenge, watchState, watchLogs,
+           logTime, completeChallenge, addNoteToLog, compressImage, findFlashback,
+           STAGES, DECOR_ICONS, ANNIVERSARY_ICON }
     from './app.js';
 
   let latestState = { points: 0, streak: 0, unlockedDecorations: [0] };
+  let lastStageKey = null;
+  let pendingPhoto = null; // compressed base64 data-url, or null
+
+  function celebrateStageUp(name) {
+    const toast = document.createElement('div');
+    toast.className = 'celebrate-toast';
+    toast.textContent = `🎉 Your plant grew to ${name}!`;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
+  }
+
+  // Scatters up to 4 recent photo memories as small circles around the scene.
+  const DOT_POSITIONS = [
+    { top: '8%', left: '12%' }, { top: '14%', right: '10%' },
+    { bottom: '18%', left: '6%' }, { bottom: '10%', right: '8%' }
+  ];
+  function renderPhotoDots(logs) {
+    const wrap = document.getElementById('photoDots');
+    const sceneWrap = document.getElementById('sceneWrap');
+    const withPhotos = logs.filter((l) => l.photo).slice(0, 4);
+    wrap.innerHTML = '';
+    withPhotos.forEach((log, i) => {
+      const img = document.createElement('img');
+      img.className = 'photo-dot';
+      img.src = log.photo;
+      Object.assign(img.style, { position: 'absolute', ...DOT_POSITIONS[i] });
+      wrap.appendChild(img);
+    });
+    sceneWrap.classList.toggle('has-photos', withPhotos.length > 0);
+  }
 
   function render(state) {
     latestState = state;
     const stage = currentStage(state.points || 0);
+
+    if (lastStageKey && stage.key !== lastStageKey) celebrateStageUp(stage.name);
+    lastStageKey = stage.key;
+
     document.getElementById('scene').setAttribute('data-stage', stage.key);
     document.getElementById('aura').className = 'aura stage-' + stage.key;
     document.getElementById('stageName').textContent = stage.name;
@@ -264,20 +392,50 @@
   const todayISO = new Date().toISOString().slice(0, 10);
   logDateInput.max = todayISO; // no future-dating entries
 
+  const photoPicker = document.getElementById('photoPicker');
+  const photoInput = document.getElementById('logPhotoInput');
+  const photoPreview = document.getElementById('photoPreview');
+  const photoPickerLabel = document.getElementById('photoPickerLabel');
+
+  photoPicker.onclick = () => photoInput.click();
+  photoInput.onchange = async () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    photoPickerLabel.textContent = 'Compressing…';
+    try {
+      pendingPhoto = await compressImage(file);
+      photoPreview.src = pendingPhoto;
+      photoPreview.classList.add('show');
+      photoPickerLabel.textContent = 'Tap to change photo';
+    } catch (err) {
+      alert('Could not process that photo: ' + err.message);
+      photoPickerLabel.textContent = 'Tap to add a photo from this date';
+    }
+  };
+
+  function resetLogSheet() {
+    document.getElementById('logActivity').value = '';
+    document.getElementById('logMinutes').value = '';
+    photoInput.value = '';
+    photoPreview.classList.remove('show');
+    photoPreview.src = '';
+    photoPickerLabel.textContent = 'Tap to add a photo from this date';
+    pendingPhoto = null;
+  }
+
   document.getElementById('btnLog').onclick = () => {
     logDateInput.value = todayISO; // reset to today each time it's opened
     logBackdrop.classList.add('open');
   };
-  document.getElementById('logCancel').onclick = () => logBackdrop.classList.remove('open');
+  document.getElementById('logCancel').onclick = () => { logBackdrop.classList.remove('open'); resetLogSheet(); };
   document.getElementById('logSave').onclick = async () => {
     const mins = parseInt(document.getElementById('logMinutes').value) || 15;
     const activity = document.getElementById('logActivity').value.trim();
     const date = logDateInput.value || todayISO;
     try {
-      await logTime(mins, activity, date);
-      document.getElementById('logActivity').value = '';
-      document.getElementById('logMinutes').value = '';
+      await logTime(mins, activity, date, pendingPhoto);
       logBackdrop.classList.remove('open');
+      resetLogSheet();
       if (!isConfigured) render(latestState);
     } catch (err) {
       // error already shown to the user inside logTime() — just leave the sheet open so they can retry
@@ -285,11 +443,12 @@
   };
 
   const challengeBackdrop = document.getElementById('challengeBackdrop');
-  document.getElementById('challengeText').textContent = todaysChallenge();
+  const currentChallengeText = todaysChallenge();
+  document.getElementById('challengeText').textContent = currentChallengeText;
   document.getElementById('btnChallenge').onclick = () => challengeBackdrop.classList.add('open');
   document.getElementById('challengeCancel').onclick = () => challengeBackdrop.classList.remove('open');
   document.getElementById('challengeDone').onclick = async () => {
-    await completeChallenge();
+    await completeChallenge(currentChallengeText);
     challengeBackdrop.classList.remove('open');
     if (!isConfigured) render(latestState);
   };
@@ -300,6 +459,7 @@
     document.getElementById('menuStage').textContent = stage.name;
     document.getElementById('menuPoints').textContent = latestState.points || 0;
     document.getElementById('menuStreak').textContent = (latestState.streak || 0) + ' days';
+
     const grid = document.getElementById('decorGrid');
     grid.innerHTML = '';
     const unlocked = new Set(latestState.unlockedDecorations || [0]);
@@ -309,14 +469,105 @@
       el.textContent = icon;
       grid.appendChild(el);
     });
+
+    const currentYear = new Date().toISOString().slice(0, 4);
+    document.getElementById('anniversaryRow').style.display =
+      latestState.anniversaryUnlockedYear === currentYear ? 'flex' : 'none';
+
+    const today = new Date().toISOString().slice(0, 10);
+    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const thisWeek = latestLogs.filter((l) => l.date >= weekAgo && l.date <= today);
+    document.getElementById('weekNights').textContent = thisWeek.filter((l) => l.type !== 'challenge').length;
+    document.getElementById('weekMinutes').textContent = thisWeek.reduce((sum, l) => sum + (l.minutes || 0), 0);
+    document.getElementById('weekChallenges').textContent = thisWeek.filter((l) => l.type === 'challenge').length;
+
     menuBackdrop.classList.add('open');
   };
   document.getElementById('menuClose').onclick = () => menuBackdrop.classList.remove('open');
+
+  // ---- Memories gallery ----
+  const memoriesBackdrop = document.getElementById('memoriesBackdrop');
+  const memoryList = document.getElementById('memoryList');
+  let latestLogs = [];
+
+  function renderMemories(logs) {
+    latestLogs = logs;
+    renderPhotoDots(logs);
+    renderFlashback(logs);
+
+    if (!logs.length) {
+      memoryList.innerHTML = '<div class="memory-empty">Nothing logged yet — your first memory will show up here.</div>';
+      return;
+    }
+    memoryList.innerHTML = '';
+    logs.forEach((log) => {
+      const card = document.createElement('div');
+      card.className = 'memory-card';
+      const d = new Date(log.date + 'T00:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+      const thumb = log.photo
+        ? `<img class="memory-thumb" src="${log.photo}">`
+        : `<div class="memory-thumb-empty">${log.type === 'challenge' ? '✦' : '🌿'}</div>`;
+      const noteHtml = log.note
+        ? `<div class="memory-note">${log.note}</div>`
+        : `<button class="memory-add-note" data-id="${log.id}">+ Add a note</button>`;
+      card.innerHTML = `
+        ${thumb}
+        <div class="memory-body">
+          <div class="memory-date">${dateStr}${log.backfilled ? ' · backfilled' : ''}</div>
+          <div class="memory-activity">${log.activity || 'Time together'}</div>
+          <div class="memory-meta">${log.minutes ? log.minutes + ' min · ' : ''}+${log.points} pts</div>
+          <div class="note-slot">${noteHtml}</div>
+        </div>`;
+      memoryList.appendChild(card);
+    });
+
+    memoryList.querySelectorAll('.memory-add-note').forEach((btn) => {
+      btn.onclick = () => {
+        const slot = btn.parentElement;
+        slot.innerHTML = `<div class="memory-note-input">
+          <input type="text" placeholder="a quick note…">
+          <button>Save</button>
+        </div>`;
+        const input = slot.querySelector('input');
+        const saveBtn = slot.querySelector('button');
+        input.focus();
+        saveBtn.onclick = async () => {
+          const note = input.value.trim();
+          if (!note) return;
+          try {
+            await addNoteToLog(btn.dataset.id, note);
+            slot.innerHTML = `<div class="memory-note">${note}</div>`;
+          } catch (err) { /* error already alerted */ }
+        };
+      };
+    });
+  }
+
+  // ---- "On this day" flashback ----
+  const flashbackEl = document.getElementById('flashback');
+  function renderFlashback(logs) {
+    const result = findFlashback(logs);
+    if (!result) { flashbackEl.classList.remove('show'); return; }
+    const { log, daysAgo } = result;
+    const label = daysAgo === 365 ? 'a year ago' : daysAgo === 30 ? 'a month ago' : 'a week ago';
+    document.getElementById('flashbackText').textContent = `${label}: ${log.activity || 'time together'}`;
+    const thumbWrap = document.getElementById('flashbackThumbWrap');
+    thumbWrap.innerHTML = log.photo
+      ? `<img src="${log.photo}">`
+      : `<div class="flashback-icon">✨</div>`;
+    flashbackEl.classList.add('show');
+    flashbackEl.onclick = () => memoriesBackdrop.classList.add('open');
+  }
+
+  document.getElementById('btnMemories').onclick = () => memoriesBackdrop.classList.add('open');
+  document.getElementById('memoriesClose').onclick = () => memoriesBackdrop.classList.remove('open');
 
   async function boot() {
     await initFirebase();
     if (!isConfigured) document.getElementById('configBanner').classList.add('show');
     watchState(render);
+    watchLogs(renderMemories);
   }
   boot();
 

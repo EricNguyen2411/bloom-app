@@ -5,14 +5,20 @@
 // not this config being secret.
 // ------------------------------------------------------------------
 export const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME"
+  apiKey: "AIzaSyCa7LlrpFb6zb1dbEkYWHFJ3gO3CtjTuSY",
+  authDomain: "bloom-app-33f28.firebaseapp.com",
+  projectId: "bloom-app-33f28",
+  storageBucket: "bloom-app-33f28.firebasestorage.app",
+  messagingSenderId: "835797740100",
+  appId: "1:835797740100:web:b31f183a35102901efea11"
 };
 
 // A shared, made-up "room code" only you and her will use — this is what
 // keeps your data separate from anyone else who might use this same app.
-export const COUPLE_ID = "REPLACE_ME_WITH_A_PRIVATE_CODE";
+export const COUPLE_ID = "24112000";
+
+// Optional: your anniversary (or any date you want celebrated every year),
+// as "MM-DD" — e.g. "08-09" for August 9th. On that date each year, a
+// special ring decoration unlocks automatically plus a points bonus.
+// Leave as null to skip this feature entirely.
+export const ANNIVERSARY_MD = 12-12; // e.g. "08-09"
