@@ -81,7 +81,7 @@
 
   .sparkle{ position:absolute; border-radius:50%; background:var(--gold); opacity:0; transition:all .8s ease; }
 
-  .helper{ position:absolute; right:-10px; bottom:40px; width:56px; height:86px; opacity:0; transform:scale(0.6) translateY(10px);
+  .helper{ position:absolute; left:-10px; bottom:40px; width:56px; height:86px; opacity:0; transform:scale(0.6) translateY(10px);
     transition:all .5s cubic-bezier(.34,1.4,.4,1); z-index:6; pointer-events:none; }
   .helper.show{ opacity:1; transform:scale(1) translateY(0); }
   .helper .can{ animation:none; }
@@ -93,6 +93,8 @@
   .helper.pouring .drop3{ animation-delay:.4s; }
   @keyframes tiltPour{ from{ transform:rotate(0deg); } to{ transform:rotate(-18deg); } }
   @keyframes dropFall{ 0%{ opacity:0; transform:translateY(0); } 20%{ opacity:1; } 100%{ opacity:0; transform:translateY(14px); } }
+  .helper-idle.show{ animation:idleSway 2.4s ease-in-out infinite; }
+  @keyframes idleSway{ 0%,100%{ transform:scale(1) rotate(0deg); } 50%{ transform:scale(1) rotate(-2deg); } }
   .s1{ width:6px; height:6px; bottom:270px; left:calc(50% + 40px); }
   .s2{ width:5px; height:5px; bottom:250px; left:calc(50% - 58px); }
   .s3{ width:7px; height:7px; bottom:290px; left:calc(50% - 20px); background:var(--plum); }
@@ -260,7 +262,6 @@
     padding:calc(env(safe-area-inset-top) + 14px) 18px 10px; }
   .garden-page-header button{ background:rgba(255,255,255,0.75); border:none; color:var(--moss); font-family:'Bricolage Grotesque',sans-serif;
     font-weight:700; font-size:13.5px; cursor:pointer; padding:8px 14px; border-radius:999px; backdrop-filter:blur(4px); }
-  #gardenShareBtn{ padding:8px 12px; font-size:15px; }
   .garden-page-title{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:16px; color:var(--ink);
     background:rgba(255,255,255,0.75); padding:8px 16px; border-radius:999px; backdrop-filter:blur(4px); }
 
@@ -408,6 +409,20 @@
           </g>
         </svg>
       </div>
+      <div class="helper helper-idle show" id="helperIdle">
+        <svg viewBox="0 0 68 104">
+          <!-- body -->
+          <path d="M20,58 Q15,80 19,97 Q30,103 41,97 Q45,80 40,58 Z" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
+          <!-- head -->
+          <circle cx="30" cy="38" r="20" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
+          <circle cx="24.5" cy="36" r="2" fill="#2A1B12"/>
+          <circle cx="35.5" cy="36" r="2" fill="#2A1B12"/>
+          <line x1="27" y1="45" x2="33" y2="45" stroke="#2A1B12" stroke-width="1.3" stroke-linecap="round"/>
+          <!-- arms akimbo, hands on hips -->
+          <path d="M19,60 Q8,64 11,76 Q16,74 21,68 Z" fill="#93C773" stroke="#2A1B12" stroke-opacity="0.12" stroke-width="0.8"/>
+          <path d="M41,60 Q52,64 49,76 Q44,74 39,68 Z" fill="#93C773" stroke="#2A1B12" stroke-opacity="0.12" stroke-width="0.8"/>
+        </svg>
+      </div>
     </div>
     <div id="photoDots"></div>
   </div>
@@ -461,7 +476,7 @@
   <div class="garden-page-header">
     <button id="gardenBack">← Back</button>
     <div class="garden-page-title">Your Garden</div>
-    <button id="gardenShareBtn" title="Share your garden">📤</button>
+    <div style="width:44px;"></div>
   </div>
 
   <div class="garden-scene">
@@ -534,8 +549,10 @@
   </div>
 
   <div class="garden-page-content">
-    <label>Your decorations</label>
-    <div class="owned-decor-row" id="ownedDecorRow"></div>
+    <div id="decorSection">
+      <label>Your decorations</label>
+      <div class="owned-decor-row" id="ownedDecorRow"></div>
+    </div>
 
     <label>The garden bed</label>
     <div class="garden-bed" id="gardenBed"></div>
@@ -544,9 +561,11 @@
       <div id="gardenDetailContent"></div>
     </div>
 
-    <label>🪙 Garden Shop</label>
-    <p style="margin:0 0 10px;">Spend points earned from logging time and challenges on things for the garden.</p>
-    <div class="shop-grid" id="shopGrid"></div>
+    <div id="shopSection">
+      <label>🪙 Garden Shop</label>
+      <p style="margin:0 0 10px;">Spend points earned from logging time and challenges on things for the garden.</p>
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
   </div>
 </div>
 
@@ -622,6 +641,13 @@
       </div>
       <button class="toggle-switch" id="toggleChallenge" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
     </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-name">Garden Shop & decorations</div>
+        <div class="setting-desc">Turn off if you're not using this yet — hides the Shop and decorations from the Garden page for both of you.</div>
+      </div>
+      <button class="toggle-switch" id="toggleShop" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
+    </div>
 
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
@@ -643,7 +669,7 @@
   import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
-           purchaseDecoration, setSetting, SPECIES, DECOR_SHOP }
+           purchaseDecoration, setSetting, countFlowers, SPECIES, DECOR_SHOP }
     from './app.js';
 
   // Injects the species' dark shade as the icon's color (icons use fill="currentColor").
@@ -651,8 +677,24 @@
     return sp.icon.replace('<svg ', `<svg style="color:${sp.dark}" `);
   }
 
-  let latestState = { points: 0, streak: 0, unlockedDecorations: [], totalFlowers: 0 };
+  let latestState = { points: 0, streak: 0, unlockedDecorations: [] };
+  let liveFlowerCount = 0;
   // pendingPhotos array is declared near the photo picker setup below
+
+  async function refreshFlowerCount() {
+    const count = await countFlowers();
+    if (count !== null) liveFlowerCount = count;
+    updateFlowerUI();
+  }
+  function updateFlowerUI() {
+    const species = currentSpecies(liveFlowerCount);
+    const sceneEl = document.getElementById('scene');
+    sceneEl.style.setProperty('--petal-light', species.light);
+    sceneEl.style.setProperty('--petal-dark', species.dark);
+    document.getElementById('flowerCountChip').textContent = liveFlowerCount;
+    document.getElementById('stageSub').textContent = `Next up: a ${species.name.toLowerCase()}`;
+    document.getElementById('menuFlowers').textContent = liveFlowerCount;
+  }
 
   // Small synthesized chime — no audio file needed. Falls back silently if
   // Web Audio isn't available (never throws, never blocks the UI).
@@ -688,9 +730,11 @@
     const sceneEl = document.getElementById('scene');
     const auraEl = document.getElementById('aura');
     const helperEl = document.getElementById('helperChar');
+    const idleEl = document.getElementById('helperIdle');
     const sequence = ['sprout', 'budding', 'blooming', 'flourishing'];
     let i = 0;
 
+    idleEl.classList.remove('show');
     helperEl.classList.add('show');
     setTimeout(() => helperEl.classList.add('pouring'), 250);
 
@@ -707,6 +751,7 @@
         setTimeout(() => {
           sceneEl.setAttribute('data-stage', 'seed');
           auraEl.className = 'aura stage-seed';
+          idleEl.classList.add('show');
           blooming = false;
         }, 3600);
         return;
@@ -779,16 +824,9 @@
 
   function render(state) {
     latestState = state;
-    const species = currentSpecies(state.totalFlowers || 0);
-
-    const sceneEl = document.getElementById('scene');
-    sceneEl.style.setProperty('--petal-light', species.light);
-    sceneEl.style.setProperty('--petal-dark', species.dark);
 
     document.getElementById('streakChip').textContent = state.streak || 0;
     document.getElementById('pointsChip').textContent = state.points || 0;
-    document.getElementById('flowerCountChip').textContent = state.totalFlowers || 0;
-    document.getElementById('stageSub').textContent = `Next up: a ${species.name.toLowerCase()}`;
 
     document.getElementById('btnChallenge').style.display = state.challengeEnabled === false ? 'none' : '';
 
@@ -974,11 +1012,12 @@
     const activity = document.getElementById('logActivity').value.trim();
     const date = logDateInput.value || todayISO;
     try {
-      const speciesForThis = currentSpecies(latestState.totalFlowers || 0);
+      const speciesForThis = currentSpecies(liveFlowerCount);
       await logTime(activity, date, pendingPhotos);
       logBackdrop.classList.remove('open');
       resetLogSheet();
       plantBloomAnimation(speciesForThis.name);
+      refreshFlowerCount();
       if (!isConfigured) render(latestState);
     } catch (err) {
       // error already shown to the user inside logTime() — just leave the sheet open so they can retry
@@ -991,17 +1030,19 @@
   document.getElementById('btnChallenge').onclick = () => challengeBackdrop.classList.add('open');
   document.getElementById('challengeCancel').onclick = () => challengeBackdrop.classList.remove('open');
   document.getElementById('challengeDone').onclick = async () => {
-    const speciesForThis = currentSpecies(latestState.totalFlowers || 0);
+    const speciesForThis = currentSpecies(liveFlowerCount);
     await completeChallenge(currentChallengeText);
     challengeBackdrop.classList.remove('open');
     plantBloomAnimation(speciesForThis.name);
+    refreshFlowerCount();
     if (!isConfigured) render(latestState);
   };
 
   const menuBackdrop = document.getElementById('menuBackdrop');
   const toggleChallengeBtn = document.getElementById('toggleChallenge');
+  const toggleShopBtn = document.getElementById('toggleShop');
   document.getElementById('btnSettings').onclick = () => {
-    document.getElementById('menuFlowers').textContent = latestState.totalFlowers || 0;
+    document.getElementById('menuFlowers').textContent = liveFlowerCount;
     document.getElementById('menuPoints').textContent = latestState.points || 0;
     document.getElementById('menuStreak').textContent = (latestState.streak || 0) + ' days';
 
@@ -1017,6 +1058,7 @@
     document.getElementById('weekChallenges').textContent = thisWeek.filter((l) => l.type === 'challenge').length;
 
     toggleChallengeBtn.setAttribute('aria-checked', latestState.challengeEnabled !== false ? 'true' : 'false');
+    toggleShopBtn.setAttribute('aria-checked', latestState.shopEnabled !== false ? 'true' : 'false');
 
     menuBackdrop.classList.add('open');
   };
@@ -1033,9 +1075,27 @@
     }
   };
 
+  toggleShopBtn.onclick = async () => {
+    const newValue = toggleShopBtn.getAttribute('aria-checked') !== 'true';
+    toggleShopBtn.setAttribute('aria-checked', newValue ? 'true' : 'false');
+    try {
+      await setSetting('shopEnabled', newValue);
+      renderShop(latestState);
+    } catch (err) {
+      toggleShopBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
+    }
+  };
+
   // ---- Garden page (shop + meadow) ----
   const gardenPage = document.getElementById('gardenPage');
   function renderShop(state) {
+    const shopSection = document.getElementById('shopSection');
+    const decorSection = document.getElementById('decorSection');
+    const shopOn = state.shopEnabled !== false;
+    if (shopSection) shopSection.style.display = shopOn ? '' : 'none';
+    if (decorSection) decorSection.style.display = shopOn ? '' : 'none';
+    if (!shopOn) return;
+
     const shopGrid = document.getElementById('shopGrid');
     if (!shopGrid) return;
     const owned = new Set(state.unlockedDecorations || []);
@@ -1118,52 +1178,6 @@
 
   document.getElementById('btnGarden').onclick = () => { applySceneTheme(); gardenPage.classList.add('open'); };
   document.getElementById('gardenBack').onclick = () => gardenPage.classList.remove('open');
-
-  // ---- Share the garden as an image ----
-  async function loadHtml2Canvas() {
-    if (window.html2canvas) return window.html2canvas;
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Could not load the image export library — check your connection.'));
-      document.head.appendChild(s);
-    });
-    return window.html2canvas;
-  }
-
-  document.getElementById('gardenShareBtn').onclick = async () => {
-    const btn = document.getElementById('gardenShareBtn');
-    const original = btn.textContent;
-    btn.textContent = '⏳';
-    btn.disabled = true;
-    try {
-      const html2canvas = await loadHtml2Canvas();
-      const canvas = await html2canvas(document.getElementById('gardenPage'), {
-        backgroundColor: null, useCORS: true, scale: 2
-      });
-      canvas.toBlob(async (blob) => {
-        const file = new File([blob], 'our-garden.png', { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'Our Garden' });
-          } catch (e) { /* user cancelled the share sheet — not an error */ }
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = 'our-garden.png';
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-      }, 'image/png');
-    } catch (err) {
-      console.error('Garden share failed:', err);
-      alert('Could not create the image: ' + err.message);
-    } finally {
-      btn.textContent = original;
-      btn.disabled = false;
-    }
-  };
 
   // ---- Export memories as a PDF keepsake ----
   document.getElementById('exportBtn').onclick = async () => {
@@ -1566,6 +1580,7 @@
     watchState(render);
     watchLogs(renderMemories);
     watchBucketList(renderBucket);
+    refreshFlowerCount();
   }
   boot();
 

@@ -151,7 +151,7 @@ const DEFAULT_CHALLENGES = [
 
 const isConfigured = firebaseConfig.apiKey !== "REPLACE_ME";
 let db, addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
-    arrayUnion, increment, query, orderBy, limit, writeBatch;
+    arrayUnion, increment, query, orderBy, limit, writeBatch, getCountFromServer;
 
 async function initFirebase() {
   if (!isConfigured) return false;
@@ -164,7 +164,7 @@ async function initFirebase() {
   await authMod.signInAnonymously(auth);
   db = fsMod.getFirestore(app);
   ({ addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
-     arrayUnion, increment, query, orderBy, limit, writeBatch } = fsMod);
+     arrayUnion, increment, query, orderBy, limit, writeBatch, getCountFromServer } = fsMod);
   return true;
 }
 
@@ -196,7 +196,7 @@ export function findFlashback(logs) {
 const DEMO_STATE = {
   points: 0, streak: 1, lastActiveDate: null,
   unlockedDecorations: [], todayChallengeCompletedDate: null,
-  anniversaryUnlockedYear: null, totalFlowers: 0, challengeEnabled: true
+  anniversaryUnlockedYear: null, totalFlowers: 0, challengeEnabled: true, shopEnabled: true
 };
 const DEMO_LOGS = [
   { id: 'demo-1', activity: 'Coffee and a walk (demo entry)', points: 8, date: todayStr(), photo: null, note: '' }
@@ -316,6 +316,22 @@ export function watchLogs(renderFn, max = 200) {
 // Normalizes a log entry's photos into an array, whether it was saved with
 // the old single "photo" field or the newer "photos" array — so nothing
 // written before this update breaks.
+// The real, accurate flower count — queried live from Firestore rather than
+// relying on the stored totalFlowers counter, which can drift out of sync
+// (e.g. entries logged before that field existed, or any edge case where an
+// increment didn't land). This counts every entry in the logs collection —
+// backfilled ones included — since every one of them is a flower in the garden.
+export async function countFlowers() {
+  if (!isConfigured) return DEMO_LOGS.length;
+  try {
+    const snap = await getCountFromServer(collection(db, `couples/${COUPLE_ID}/logs`));
+    return snap.data().count;
+  } catch (err) {
+    console.error('countFlowers failed:', err);
+    return null;
+  }
+}
+
 export function getPhotos(log) {
   if (log.photos && log.photos.length) return log.photos;
   if (log.photo) return [log.photo];
