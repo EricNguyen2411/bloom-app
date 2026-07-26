@@ -13,51 +13,124 @@ export const STAGES = [
 export const DECOR_ICONS = ['🦋', '✨', '🌈', '🕯️', '🐝', '🌙', '☀️'];
 export const ANNIVERSARY_ICON = '💍';
 
+// ---- Botanical icon generator ----
+// Builds real flower structure (layered petal rings, not abstract shapes) as
+// static SVG strings, computed once here. Each species gets its own colors
+// baked in directly (light + dark shades + accents) rather than a single
+// flat tone, so the shape actually reads as that specific flower.
+const STROKE = 'stroke="#2A1B12" stroke-opacity="0.16" stroke-width="0.7"';
+
+function petal(angleDeg, length, width, fill, cx = 50, cy = 50, curve = 0.7) {
+  const w = width / 2;
+  const d = `M0,0 C ${-w},${-length * 0.2} ${-w},${-length * curve} 0,${-length} C ${w},${-length * curve} ${w},${-length * 0.2} 0,0 Z`;
+  return `<path d="${d}" fill="${fill}" ${STROKE} transform="translate(${cx},${cy}) rotate(${angleDeg})"/>`;
+}
+function petalRing(count, startAngle, length, width, fill, cx = 50, cy = 50, curve = 0.7) {
+  let s = '';
+  for (let i = 0; i < count; i++) s += petal(startAngle + (360 / count) * i, length, width, fill, cx, cy, curve);
+  return s;
+}
+function svg(inner) { return `<svg viewBox="0 0 100 100">${inner}</svg>`; }
+
+const roseIcon = svg(`
+  ${petalRing(5, 8, 34, 25, '#C63D52')}
+  ${petalRing(5, 44, 25, 19, '#E2758A')}
+  ${petalRing(4, 20, 15, 12, '#F0A8AE')}
+  <circle cx="50" cy="50" r="4.5" fill="#F6C6CC" ${STROKE}/>
+`);
+
+const peonyIcon = svg(`
+  ${petalRing(8, 0, 33, 22, '#D77FA1')}
+  ${petalRing(8, 22.5, 25, 17, '#E9A3BF')}
+  ${petalRing(6, 10, 16, 12, '#F3C6D9')}
+  ${petalRing(5, 40, 8, 6, '#FBE4EE')}
+  <circle cx="50" cy="50" r="3" fill="#E8B84B"/>
+`);
+
+function floret(cx, cy, scale, light, dark) {
+  return `<g transform="translate(${cx},${cy}) scale(${scale})">
+    ${petalRing(4, 0, 9, 8, dark, 0, 0, 0.75)}
+    <circle cx="0" cy="0" r="2.4" fill="${light}"/>
+  </g>`;
+}
+const hydrangeaIcon = svg(`
+  ${floret(37, 35, 1, '#D3E4F1', '#6E9BC2')}
+  ${floret(63, 35, 1, '#D3E4F1', '#6E9BC2')}
+  ${floret(50, 50, 1.15, '#E2EDF6', '#7CA9CE')}
+  ${floret(34, 62, 0.95, '#D3E4F1', '#6E9BC2')}
+  ${floret(66, 62, 0.95, '#D3E4F1', '#6E9BC2')}
+  ${floret(50, 24, 0.8, '#D3E4F1', '#6E9BC2')}
+  ${floret(50, 76, 0.8, '#D3E4F1', '#6E9BC2')}
+`);
+
+const ranunculusIcon = svg(`
+  ${petalRing(10, 0, 27, 15, '#E8865A', 50, 50, 0.6)}
+  ${petalRing(9, 18, 20, 12, '#F0A574', 50, 50, 0.6)}
+  ${petalRing(8, 5, 13.5, 9, '#F6C9B0', 50, 50, 0.6)}
+  ${petalRing(6, 30, 8, 6, '#FBE3D2', 50, 50, 0.6)}
+  <circle cx="50" cy="50" r="2.8" fill="#B85A28"/>
+`);
+
+const poppyIcon = svg(`
+  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#E37B5D" ${STROKE} transform="translate(50,50) rotate(0)"/>
+  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#C1432E" ${STROKE} transform="translate(50,50) rotate(90)"/>
+  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#E37B5D" ${STROKE} transform="translate(50,50) rotate(180)"/>
+  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#C1432E" ${STROKE} transform="translate(50,50) rotate(270)"/>
+  <circle cx="50" cy="50" r="9" fill="#2A1B12" opacity="0.78"/>
+  ${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => {
+    const r = a * Math.PI / 180;
+    return `<line x1="50" y1="50" x2="${(50 + 12 * Math.cos(r)).toFixed(1)}" y2="${(50 + 12 * Math.sin(r)).toFixed(1)}" stroke="#F2D488" stroke-width="1"/>`;
+  }).join('')}
+`);
+
+function snapFloret(y, scale, fill) {
+  return `<g transform="translate(50,${y}) scale(${scale})">
+    <ellipse cx="0" cy="4" rx="11" ry="7.5" fill="${fill}" ${STROKE}/>
+    <ellipse cx="0" cy="-3.5" rx="7.5" ry="6.5" fill="${fill}" opacity="0.82"/>
+  </g>`;
+}
+const snapdragonIcon = svg(`
+  <path d="M50,90 L50,16" stroke="#7DB857" stroke-width="2.5" fill="none"/>
+  ${snapFloret(80, 1.3, '#E3A93E')}
+  ${snapFloret(63, 1.1, '#EAB955')}
+  ${snapFloret(48, 0.9, '#F2D488')}
+  ${snapFloret(35, 0.72, '#F6E1A8')}
+  ${snapFloret(25, 0.55, '#FBEFC9')}
+`);
+
+function tinyFlower(cx, cy, scale) {
+  return `<g transform="translate(${cx},${cy}) scale(${scale})">
+    ${petalRing(5, 0, 5.5, 4.5, '#FFFFFF', 0, 0, 0.7)}
+    <circle cx="0" cy="0" r="1.3" fill="#E8DFC0"/>
+  </g>`;
+}
+const babysBreathIcon = svg(`
+  <g stroke="#9CA37F" stroke-width="1" fill="none">
+    <path d="M50,82 L40,55 M50,82 L60,50 M50,82 L50,28 M40,55 L30,40 M60,50 L70,35"/>
+  </g>
+  ${tinyFlower(30, 40, 1)}${tinyFlower(70, 35, 1)}${tinyFlower(50, 28, 1.1)}${tinyFlower(40, 55, 0.9)}${tinyFlower(60, 50, 0.9)}${tinyFlower(50, 82, 0.85)}
+`);
+
+const lilyIcon = svg(`
+  ${[0, 60, 120, 180, 240, 300].map((a) => petal(a, 42, 16, '#FBF3D9', 50, 50, 0.72)).join('')}
+  ${[30, 90, 150, 210, 270, 330].map((a) => {
+    const r = a * Math.PI / 180;
+    const x = (50 + 17 * Math.cos(r)).toFixed(1), y = (50 + 17 * Math.sin(r)).toFixed(1);
+    return `<line x1="50" y1="50" x2="${x}" y2="${y}" stroke="#B4842A" stroke-width="1"/><ellipse cx="${x}" cy="${y}" rx="2" ry="1.3" fill="#8C5A1E" transform="rotate(${a} ${x} ${y})"/>`;
+  }).join('')}
+`);
+
 // Flower species — cycles each time you harvest a fully-bloomed plant into
 // the bouquet, so the plant you're growing looks different each round.
-// Each icon is a small flat SVG silhouette (viewBox 0 0 24 24). They use
-// fill="currentColor" so the color is set per-species at render time from
-// that species' "dark" shade — see applySpeciesColor() in index.html.
-const ICON_STROKE = 'stroke="#2A1B12" stroke-opacity="0.22" stroke-width="0.6"';
-
 export const SPECIES = [
-  {
-    name: 'Rose', light: '#F0A8AE', dark: '#C63D52',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><circle cx="12" cy="12" r="2.6"/><path d="M12 12C9.5 9.5 9.5 5.5 12 3c1.8 3 1.8 6.5 0 9z"/><path d="M12 12c2.5-2.5 6.5-2.5 9 0-3 1.8-6.5 1.8-9 0z"/><path d="M12 12c2.5 2.5 2.5 6.5 0 9-1.8-3-1.8-6.5 0-9z"/><path d="M12 12c-2.5 2.5-6.5 2.5-9 0 3-1.8 6.5-1.8 9 0z"/></svg>`
-  },
-  {
-    name: 'Peony', light: '#F3C6D9', dark: '#D77FA1',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><circle cx="12" cy="6.5" r="4"/><circle cx="17" cy="9.5" r="4"/><circle cx="17" cy="15" r="4"/><circle cx="12" cy="18" r="4"/><circle cx="7" cy="15" r="4"/><circle cx="7" cy="9.5" r="4"/><circle cx="12" cy="12" r="3.2"/></svg>`
-  },
-  {
-    name: 'Hydrangea', light: '#B9D3EA', dark: '#6E9BC2',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}>
-      <g transform="translate(7,7) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
-      <g transform="translate(16,7) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
-      <g transform="translate(7,16) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
-      <g transform="translate(16,16) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
-    </svg>`
-  },
-  {
-    name: 'Ranunculus', light: '#F6C9B0', dark: '#E8865A',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><ellipse cx="19" cy="12" rx="3" ry="2"/><ellipse cx="17" cy="17" rx="3" ry="2" transform="rotate(45 17 17)"/><ellipse cx="12" cy="19" rx="3" ry="2" transform="rotate(90 12 19)"/><ellipse cx="7" cy="17" rx="3" ry="2" transform="rotate(135 7 17)"/><ellipse cx="5" cy="12" rx="3" ry="2"/><ellipse cx="7" cy="7" rx="3" ry="2" transform="rotate(45 7 7)"/><ellipse cx="12" cy="5" rx="3" ry="2" transform="rotate(90 12 5)"/><ellipse cx="17" cy="7" rx="3" ry="2" transform="rotate(135 17 7)"/><circle cx="12" cy="12" r="3.4"/></svg>`
-  },
-  {
-    name: 'Poppy', light: '#E37B5D', dark: '#C1432E',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><ellipse cx="12" cy="6" rx="5.5" ry="6"/><ellipse cx="18" cy="12" rx="6" ry="5.5" transform="rotate(90 18 12)"/><ellipse cx="12" cy="18" rx="5.5" ry="6" transform="rotate(180 12 18)"/><ellipse cx="6" cy="12" rx="6" ry="5.5" transform="rotate(270 6 12)"/><circle cx="12" cy="12" r="2.6" fill="#2A1B12" fill-opacity="0.55" stroke="none"/></svg>`
-  },
-  {
-    name: 'Snapdragon', light: '#F2D488', dark: '#E3A93E',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><ellipse cx="12" cy="18" rx="5" ry="3.6"/><ellipse cx="12" cy="12" rx="4.2" ry="3"/><ellipse cx="12" cy="7" rx="3.4" ry="2.4"/><ellipse cx="12" cy="3.2" rx="2.4" ry="1.7"/></svg>`
-  },
-  {
-    name: "Baby's Breath", light: '#FBF6E8', dark: '#B7AD8E',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><circle cx="6" cy="7" r="2"/><circle cx="13" cy="5" r="2.2"/><circle cx="19" cy="8" r="1.8"/><circle cx="9" cy="12" r="2.4"/><circle cx="16" cy="13" r="2"/><circle cx="6" cy="16" r="1.8"/><circle cx="12" cy="18" r="2.2"/><circle cx="18" cy="18" r="1.8"/></svg>`
-  },
-  {
-    name: 'Lily', light: '#FBF3D9', dark: '#D4A537',
-    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><path d="M12 12 L12 2 L14.5 8 Z"/><path d="M12 12 L20.8 6.2 L16.5 11.3 Z"/><path d="M12 12 L21.8 17.8 L15.2 15 Z"/><path d="M12 12 L12 22 L9.5 16 Z"/><path d="M12 12 L3.2 17.8 L7.5 12.7 Z"/><path d="M12 12 L2.2 6.2 L8.8 9 Z"/><circle cx="12" cy="12" r="2" fill="#E8C468" stroke="none"/></svg>`
-  }
+  { name: 'Rose', light: '#F0A8AE', dark: '#C63D52', icon: roseIcon },
+  { name: 'Peony', light: '#F3C6D9', dark: '#D77FA1', icon: peonyIcon },
+  { name: 'Hydrangea', light: '#B9D3EA', dark: '#6E9BC2', icon: hydrangeaIcon },
+  { name: 'Ranunculus', light: '#F6C9B0', dark: '#E8865A', icon: ranunculusIcon },
+  { name: 'Poppy', light: '#E37B5D', dark: '#C1432E', icon: poppyIcon },
+  { name: 'Snapdragon', light: '#F2D488', dark: '#E3A93E', icon: snapdragonIcon },
+  { name: "Baby's Breath", light: '#FBF6E8', dark: '#B7AD8E', icon: babysBreathIcon },
+  { name: 'Lily', light: '#FBF3D9', dark: '#D4A537', icon: lilyIcon }
 ];
 
 const DEFAULT_CHALLENGES = [

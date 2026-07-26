@@ -210,7 +210,7 @@
   .bouquet-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
   .bouquet-item{ width:52px; display:flex; flex-direction:column; align-items:center; gap:4px; }
   .bouquet-flower{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:2.5px solid rgba(255,255,255,0.85); }
-  .bouquet-flower svg{ width:60%; height:60%; }
+  .bouquet-flower svg{ width:80%; height:80%; }
   .bouquet-date{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#2A3B1F; background:rgba(255,255,255,0.7); padding:1px 5px; border-radius:5px; }
   .bouquet-empty{ font-size:12.5px; color:#2A3B1F; margin-top:6px; background:rgba(255,255,255,0.75); padding:12px; border-radius:12px; }
 
@@ -252,7 +252,7 @@
   .meadow-bloom{ width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:20px; box-shadow:0 8px 16px -6px rgba(20,30,15,0.5); overflow:hidden; position:relative; z-index:2;
     border:2.5px solid rgba(255,255,255,0.85); }
-  .meadow-bloom svg{ width:62%; height:62%; }
+  .meadow-bloom svg{ width:82%; height:82%; }
   .meadow-bloom-photo{ width:88%; height:88%; object-fit:contain; border-radius:50%; }
   .meadow-badge{ position:absolute; top:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:var(--gold);
     display:flex; align-items:center; justify-content:center; font-size:9px; border:1.5px solid #fff; z-index:3; }
@@ -921,7 +921,7 @@
       const el = document.createElement('div');
       el.className = 'bouquet-item';
       el.innerHTML = `
-        <div class="bouquet-flower" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">${iconWithColor(sp)}</div>
+        <div class="bouquet-flower" style="background:#FBF8F0">${iconWithColor(sp)}</div>
         <div class="bouquet-date">${item.date}</div>`;
       bouquetGrid.appendChild(el);
     });
@@ -1290,8 +1290,9 @@
         const flower = document.createElement('div');
         flower.className = 'meadow-flower';
         flower.style.left = ROW_X[i];
+        const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
         flower.innerHTML = `
-          <div class="meadow-bloom" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">
+          <div class="meadow-bloom" style="background:${bloomBg}">
             ${bloomInner}
             ${log.type === 'challenge' ? '<div class="meadow-badge">✦</div>' : ''}
             ${photos.length > 1 ? `<div class="photo-count-badge">+${photos.length - 1}</div>` : ''}
