@@ -74,7 +74,7 @@
   .petal:nth-child(3){ transform:rotate(144deg); }
   .petal:nth-child(4){ transform:rotate(216deg); }
   .petal:nth-child(5){ transform:rotate(288deg); }
-  .flower-center{ position:absolute; width:26px; height:26px; border-radius:50%; background:var(--gold); top:32px; left:32px; box-shadow:0 4px 10px rgba(227,185,79,0.5); }
+  .flower-center{ position:absolute; width:26px; height:26px; border-radius:50%; background:var(--gold); top:55px; left:32px; box-shadow:0 4px 10px rgba(227,185,79,0.5); }
 
   .bud2{ position:absolute; bottom:196px; left:calc(50% - 46px); width:16px; height:20px; border-radius:50%;
     background:var(--plum); opacity:0; transform:scale(0.3); transition:all .7s ease; }
@@ -83,7 +83,7 @@
 
   .helper{ position:absolute; left:16px; bottom:20px; width:56px; height:90px; z-index:6; pointer-events:none;
     animation:idleSway 2.6s ease-in-out infinite; }
-  .helper-can{ position:absolute; left:60px; bottom:14px; width:30px; height:22px; opacity:1; transition:opacity .4s ease; z-index:5; pointer-events:none; }
+  .helper-can{ position:absolute; left:-10px; bottom:14px; width:30px; height:22px; opacity:1; transition:opacity .4s ease; z-index:5; pointer-events:none; }
   .helper-can.hide{ opacity:0; }
   #armLeft{ transform:rotate(-28deg); }
   #armRight{ transform:rotate(28deg); }
@@ -399,8 +399,10 @@
           <!-- torso -->
           <rect x="16" y="52" width="28" height="30" rx="14" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
           <!-- left arm (far side from the pot): hip-rest by default -->
-          <g id="armLeft" style="transform-origin:18px 58px; transition:transform .7s cubic-bezier(.4,.2,.2,1);">
-            <rect x="-4.5" y="0" width="9" height="27" rx="4.5" fill="#93C773"/>
+          <g transform="translate(18,58)">
+            <g id="armLeft" style="transition:transform .7s cubic-bezier(.4,.2,.2,1);">
+              <rect x="-4.5" y="0" width="9" height="27" rx="4.5" fill="#93C773"/>
+            </g>
           </g>
           <!-- head -->
           <circle cx="30" cy="38" r="20" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
@@ -408,8 +410,10 @@
           <circle cx="35.5" cy="36" r="2" fill="#2A1B12"/>
           <line x1="27" y1="45" x2="33" y2="45" stroke="#2A1B12" stroke-width="1.3" stroke-linecap="round"/>
           <!-- right arm (near side, facing the pot): swings up to hold the can when watering -->
-          <g id="armRight" style="transform-origin:42px 58px; transition:transform .7s cubic-bezier(.4,.2,.2,1);">
-            <rect x="-4.5" y="0" width="9" height="27" rx="4.5" fill="#93C773"/>
+          <g transform="translate(42,58)">
+            <g id="armRight" style="transition:transform .7s cubic-bezier(.4,.2,.2,1);">
+              <rect x="-4.5" y="0" width="9" height="27" rx="4.5" fill="#93C773"/>
+            </g>
           </g>
           <!-- can held in hand, only visible while watering -->
           <g id="heldCan" style="opacity:0; transition:opacity .3s ease .3s;">
