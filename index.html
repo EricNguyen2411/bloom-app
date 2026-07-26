@@ -81,7 +81,7 @@
 
   .sparkle{ position:absolute; border-radius:50%; background:var(--gold); opacity:0; transition:all .8s ease; }
 
-  .helper{ position:absolute; right:-6px; bottom:78px; width:60px; height:70px; opacity:0; transform:scale(0.6) translateY(10px);
+  .helper{ position:absolute; right:-10px; bottom:40px; width:56px; height:86px; opacity:0; transform:scale(0.6) translateY(10px);
     transition:all .5s cubic-bezier(.34,1.4,.4,1); z-index:6; pointer-events:none; }
   .helper.show{ opacity:1; transform:scale(1) translateY(0); }
   .helper .can{ animation:none; }
@@ -385,19 +385,26 @@
       </div>
       <div class="sparkle s1"></div><div class="sparkle s2"></div><div class="sparkle s3"></div>
       <div class="helper" id="helperChar">
-        <svg viewBox="0 0 60 70">
-          <ellipse cx="28" cy="42" rx="17" ry="19" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
-          <circle cx="22.5" cy="36" r="2" fill="#2A1B12"/>
-          <circle cx="33.5" cy="36" r="2" fill="#2A1B12"/>
-          <g class="can" style="transform-origin:46px 38px;">
-            <rect x="38" y="32" width="13" height="9" rx="3" fill="#7A8B6C"/>
-            <path d="M51,34 L59,28" stroke="#7A8B6C" stroke-width="3" stroke-linecap="round"/>
-            <path d="M42,28 Q45,22 48,28" stroke="#7A8B6C" stroke-width="2.2" fill="none"/>
+        <svg viewBox="0 0 68 104">
+          <!-- body -->
+          <path d="M20,58 Q15,80 19,97 Q30,103 41,97 Q45,80 40,58 Z" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
+          <!-- head -->
+          <circle cx="30" cy="38" r="20" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
+          <circle cx="24.5" cy="36" r="2" fill="#2A1B12"/>
+          <circle cx="35.5" cy="36" r="2" fill="#2A1B12"/>
+          <line x1="27" y1="45" x2="33" y2="45" stroke="#2A1B12" stroke-width="1.3" stroke-linecap="round"/>
+          <!-- arm reaching toward the can -->
+          <path d="M32,56 Q42,58 48,57" stroke="#93C773" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <!-- watering can, tilted to pour -->
+          <g class="can" style="transform-origin:52px 60px;">
+            <rect x="44" y="53" width="16" height="12" rx="3.5" fill="#7A8B6C"/>
+            <path d="M60,55 L70,47" stroke="#7A8B6C" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M48,48 Q52,40 56,48" stroke="#7A8B6C" stroke-width="2.5" fill="none"/>
           </g>
           <g class="drops">
-            <circle class="drop drop1" cx="57" cy="30" r="1.5" fill="#8FB3CC"/>
-            <circle class="drop drop2" cx="60" cy="34" r="1.3" fill="#8FB3CC"/>
-            <circle class="drop drop3" cx="55" cy="36" r="1.2" fill="#8FB3CC"/>
+            <circle class="drop drop1" cx="68" cy="50" r="1.7" fill="#8FB3CC"/>
+            <circle class="drop drop2" cx="71" cy="55" r="1.5" fill="#8FB3CC"/>
+            <circle class="drop drop3" cx="66" cy="58" r="1.4" fill="#8FB3CC"/>
           </g>
         </svg>
       </div>
@@ -685,7 +692,7 @@
     let i = 0;
 
     helperEl.classList.add('show');
-    setTimeout(() => helperEl.classList.add('pouring'), 150);
+    setTimeout(() => helperEl.classList.add('pouring'), 250);
 
     const step = () => {
       if (i >= sequence.length) {
@@ -695,24 +702,24 @@
         toast.textContent = `🌸 Today's flower: ${speciesName}!`;
         document.body.appendChild(toast);
         requestAnimationFrame(() => toast.classList.add('show'));
-        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2600);
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 3200);
 
         setTimeout(() => {
           sceneEl.setAttribute('data-stage', 'seed');
           auraEl.className = 'aura stage-seed';
           blooming = false;
-        }, 2200);
+        }, 3600);
         return;
       }
       sceneEl.setAttribute('data-stage', sequence[i]);
       auraEl.className = 'aura stage-' + sequence[i];
-      // The little gardener finishes watering once the sprout is up, then steps back for the bloom.
-      if (sequence[i] === 'budding') {
+      // The little gardener waters through the sprout and budding stages, then steps back for the bloom.
+      if (sequence[i] === 'blooming') {
         helperEl.classList.remove('pouring');
         helperEl.classList.remove('show');
       }
       i++;
-      setTimeout(step, 500);
+      setTimeout(step, 1100);
     };
     step();
   }
