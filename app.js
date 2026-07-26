@@ -199,7 +199,7 @@ const DEMO_STATE = {
   anniversaryUnlockedYear: null, totalFlowers: 0
 };
 const DEMO_LOGS = [
-  { id: 'demo-1', activity: 'Coffee and a walk (demo entry)', hours: 0.7, points: 4, date: todayStr(), photo: null, note: '' }
+  { id: 'demo-1', activity: 'Coffee and a walk (demo entry)', points: 8, date: todayStr(), photo: null, note: '' }
 ];
 const DEMO_BUCKET = [
   { id: 'demo-b1', text: 'Try that ramen place downtown (demo idea)', done: false }
@@ -305,9 +305,9 @@ export function getPhotos(log) {
   return [];
 }
 
-export async function logTime(hours, activity = '', dateStr = null, photos = []) {
+export async function logTime(activity = '', dateStr = null, photos = []) {
   const entryDate = dateStr || todayStr();
-  const gained = Math.max(4, Math.min(12, Math.round(hours * 6)));
+  const gained = 8; // flat reward per logged memory — duration no longer factors in
 
   const totalSize = photos.reduce((sum, p) => sum + p.length, 0);
   if (totalSize > 900000) {
@@ -318,7 +318,7 @@ export async function logTime(hours, activity = '', dateStr = null, photos = [])
     DEMO_STATE.points += gained;
     DEMO_STATE.totalFlowers += 1;
     if (entryDate === todayStr()) DEMO_STATE.lastActiveDate = entryDate;
-    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, hours, points: gained, date: entryDate, photos, note: '' });
+    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, points: gained, date: entryDate, photos, note: '' });
     return DEMO_STATE;
   }
 
@@ -343,7 +343,7 @@ export async function logTime(hours, activity = '', dateStr = null, photos = [])
     await setDoc(ref, update, { merge: true });
 
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
-      type: 'log', hours, activity, points: gained,
+      type: 'log', activity, points: gained,
       date: entryDate, backfilled: entryDate !== today,
       photos, note: '',
       createdAt: serverTimestamp()
@@ -361,7 +361,7 @@ export async function completeChallenge(challengeText = '') {
       DEMO_STATE.points += 15;
       DEMO_STATE.totalFlowers += 1;
       DEMO_STATE.todayChallengeCompletedDate = todayStr();
-      DEMO_LOGS.unshift({ id: 'demo-c-' + Date.now(), type: 'challenge', activity: 'Challenge: ' + challengeText, hours: 0, points: 15, date: todayStr(), photo: null, note: '' });
+      DEMO_LOGS.unshift({ id: 'demo-c-' + Date.now(), type: 'challenge', activity: 'Challenge: ' + challengeText, points: 15, date: todayStr(), photo: null, note: '' });
     }
     return DEMO_STATE;
   }
@@ -378,7 +378,7 @@ export async function completeChallenge(challengeText = '') {
     }, { merge: true });
 
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
-      type: 'challenge', activity: 'Challenge: ' + challengeText, hours: 0, points: 15,
+      type: 'challenge', activity: 'Challenge: ' + challengeText, points: 15,
       date: today, backfilled: false, photo: null, note: '',
       createdAt: serverTimestamp()
     });
@@ -422,7 +422,7 @@ export async function deleteLog(logId) {
   }
 }
 
-// Edits the activity description of an existing memory entry (hours/points
+// Edits the activity description of an existing memory entry (points
 // are left alone to avoid re-triggering streak logic).
 export async function editLog(logId, activity) {
   if (!isConfigured) {

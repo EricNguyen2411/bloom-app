@@ -304,17 +304,6 @@
   .memory-edit-input input{ flex:1; padding:7px 10px; border:1.5px solid #E4E1D6; border-radius:8px; font-family:'Inter'; font-size:12.5px; }
   .memory-edit-input button{ padding:0 12px; border-radius:8px; border:none; background:var(--moss); color:#fff; font-weight:700; font-size:11.5px; cursor:pointer; }
 
-  .duration-chips{ display:flex; gap:7px; flex-wrap:wrap; margin-top:2px; }
-  .duration-chip{ padding:9px 14px; border-radius:999px; border:1.5px solid #E4E1D6; background:#FBFAF6;
-    font-family:'Inter'; font-weight:600; font-size:13px; color:var(--ink-soft); cursor:pointer; }
-  .duration-chip.active{ background:var(--moss); border-color:var(--moss); color:#fff; }
-  .duration-toggle{ margin-top:8px; font-size:11.5px; color:var(--moss); font-weight:700; cursor:pointer; background:none; border:none; padding:0; }
-  .duration-time-row{ display:none; gap:10px; margin-top:8px; }
-  .duration-time-row.show{ display:flex; }
-  .duration-time-row div{ flex:1; }
-  .duration-time-row input[type=time]{ width:100%; padding:11px; border:1.5px solid #E4E1D6; border-radius:12px; font-family:'Inter'; font-size:14px; background:#FBFAF6; }
-  .duration-readout{ margin-top:8px; font-size:12px; color:var(--ink-soft); font-weight:600; }
-
   .welcome-overlay{ position:fixed; inset:0; background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom)); z-index:80;
     display:flex; align-items:center; justify-content:center; padding:30px; }
   .welcome-overlay.hide{ display:none; }
@@ -353,8 +342,8 @@
   </div>
 
   <div class="scene-wrap" id="sceneWrap">
-    <div class="aura stage-budding" id="aura"></div>
-    <div class="scene" data-stage="budding" id="scene">
+    <div class="aura stage-seed" id="aura"></div>
+    <div class="scene" data-stage="seed" id="scene">
       <div class="pot"></div>
       <div class="soil"></div>
       <div class="stem" id="stem"></div>
@@ -401,20 +390,6 @@
     <p>What'd you two do? Real time together is what grows this.</p>
     <label>What you did</label>
     <input type="text" id="logActivity" placeholder="e.g. cooked dinner, watched a movie">
-    <label>Time together</label>
-    <div class="duration-chips" id="durationChips">
-      <button type="button" class="duration-chip" data-hours="0.25">15m</button>
-      <button type="button" class="duration-chip" data-hours="0.5">30m</button>
-      <button type="button" class="duration-chip active" data-hours="1">1h</button>
-      <button type="button" class="duration-chip" data-hours="2">2h</button>
-      <button type="button" class="duration-chip" data-hours="4">4h+</button>
-    </div>
-    <button type="button" class="duration-toggle" id="durationToggle">Use start &amp; end time instead</button>
-    <div class="duration-time-row" id="durationTimeRow">
-      <div><label style="margin:0 0 4px;">Start</label><input type="time" id="startTimeInput"></div>
-      <div><label style="margin:0 0 4px;">End</label><input type="time" id="endTimeInput"></div>
-    </div>
-    <div class="duration-readout" id="durationReadout">≈ 1 hour</div>
     <label>Date</label>
     <input type="date" id="logDateInput">
     <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
@@ -578,7 +553,7 @@
     <label>This week</label>
     <div class="weekly-recap">
       <div class="box"><b id="weekNights">0</b><span>Logged</span></div>
-      <div class="box"><b id="weekHours">0</b><span>Hours</span></div>
+      <div class="box"><b id="weekPoints">0</b><span>Points</span></div>
       <div class="box"><b id="weekChallenges">0</b><span>Challenges</span></div>
     </div>
 
@@ -642,17 +617,18 @@
     if (navigator.vibrate) navigator.vibrate(happy ? [30, 40, 30] : 25);
   }
 
-  // The core payoff: on a successful log/challenge, the idle bud blooms all
-  // the way to full flower over ~1.5s, then settles back to budding — ready
-  // for next time. The flower itself was already permanently planted in the
-  // garden the moment the save succeeded (that's just how watchLogs works).
+  // The core payoff: on a successful log/challenge, the plant grows through
+  // every stage from bare seed all the way to full bloom over a few seconds,
+  // then settles back to just a pot of soil — ready for next time. The flower
+  // itself was already permanently planted in the garden the moment the save
+  // succeeded (that's just how watchLogs works).
   let blooming = false;
   function plantBloomAnimation(speciesName) {
     if (blooming) return;
     blooming = true;
     const sceneEl = document.getElementById('scene');
     const auraEl = document.getElementById('aura');
-    const sequence = ['blooming', 'flourishing'];
+    const sequence = ['sprout', 'budding', 'blooming', 'flourishing'];
     let i = 0;
     const step = () => {
       if (i >= sequence.length) {
@@ -665,8 +641,8 @@
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2600);
 
         setTimeout(() => {
-          sceneEl.setAttribute('data-stage', 'budding');
-          auraEl.className = 'aura stage-budding';
+          sceneEl.setAttribute('data-stage', 'seed');
+          auraEl.className = 'aura stage-seed';
           blooming = false;
         }, 2200);
         return;
@@ -674,32 +650,62 @@
       sceneEl.setAttribute('data-stage', sequence[i]);
       auraEl.className = 'aura stage-' + sequence[i];
       i++;
-      setTimeout(step, 550);
+      setTimeout(step, 500);
     };
     step();
   }
 
   // Scatters up to 8 recent photo memories as small circles around the scene,
-  // roughly ringing the plant without overlapping it.
+  // roughly ringing the plant without overlapping it. Which photos show and
+  // where changes once per day (same arrangement all day, different tomorrow)
+  // rather than reshuffling on every visit.
   const DOT_POSITIONS = [
     { top: '6%', left: '10%' }, { top: '10%', right: '8%' },
     { top: '36%', left: '2%' }, { top: '40%', right: '3%' },
     { bottom: '34%', left: '4%' }, { bottom: '38%', right: '5%' },
     { bottom: '8%', left: '14%' }, { bottom: '6%', right: '12%' }
   ];
+  function dailySeed(dateStr) {
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) & 0x7fffffff;
+    return hash || 1;
+  }
+  function seededShuffle(arr, seed) {
+    let s = seed;
+    const rand = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
   function renderPhotoDots(logs) {
     const wrap = document.getElementById('photoDots');
     const sceneWrap = document.getElementById('sceneWrap');
-    const withPhotos = logs.filter((l) => getPhotos(l).length).slice(0, DOT_POSITIONS.length);
+    const withPhotos = logs.filter((l) => getPhotos(l).length);
+    const shuffled = seededShuffle(withPhotos, dailySeed(todayISO)).slice(0, DOT_POSITIONS.length);
     wrap.innerHTML = '';
-    withPhotos.forEach((log, i) => {
+    shuffled.forEach((log, i) => {
       const img = document.createElement('img');
       img.className = 'photo-dot';
       img.src = getPhotos(log)[0];
-      Object.assign(img.style, { position: 'absolute', ...DOT_POSITIONS[i] });
+      img.title = 'See this day in the garden';
+      Object.assign(img.style, { position: 'absolute', cursor: 'pointer', ...DOT_POSITIONS[i] });
+      img.onclick = () => openGardenToLog(log);
       wrap.appendChild(img);
     });
-    sceneWrap.classList.toggle('has-photos', withPhotos.length > 0);
+    sceneWrap.classList.toggle('has-photos', shuffled.length > 0);
+  }
+
+  // Jumps straight from a floating dashboard photo to that specific day's
+  // entry inside the Garden page, skipping the meadow browse step.
+  function openGardenToLog(log) {
+    gardenPage.classList.add('open');
+    gardenBed.style.display = 'none';
+    gardenDetail.classList.add('show');
+    gardenDetailContent.innerHTML = '';
+    gardenDetailContent.appendChild(buildMemoryCard(log));
   }
 
   function render(state) {
@@ -716,73 +722,6 @@
     document.getElementById('stageSub').textContent = `Next up: a ${species.name.toLowerCase()}`;
 
     renderShop(state);
-  }
-
-  // ---- Duration input: quick chips, or optional start/end time ----
-  let pendingHours = 1;
-  const durationChips = document.querySelectorAll('.duration-chip');
-  const durationToggle = document.getElementById('durationToggle');
-  const durationTimeRow = document.getElementById('durationTimeRow');
-  const durationReadout = document.getElementById('durationReadout');
-  const startTimeInput = document.getElementById('startTimeInput');
-  const endTimeInput = document.getElementById('endTimeInput');
-  let usingTimeRange = false;
-
-  function formatHoursLabel(hours) {
-    if (hours < 1) return `≈ ${Math.round(hours * 60)} minutes`;
-    const whole = Math.floor(hours);
-    const rem = Math.round((hours - whole) * 60);
-    return `≈ ${whole} hr${whole === 1 ? '' : 's'}` + (rem ? ` ${rem} min` : '');
-  }
-
-  durationChips.forEach((chip) => {
-    chip.onclick = () => {
-      pendingHours = parseFloat(chip.dataset.hours);
-      durationChips.forEach((c) => c.classList.remove('active'));
-      chip.classList.add('active');
-      durationReadout.textContent = formatHoursLabel(pendingHours);
-    };
-  });
-
-  durationToggle.onclick = () => {
-    usingTimeRange = !usingTimeRange;
-    durationTimeRow.classList.toggle('show', usingTimeRange);
-    durationChips.forEach((c) => c.style.display = usingTimeRange ? 'none' : '');
-    durationToggle.textContent = usingTimeRange ? 'Use quick durations instead' : 'Use start & end time instead';
-    if (!usingTimeRange) {
-      const active = document.querySelector('.duration-chip.active') || durationChips[2];
-      pendingHours = parseFloat(active.dataset.hours);
-      durationReadout.textContent = formatHoursLabel(pendingHours);
-    } else {
-      updateFromTimeRange();
-    }
-  };
-
-  function updateFromTimeRange() {
-    if (!startTimeInput.value || !endTimeInput.value) {
-      durationReadout.textContent = 'Set both times';
-      return;
-    }
-    const [sh, sm] = startTimeInput.value.split(':').map(Number);
-    const [eh, em] = endTimeInput.value.split(':').map(Number);
-    let mins = (eh * 60 + em) - (sh * 60 + sm);
-    if (mins <= 0) mins += 24 * 60; // handles crossing midnight
-    pendingHours = Math.round((mins / 60) * 4) / 4; // round to nearest 15 min
-    durationReadout.textContent = formatHoursLabel(pendingHours);
-  }
-  startTimeInput.oninput = updateFromTimeRange;
-  endTimeInput.oninput = updateFromTimeRange;
-
-  function resetDurationInput() {
-    pendingHours = 1;
-    durationChips.forEach((c) => c.classList.remove('active'));
-    durationChips[2].classList.add('active');
-    usingTimeRange = false;
-    durationTimeRow.classList.remove('show');
-    durationChips.forEach((c) => c.style.display = '');
-    durationToggle.textContent = 'Use start & end time instead';
-    startTimeInput.value = ''; endTimeInput.value = '';
-    durationReadout.textContent = formatHoursLabel(1);
   }
 
   const logBackdrop = document.getElementById('logBackdrop');
@@ -947,7 +886,6 @@
 
   function resetLogSheet() {
     document.getElementById('logActivity').value = '';
-    resetDurationInput();
     photoInput.value = '';
     pendingPhotos = [];
     dateWasAutoSet = false;
@@ -964,13 +902,9 @@
   document.getElementById('logSave').onclick = async () => {
     const activity = document.getElementById('logActivity').value.trim();
     const date = logDateInput.value || todayISO;
-    if (usingTimeRange && (!startTimeInput.value || !endTimeInput.value)) {
-      alert('Set both a start and end time, or switch back to quick durations.');
-      return;
-    }
     try {
       const speciesForThis = currentSpecies(latestState.totalFlowers || 0);
-      await logTime(pendingHours, activity, date, pendingPhotos);
+      await logTime(activity, date, pendingPhotos);
       logBackdrop.classList.remove('open');
       resetLogSheet();
       plantBloomAnimation(speciesForThis.name);
@@ -1007,7 +941,7 @@
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
     const thisWeek = latestLogs.filter((l) => l.date >= weekAgo && l.date <= today);
     document.getElementById('weekNights').textContent = thisWeek.filter((l) => l.type !== 'challenge').length;
-    document.getElementById('weekHours').textContent = thisWeek.reduce((sum, l) => sum + (l.hours || 0), 0).toFixed(1).replace(/\.0$/, '');
+    document.getElementById('weekPoints').textContent = thisWeek.reduce((sum, l) => sum + (l.points || 0), 0);
     document.getElementById('weekChallenges').textContent = thisWeek.filter((l) => l.type === 'challenge').length;
 
     menuBackdrop.classList.add('open');
@@ -1309,7 +1243,7 @@
       <div class="memory-body">
         <div class="memory-date">${dateStr}${log.backfilled ? ' · backfilled' : ''}</div>
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
-        <div class="memory-meta">${log.hours ? log.hours + ' hr' + (log.hours === 1 ? '' : 's') + ' · ' : ''}+${log.points} pts</div>
+        <div class="memory-meta">+${log.points} pts</div>
         ${galleryHtml}
         <div class="note-slot">${noteHtml}</div>
         <div class="memory-actions">
