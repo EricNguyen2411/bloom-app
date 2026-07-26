@@ -116,9 +116,10 @@
   .action-icon{ width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; }
   .action:nth-child(1) .action-icon{ background:linear-gradient(160deg,var(--lime),var(--moss)); color:#fff; }
   .action:nth-child(2) .action-icon{ background:linear-gradient(160deg,#F0A98D,var(--coral)); color:#fff; }
-  .action:nth-child(3) .action-icon{ background:linear-gradient(160deg,#B487A3,var(--plum)); color:#fff; }
+  .action:nth-child(3) .action-icon{ background:linear-gradient(160deg,#F0A8B8,#D8567A); color:#fff; }
   .action:nth-child(4) .action-icon{ background:linear-gradient(160deg,#8FB3CC,#5C8BAA); color:#fff; }
-  .action:nth-child(5) .action-icon{ background:linear-gradient(160deg,#F2D488,var(--gold)); color:#fff; }
+  .action:nth-child(5) .action-icon{ background:linear-gradient(160deg,#B487A3,var(--plum)); color:#fff; }
+  .action:nth-child(6) .action-icon{ background:linear-gradient(160deg,#F2D488,var(--gold)); color:#fff; }
   .action-label{ font-size:9.5px; font-weight:600; white-space:nowrap; }
 
   .backdrop{ display:none; position:fixed; inset:0; background:rgba(30,42,32,0.4); z-index:40; align-items:flex-end; justify-content:center; }
@@ -343,9 +344,10 @@
   <div class="actionbar">
     <button class="action" id="btnLog"><div class="action-icon">＋</div><div class="action-label">Log time</div></button>
     <button class="action" id="btnChallenge"><div class="action-icon">✦</div><div class="action-label">Challenge</div></button>
+    <button class="action" id="btnGarden"><div class="action-icon">🌷</div><div class="action-label">Garden</div></button>
     <button class="action" id="btnMemories"><div class="action-icon">📷</div><div class="action-label">Memories</div></button>
     <button class="action" id="btnBucket"><div class="action-icon">💡</div><div class="action-label">Ideas</div></button>
-    <button class="action" id="btnMenu"><div class="action-icon">☰</div><div class="action-label">Garden</div></button>
+    <button class="action" id="btnMenu"><div class="action-icon">☰</div><div class="action-label">Stats</div></button>
   </div>
 </div>
 
@@ -385,25 +387,33 @@
   </div>
 </div>
 
+<div class="backdrop" id="gardenBackdrop">
+  <div class="sheet">
+    <h3>Your garden</h3>
+    <p>Every flower you've grown together, at a glance.</p>
+
+    <label>Bouquet</label>
+    <div class="bouquet-grid" id="bouquetGrid"></div>
+
+    <label>The garden bed</label>
+    <div class="garden-bed" id="gardenBed"></div>
+    <div class="garden-detail" id="gardenDetail">
+      <button class="garden-detail-back" id="gardenDetailBack">← Back to garden</button>
+      <div id="gardenDetailContent"></div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn-confirm" id="gardenClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="backdrop" id="memoriesBackdrop">
   <div class="sheet">
     <h3>Your memories</h3>
-    <p>Every logged moment — as a garden, or a list.</p>
+    <p>Every logged moment, newest first.</p>
     <input type="text" class="search-input" id="memorySearch" placeholder="Search memories…">
-    <div class="view-toggle">
-      <button type="button" class="active" id="viewGardenBtn">🌷 Garden</button>
-      <button type="button" id="viewListBtn">📋 List</button>
-    </div>
-
-    <div id="gardenView">
-      <div class="garden-bed" id="gardenBed"></div>
-      <div class="garden-detail" id="gardenDetail">
-        <button class="garden-detail-back" id="gardenDetailBack">← Back to garden</button>
-        <div id="gardenDetailContent"></div>
-      </div>
-    </div>
-
-    <div class="memory-list" id="memoryList" style="display:none;"></div>
+    <div class="memory-list" id="memoryList"></div>
     <div class="sheet-actions">
       <button class="btn-confirm" id="memoriesClose">Close</button>
     </div>
@@ -411,6 +421,7 @@
 </div>
 
 <div class="backdrop" id="challengeBackdrop">
+
   <div class="sheet">
     <h3>Today's challenge</h3>
     <div class="challenge-card">
@@ -460,9 +471,6 @@
       <div class="icon">💍</div>
       <div class="txt">Anniversary decoration unlocked — happy anniversary!</div>
     </div>
-
-    <label>Your bouquet</label>
-    <div class="bouquet-grid" id="bouquetGrid"></div>
 
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
@@ -555,6 +563,8 @@
 
     const harvestBtn = document.getElementById('harvestBtn');
     harvestBtn.classList.toggle('show', stage.key === 'flourishing');
+
+    renderBouquet(state);
 
     if (stage.next) {
       const pct = Math.min(100, Math.round(((state.points - stage.min) / (stage.next - stage.min)) * 100));
@@ -739,26 +749,32 @@
     document.getElementById('weekHours').textContent = thisWeek.reduce((sum, l) => sum + (l.hours || 0), 0).toFixed(1).replace(/\.0$/, '');
     document.getElementById('weekChallenges').textContent = thisWeek.filter((l) => l.type === 'challenge').length;
 
-    const bouquetGrid = document.getElementById('bouquetGrid');
-    const bouquet = latestState.bouquet || [];
-    if (!bouquet.length) {
-      bouquetGrid.innerHTML = '<div class="bouquet-empty">Grow your first plant to Flourishing and harvest it to start your bouquet.</div>';
-    } else {
-      bouquetGrid.innerHTML = '';
-      [...bouquet].reverse().forEach((item) => {
-        const sp = SPECIES[item.speciesIndex % SPECIES.length];
-        const el = document.createElement('div');
-        el.className = 'bouquet-item';
-        el.innerHTML = `
-          <div class="bouquet-flower" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">${sp.emoji}</div>
-          <div class="bouquet-date">${item.date}</div>`;
-        bouquetGrid.appendChild(el);
-      });
-    }
-
     menuBackdrop.classList.add('open');
   };
   document.getElementById('menuClose').onclick = () => menuBackdrop.classList.remove('open');
+
+  // ---- Garden page (bouquet + meadow) ----
+  const gardenBackdrop = document.getElementById('gardenBackdrop');
+  function renderBouquet(state) {
+    const bouquetGrid = document.getElementById('bouquetGrid');
+    const bouquet = state.bouquet || [];
+    if (!bouquet.length) {
+      bouquetGrid.innerHTML = '<div class="bouquet-empty">Grow your first plant to Flourishing and harvest it to start your bouquet.</div>';
+      return;
+    }
+    bouquetGrid.innerHTML = '';
+    [...bouquet].reverse().forEach((item) => {
+      const sp = SPECIES[item.speciesIndex % SPECIES.length];
+      const el = document.createElement('div');
+      el.className = 'bouquet-item';
+      el.innerHTML = `
+        <div class="bouquet-flower" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">${sp.emoji}</div>
+        <div class="bouquet-date">${item.date}</div>`;
+      bouquetGrid.appendChild(el);
+    });
+  }
+  document.getElementById('btnGarden').onclick = () => gardenBackdrop.classList.add('open');
+  document.getElementById('gardenClose').onclick = () => gardenBackdrop.classList.remove('open');
 
   // ---- Export memories as a PDF keepsake ----
   document.getElementById('exportBtn').onclick = async () => {
@@ -821,23 +837,21 @@
     }
   };
 
-  // ---- Memories gallery (garden view + list view) ----
+  // ---- Memories list (search) + Garden page (visual, unfiltered) ----
   const memoriesBackdrop = document.getElementById('memoriesBackdrop');
   const memoryList = document.getElementById('memoryList');
   const memorySearch = document.getElementById('memorySearch');
-  const gardenView = document.getElementById('gardenView');
   const gardenBed = document.getElementById('gardenBed');
   const gardenDetail = document.getElementById('gardenDetail');
   const gardenDetailContent = document.getElementById('gardenDetailContent');
-  const viewGardenBtn = document.getElementById('viewGardenBtn');
-  const viewListBtn = document.getElementById('viewListBtn');
   let latestLogs = [];
 
   function renderMemories(logs) {
     latestLogs = logs;
     renderPhotoDots(logs);
     renderFlashback(logs);
-    applyMemoryFilter();
+    renderMemoryList(filteredLogs());
+    renderGardenBed(logs); // garden always shows everything, unfiltered
   }
 
   function filteredLogs() {
@@ -847,11 +861,6 @@
           (l.activity || '').toLowerCase().includes(filterText) ||
           (l.note || '').toLowerCase().includes(filterText))
       : latestLogs;
-  }
-
-  function applyMemoryFilter() {
-    renderGardenBed(filteredLogs());
-    renderMemoryList(filteredLogs());
   }
 
   // Builds a single memory card (used by both the list view and the garden's tap-to-reveal detail).
@@ -908,7 +917,7 @@
       try {
         await deleteLog(log.id);
         gardenDetail.classList.remove('show');
-        gardenView.querySelector('.garden-bed').style.display = '';
+        gardenBed.style.display = '';
       } catch (err) { /* error already alerted */ }
     };
 
@@ -1001,20 +1010,7 @@
     gardenBed.style.display = '';
   };
 
-  viewGardenBtn.onclick = () => {
-    viewGardenBtn.classList.add('active');
-    viewListBtn.classList.remove('active');
-    gardenView.style.display = '';
-    memoryList.style.display = 'none';
-  };
-  viewListBtn.onclick = () => {
-    viewListBtn.classList.add('active');
-    viewGardenBtn.classList.remove('active');
-    gardenView.style.display = 'none';
-    memoryList.style.display = '';
-  };
-
-  memorySearch.oninput = applyMemoryFilter;
+  memorySearch.oninput = () => renderMemoryList(filteredLogs());
 
   // ---- "On this day" flashback ----
   const flashbackEl = document.getElementById('flashback');
