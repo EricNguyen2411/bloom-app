@@ -81,11 +81,16 @@
 
   .sparkle{ position:absolute; border-radius:50%; background:var(--gold); opacity:0; transition:all .8s ease; }
 
-  .helper{ position:absolute; left:22%; bottom:17%; width:56px; height:90px; opacity:0; transform:scale(0.6) translateY(10px);
-    transition:all .5s cubic-bezier(.34,1.4,.4,1); z-index:6; pointer-events:none; }
-  .helper.show{ opacity:1; transform:scale(1) translateY(0); }
-  .helper-can{ position:absolute; left:9%; bottom:15%; width:34px; height:26px; opacity:0; transition:opacity .4s ease; z-index:5; pointer-events:none; }
-  .helper-can.show{ opacity:1; }
+  .helper{ position:absolute; left:16px; bottom:20px; width:56px; height:90px; z-index:6; pointer-events:none;
+    animation:idleSway 2.6s ease-in-out infinite; }
+  .helper-can{ position:absolute; left:60px; bottom:14px; width:30px; height:22px; opacity:1; transition:opacity .4s ease; z-index:5; pointer-events:none; }
+  .helper-can.hide{ opacity:0; }
+  #armLeft{ transform:rotate(-28deg); }
+  #armRight{ transform:rotate(28deg); }
+  .helper.watering #armLeft{ transform:rotate(8deg); }
+  .helper.watering #armRight{ transform:rotate(-75deg); }
+  .helper.watering #heldCan{ opacity:1; }
+  .helper.watering{ animation:none; }
   .helper .can{ animation:none; }
   .helper.pouring .can{ animation:tiltPour 0.6s ease-in-out infinite alternate; }
   .helper .drop{ opacity:0; }
@@ -95,8 +100,7 @@
   .helper.pouring .drop3{ animation-delay:.4s; }
   @keyframes tiltPour{ from{ transform:rotate(0deg); } to{ transform:rotate(-18deg); } }
   @keyframes dropFall{ 0%{ opacity:0; transform:translateY(0); } 20%{ opacity:1; } 100%{ opacity:0; transform:translateY(14px); } }
-  .helper-idle.show{ animation:idleSway 2.4s ease-in-out infinite; }
-  @keyframes idleSway{ 0%,100%{ transform:scale(1) rotate(0deg); } 50%{ transform:scale(1) rotate(-2deg); } }
+  @keyframes idleSway{ 0%,100%{ transform:rotate(0deg); } 50%{ transform:rotate(-1.5deg); } }
   .s1{ width:6px; height:6px; bottom:270px; left:calc(50% + 40px); }
   .s2{ width:5px; height:5px; bottom:250px; left:calc(50% - 58px); }
   .s3{ width:7px; height:7px; bottom:290px; left:calc(50% - 20px); background:var(--plum); }
@@ -394,43 +398,32 @@
           <rect x="31" y="78" width="11" height="26" rx="5.5" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
           <!-- torso -->
           <rect x="16" y="52" width="28" height="30" rx="14" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
-          <!-- resting arm, longer, hanging at the side -->
-          <path d="M17,56 Q6,68 9,84" stroke="#93C773" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+          <!-- left arm (far side from the pot): hip-rest by default -->
+          <g id="armLeft" style="transform-origin:18px 58px; transition:transform .7s cubic-bezier(.4,.2,.2,1);">
+            <rect x="-4.5" y="0" width="9" height="27" rx="4.5" fill="#93C773"/>
+          </g>
           <!-- head -->
           <circle cx="30" cy="38" r="20" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
           <circle cx="24.5" cy="36" r="2" fill="#2A1B12"/>
           <circle cx="35.5" cy="36" r="2" fill="#2A1B12"/>
           <line x1="27" y1="45" x2="33" y2="45" stroke="#2A1B12" stroke-width="1.3" stroke-linecap="round"/>
-          <!-- arm reaching toward the can, longer -->
-          <path d="M29,58 Q40,60 49,56" stroke="#93C773" stroke-width="7.5" stroke-linecap="round" fill="none"/>
-          <!-- watering can, tilted to pour -->
-          <g class="can" style="transform-origin:52px 60px;">
-            <rect x="44" y="53" width="16" height="12" rx="3.5" fill="#7A8B6C"/>
-            <path d="M60,55 L70,47" stroke="#7A8B6C" stroke-width="3.5" stroke-linecap="round"/>
-            <path d="M48,48 Q52,40 56,48" stroke="#7A8B6C" stroke-width="2.5" fill="none"/>
+          <!-- right arm (near side, facing the pot): swings up to hold the can when watering -->
+          <g id="armRight" style="transform-origin:42px 58px; transition:transform .7s cubic-bezier(.4,.2,.2,1);">
+            <rect x="-4.5" y="0" width="9" height="27" rx="4.5" fill="#93C773"/>
           </g>
-          <g class="drops">
-            <circle class="drop drop1" cx="68" cy="50" r="1.7" fill="#8FB3CC"/>
-            <circle class="drop drop2" cx="71" cy="55" r="1.5" fill="#8FB3CC"/>
-            <circle class="drop drop3" cx="66" cy="58" r="1.4" fill="#8FB3CC"/>
+          <!-- can held in hand, only visible while watering -->
+          <g id="heldCan" style="opacity:0; transition:opacity .3s ease .3s;">
+            <g class="can" style="transform-origin:52px 60px;">
+              <rect x="44" y="53" width="16" height="12" rx="3.5" fill="#7A8B6C"/>
+              <path d="M60,55 L70,47" stroke="#7A8B6C" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M48,48 Q52,40 56,48" stroke="#7A8B6C" stroke-width="2.5" fill="none"/>
+            </g>
+            <g class="drops">
+              <circle class="drop drop1" cx="68" cy="50" r="1.7" fill="#8FB3CC"/>
+              <circle class="drop drop2" cx="71" cy="55" r="1.5" fill="#8FB3CC"/>
+              <circle class="drop drop3" cx="66" cy="58" r="1.4" fill="#8FB3CC"/>
+            </g>
           </g>
-        </svg>
-      </div>
-      <div class="helper helper-idle show" id="helperIdle">
-        <svg viewBox="0 0 68 108">
-          <!-- legs -->
-          <rect x="18" y="78" width="11" height="26" rx="5.5" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
-          <rect x="31" y="78" width="11" height="26" rx="5.5" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
-          <!-- torso -->
-          <rect x="16" y="52" width="28" height="30" rx="14" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
-          <!-- head -->
-          <circle cx="30" cy="38" r="20" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
-          <circle cx="24.5" cy="36" r="2" fill="#2A1B12"/>
-          <circle cx="35.5" cy="36" r="2" fill="#2A1B12"/>
-          <line x1="27" y1="45" x2="33" y2="45" stroke="#2A1B12" stroke-width="1.3" stroke-linecap="round"/>
-          <!-- arms akimbo, hands on hips, longer upper arm before the bend -->
-          <path d="M17,56 Q4,62 8,76 Q14,74 20,66 Z" fill="#93C773" stroke="#2A1B12" stroke-opacity="0.12" stroke-width="0.8"/>
-          <path d="M43,56 Q56,62 52,76 Q46,74 40,66 Z" fill="#93C773" stroke="#2A1B12" stroke-opacity="0.12" stroke-width="0.8"/>
         </svg>
       </div>
       <div class="helper-can show" id="helperCan">
@@ -747,15 +740,13 @@
     const sceneEl = document.getElementById('scene');
     const auraEl = document.getElementById('aura');
     const helperEl = document.getElementById('helperChar');
-    const idleEl = document.getElementById('helperIdle');
     const canEl = document.getElementById('helperCan');
     const sequence = ['sprout', 'budding', 'blooming', 'flourishing'];
     let i = 0;
 
-    idleEl.classList.remove('show');
-    canEl.classList.remove('show');
-    helperEl.classList.add('show');
-    setTimeout(() => helperEl.classList.add('pouring'), 250);
+    helperEl.classList.add('watering');
+    canEl.classList.add('hide');
+    setTimeout(() => helperEl.classList.add('pouring'), 500);
 
     const step = () => {
       if (i >= sequence.length) {
@@ -770,8 +761,8 @@
         setTimeout(() => {
           sceneEl.setAttribute('data-stage', 'seed');
           auraEl.className = 'aura stage-seed';
-          idleEl.classList.add('show');
-          canEl.classList.add('show');
+          helperEl.classList.remove('watering');
+          canEl.classList.remove('hide');
           blooming = false;
         }, 3600);
         return;
@@ -781,7 +772,7 @@
       // The little gardener waters through the sprout and budding stages, then steps back for the bloom.
       if (sequence[i] === 'blooming') {
         helperEl.classList.remove('pouring');
-        helperEl.classList.remove('show');
+        helperEl.classList.remove('watering');
       }
       i++;
       setTimeout(step, 1100);
