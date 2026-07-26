@@ -15,12 +15,49 @@ export const ANNIVERSARY_ICON = '💍';
 
 // Flower species — cycles each time you harvest a fully-bloomed plant into
 // the bouquet, so the plant you're growing looks different each round.
+// Each icon is a small flat SVG silhouette (viewBox 0 0 24 24). They use
+// fill="currentColor" so the color is set per-species at render time from
+// that species' "dark" shade — see applySpeciesColor() in index.html.
+const ICON_STROKE = 'stroke="#2A1B12" stroke-opacity="0.22" stroke-width="0.6"';
+
 export const SPECIES = [
-  { name: 'Rose Blush', light: '#EFAF95', dark: '#E2896A', emoji: '🌹' },
-  { name: 'Violet Bloom', light: '#B487A3', dark: '#8C5A78', emoji: '💜' },
-  { name: 'Golden Marigold', light: '#F2D488', dark: '#E3B94F', emoji: '🌼' },
-  { name: 'Sky Aster', light: '#8FB3CC', dark: '#5C8BAA', emoji: '🪻' },
-  { name: 'Wild Poppy', light: '#E37B5D', dark: '#C1432E', emoji: '🌺' }
+  {
+    name: 'Rose', light: '#F0A8AE', dark: '#C63D52',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><circle cx="12" cy="12" r="2.6"/><path d="M12 12C9.5 9.5 9.5 5.5 12 3c1.8 3 1.8 6.5 0 9z"/><path d="M12 12c2.5-2.5 6.5-2.5 9 0-3 1.8-6.5 1.8-9 0z"/><path d="M12 12c2.5 2.5 2.5 6.5 0 9-1.8-3-1.8-6.5 0-9z"/><path d="M12 12c-2.5 2.5-6.5 2.5-9 0 3-1.8 6.5-1.8 9 0z"/></svg>`
+  },
+  {
+    name: 'Peony', light: '#F3C6D9', dark: '#D77FA1',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><circle cx="12" cy="6.5" r="4"/><circle cx="17" cy="9.5" r="4"/><circle cx="17" cy="15" r="4"/><circle cx="12" cy="18" r="4"/><circle cx="7" cy="15" r="4"/><circle cx="7" cy="9.5" r="4"/><circle cx="12" cy="12" r="3.2"/></svg>`
+  },
+  {
+    name: 'Hydrangea', light: '#B9D3EA', dark: '#6E9BC2',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}>
+      <g transform="translate(7,7) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
+      <g transform="translate(16,7) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
+      <g transform="translate(7,16) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
+      <g transform="translate(16,16) scale(0.55)"><circle cx="0" cy="-4" r="3"/><circle cx="4" cy="0" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="-4" cy="0" r="3"/><circle cx="0" cy="0" r="2"/></g>
+    </svg>`
+  },
+  {
+    name: 'Ranunculus', light: '#F6C9B0', dark: '#E8865A',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><ellipse cx="19" cy="12" rx="3" ry="2"/><ellipse cx="17" cy="17" rx="3" ry="2" transform="rotate(45 17 17)"/><ellipse cx="12" cy="19" rx="3" ry="2" transform="rotate(90 12 19)"/><ellipse cx="7" cy="17" rx="3" ry="2" transform="rotate(135 7 17)"/><ellipse cx="5" cy="12" rx="3" ry="2"/><ellipse cx="7" cy="7" rx="3" ry="2" transform="rotate(45 7 7)"/><ellipse cx="12" cy="5" rx="3" ry="2" transform="rotate(90 12 5)"/><ellipse cx="17" cy="7" rx="3" ry="2" transform="rotate(135 17 7)"/><circle cx="12" cy="12" r="3.4"/></svg>`
+  },
+  {
+    name: 'Poppy', light: '#E37B5D', dark: '#C1432E',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><ellipse cx="12" cy="6" rx="5.5" ry="6"/><ellipse cx="18" cy="12" rx="6" ry="5.5" transform="rotate(90 18 12)"/><ellipse cx="12" cy="18" rx="5.5" ry="6" transform="rotate(180 12 18)"/><ellipse cx="6" cy="12" rx="6" ry="5.5" transform="rotate(270 6 12)"/><circle cx="12" cy="12" r="2.6" fill="#2A1B12" fill-opacity="0.55" stroke="none"/></svg>`
+  },
+  {
+    name: 'Snapdragon', light: '#F2D488', dark: '#E3A93E',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><ellipse cx="12" cy="18" rx="5" ry="3.6"/><ellipse cx="12" cy="12" rx="4.2" ry="3"/><ellipse cx="12" cy="7" rx="3.4" ry="2.4"/><ellipse cx="12" cy="3.2" rx="2.4" ry="1.7"/></svg>`
+  },
+  {
+    name: "Baby's Breath", light: '#FBF6E8', dark: '#B7AD8E',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><circle cx="6" cy="7" r="2"/><circle cx="13" cy="5" r="2.2"/><circle cx="19" cy="8" r="1.8"/><circle cx="9" cy="12" r="2.4"/><circle cx="16" cy="13" r="2"/><circle cx="6" cy="16" r="1.8"/><circle cx="12" cy="18" r="2.2"/><circle cx="18" cy="18" r="1.8"/></svg>`
+  },
+  {
+    name: 'Lily', light: '#FBF3D9', dark: '#D4A537',
+    icon: `<svg viewBox="0 0 24 24" fill="currentColor" ${ICON_STROKE}><path d="M12 12 L12 2 L14.5 8 Z"/><path d="M12 12 L20.8 6.2 L16.5 11.3 Z"/><path d="M12 12 L21.8 17.8 L15.2 15 Z"/><path d="M12 12 L12 22 L9.5 16 Z"/><path d="M12 12 L3.2 17.8 L7.5 12.7 Z"/><path d="M12 12 L2.2 6.2 L8.8 9 Z"/><circle cx="12" cy="12" r="2" fill="#E8C468" stroke="none"/></svg>`
+  }
 ];
 
 const DEFAULT_CHALLENGES = [

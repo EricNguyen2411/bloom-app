@@ -201,6 +201,7 @@
   .bouquet-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
   .bouquet-item{ width:52px; display:flex; flex-direction:column; align-items:center; gap:4px; }
   .bouquet-flower{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:2.5px solid rgba(255,255,255,0.85); }
+  .bouquet-flower svg{ width:60%; height:60%; }
   .bouquet-date{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#2A3B1F; background:rgba(255,255,255,0.7); padding:1px 5px; border-radius:5px; }
   .bouquet-empty{ font-size:12.5px; color:#2A3B1F; margin-top:6px; background:rgba(255,255,255,0.75); padding:12px; border-radius:12px; }
 
@@ -217,6 +218,7 @@
     padding:calc(env(safe-area-inset-top) + 14px) 18px 10px; }
   .garden-page-header button{ background:rgba(255,255,255,0.75); border:none; color:var(--moss); font-family:'Bricolage Grotesque',sans-serif;
     font-weight:700; font-size:13.5px; cursor:pointer; padding:8px 14px; border-radius:999px; backdrop-filter:blur(4px); }
+  #gardenShareBtn{ padding:8px 12px; font-size:15px; }
   .garden-page-title{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:16px; color:var(--ink);
     background:rgba(255,255,255,0.75); padding:8px 16px; border-radius:999px; backdrop-filter:blur(4px); }
 
@@ -238,10 +240,11 @@
   .meadow-flower{ position:absolute; bottom:12px; display:flex; flex-direction:column; align-items:center; cursor:pointer;
     transition:transform .15s ease; transform:translateX(-50%); }
   .meadow-flower:active{ transform:translateX(-50%) scale(0.92); }
-  .meadow-bloom{ width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  .meadow-bloom{ width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:20px; box-shadow:0 8px 16px -6px rgba(20,30,15,0.5); overflow:hidden; position:relative; z-index:2;
-    border:2.5px solid rgba(255,255,255,0.85); } }
-  .meadow-bloom-photo{ width:100%; height:100%; object-fit:cover; }
+    border:2.5px solid rgba(255,255,255,0.85); }
+  .meadow-bloom svg{ width:62%; height:62%; }
+  .meadow-bloom-photo{ width:88%; height:88%; object-fit:contain; border-radius:50%; }
   .meadow-badge{ position:absolute; top:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:var(--gold);
     display:flex; align-items:center; justify-content:center; font-size:9px; border:1.5px solid #fff; z-index:3; }
   .meadow-stem{ width:3px; background:linear-gradient(180deg,var(--lime),var(--moss)); border-radius:2px; margin-top:-2px; }
@@ -253,6 +256,12 @@
   .garden-detail{ display:none; }
   .garden-detail.show{ display:block; background:var(--card); border-radius:18px; padding:16px; box-shadow:0 12px 26px -10px rgba(20,30,15,0.4); }
   .garden-detail-back{ background:none; border:none; color:var(--moss); font-weight:700; font-size:12.5px; cursor:pointer; padding:0; margin-bottom:10px; }
+
+  .photo-peek{ position:fixed; inset:0; z-index:90; display:none; align-items:center; justify-content:center;
+    background:rgba(20,30,15,0.55); padding:40px; pointer-events:none; }
+  .photo-peek.show{ display:flex; }
+  .photo-peek img{ max-width:100%; max-height:100%; border-radius:20px; box-shadow:0 20px 50px -10px rgba(0,0,0,0.5);
+    border:4px solid #fff; }
 
   .bucket-list{ max-height:50vh; overflow-y:auto; margin-top:6px; }
   .bucket-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #F0EDE2; }
@@ -411,60 +420,74 @@
   <div class="garden-page-header">
     <button id="gardenBack">← Back</button>
     <div class="garden-page-title">Your Garden</div>
-    <div style="width:44px;"></div>
+    <button id="gardenShareBtn" title="Share your garden">📤</button>
   </div>
 
   <div class="garden-scene">
     <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#BFE3F5"/>
-          <stop offset="100%" stop-color="#E8F5EC"/>
+          <stop id="skyStop1" offset="0%" stop-color="#BFE3F5"/>
+          <stop id="skyStop2" offset="100%" stop-color="#E8F5EC"/>
         </linearGradient>
       </defs>
       <rect x="0" y="0" width="400" height="200" fill="url(#skyGrad)"/>
 
-      <!-- sun -->
-      <g stroke="#E8B84B" stroke-width="3" stroke-linecap="round">
-        <line x1="330" y1="14" x2="330" y2="2"/>
-        <line x1="352" y1="24" x2="362" y2="14"/>
-        <line x1="308" y1="24" x2="298" y2="14"/>
-        <line x1="360" y1="46" x2="372" y2="46"/>
-        <line x1="300" y1="46" x2="288" y2="46"/>
+      <!-- day group: sun + birds -->
+      <g id="sceneDay">
+        <g stroke="#E8B84B" stroke-width="3" stroke-linecap="round">
+          <line x1="330" y1="14" x2="330" y2="2"/>
+          <line x1="352" y1="24" x2="362" y2="14"/>
+          <line x1="308" y1="24" x2="298" y2="14"/>
+          <line x1="360" y1="46" x2="372" y2="46"/>
+          <line x1="300" y1="46" x2="288" y2="46"/>
+        </g>
+        <circle cx="330" cy="46" r="22" fill="#FFD966" stroke="#E8B84B" stroke-width="3"/>
+        <g stroke="#5C6B5E" stroke-width="2.5" stroke-linecap="round" fill="none">
+          <path d="M150,20 q6,-8 12,0 q6,-8 12,0"/>
+          <path d="M180,36 q5,-7 10,0 q5,-7 10,0"/>
+        </g>
       </g>
-      <circle cx="330" cy="46" r="22" fill="#FFD966" stroke="#E8B84B" stroke-width="3"/>
+
+      <!-- night group: moon + stars -->
+      <g id="sceneNight" style="display:none;">
+        <circle cx="330" cy="42" r="20" fill="#F4EEDC"/>
+        <circle cx="338" cy="36" r="17" fill="#1B2A4A" opacity="0.92"/>
+        <g fill="#F4EEDC">
+          <circle cx="60" cy="24" r="2"/>
+          <circle cx="100" cy="44" r="1.6"/>
+          <circle cx="150" cy="18" r="1.8"/>
+          <circle cx="200" cy="50" r="1.4"/>
+          <circle cx="255" cy="20" r="2"/>
+          <circle cx="40" cy="60" r="1.4"/>
+          <circle cx="130" cy="60" r="1.6"/>
+        </g>
+      </g>
 
       <!-- clouds -->
-      <g fill="#FFFFFF" stroke="#DCE9EF" stroke-width="2">
+      <g id="clouds" fill="#FFFFFF" stroke="#DCE9EF" stroke-width="2">
         <ellipse cx="62" cy="38" rx="26" ry="14"/>
         <ellipse cx="84" cy="34" rx="18" ry="12"/>
         <ellipse cx="42" cy="34" rx="16" ry="11"/>
       </g>
-      <g fill="#FFFFFF" stroke="#DCE9EF" stroke-width="2" opacity="0.9">
+      <g id="clouds2" fill="#FFFFFF" stroke="#DCE9EF" stroke-width="2" opacity="0.9">
         <ellipse cx="220" cy="26" rx="20" ry="11"/>
         <ellipse cx="236" cy="23" rx="14" ry="9"/>
       </g>
 
-      <!-- back hill -->
-      <path d="M0,140 Q100,100 200,130 T400,120 V200 H0 Z" fill="#B7D98C"/>
-      <!-- front hill -->
-      <path d="M0,175 Q120,135 230,165 T400,155 V200 H0 Z" fill="#8CBB70"/>
+      <!-- hills -->
+      <path id="backHill" d="M0,140 Q100,100 200,130 T400,120 V200 H0 Z" fill="#B7D98C"/>
+      <path id="frontHill" d="M0,175 Q120,135 230,165 T400,155 V200 H0 Z" fill="#8CBB70"/>
 
       <!-- little tree -->
       <g transform="translate(46,108)">
         <rect x="-5" y="30" width="10" height="34" rx="4" fill="#A9713F"/>
-        <circle cx="0" cy="14" r="26" fill="#6FA84A"/>
-        <circle cx="-18" cy="24" r="18" fill="#7DB857"/>
-        <circle cx="18" cy="24" r="18" fill="#7DB857"/>
-        <circle cx="-10" cy="2" r="3.5" fill="#D8567A"/>
-        <circle cx="12" cy="8" r="3.5" fill="#D8567A"/>
-        <circle cx="2" cy="20" r="3.5" fill="#D8567A"/>
-      </g>
-
-      <!-- a couple of birds -->
-      <g stroke="#5C6B5E" stroke-width="2.5" stroke-linecap="round" fill="none">
-        <path d="M150,20 q6,-8 12,0 q6,-8 12,0"/>
-        <path d="M180,36 q5,-7 10,0 q5,-7 10,0"/>
+        <circle id="canopy1" cx="0" cy="14" r="26" fill="#6FA84A"/>
+        <circle id="canopy2" cx="-18" cy="24" r="18" fill="#7DB857"/>
+        <circle id="canopy3" cx="18" cy="24" r="18" fill="#7DB857"/>
+        <circle id="fruit1" cx="-10" cy="2" r="3.5" fill="#D8567A"/>
+        <circle id="fruit2" cx="12" cy="8" r="3.5" fill="#D8567A"/>
+        <circle id="fruit3" cx="2" cy="20" r="3.5" fill="#D8567A"/>
       </g>
     </svg>
   </div>
@@ -560,6 +583,11 @@
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem,
            STAGES, SPECIES, DECOR_ICONS, ANNIVERSARY_ICON }
     from './app.js';
+
+  // Injects the species' dark shade as the icon's color (icons use fill="currentColor").
+  function iconWithColor(sp) {
+    return sp.icon.replace('<svg ', `<svg style="color:${sp.dark}" `);
+  }
 
   let latestState = { points: 0, streak: 0, unlockedDecorations: [0], totalHarvests: 0, bouquet: [] };
   let lastStageKey = null;
@@ -842,13 +870,99 @@
       const el = document.createElement('div');
       el.className = 'bouquet-item';
       el.innerHTML = `
-        <div class="bouquet-flower" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">${sp.emoji}</div>
+        <div class="bouquet-flower" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">${iconWithColor(sp)}</div>
         <div class="bouquet-date">${item.date}</div>`;
       bouquetGrid.appendChild(el);
     });
   }
-  document.getElementById('btnGarden').onclick = () => gardenPage.classList.add('open');
+  // ---- Day/night + seasonal theming for the garden scene ----
+  const SEASON_PALETTES = {
+    spring: { backHill: '#B7D98C', frontHill: '#8CBB70', canopy: '#6FA84A', canopy2: '#7DB857', fruit: '#D8567A', meadow: ['#97C078', '#8CBB70', '#7FB264'] },
+    summer: { backHill: '#A8D27E', frontHill: '#7CB860', canopy: '#5F9A3E', canopy2: '#6FA84A', fruit: '#E2896A', meadow: ['#8CBB70', '#7CB05F', '#6EA354'] },
+    autumn: { backHill: '#D9BE7C', frontHill: '#C79A56', canopy: '#D8934A', canopy2: '#C1702F', fruit: '#A8395C', meadow: ['#C9A85E', '#B58F4C', '#A17E42'] },
+    winter: { backHill: '#CFE0DA', frontHill: '#AECABF', canopy: '#8FAE95', canopy2: '#9FBBA3', fruit: '#8C5A78', meadow: ['#AECABF', '#9BBCAE', '#8AAE9E'] }
+  };
+  function currentSeason() {
+    const m = new Date().getMonth(); // 0=Jan
+    if (m >= 2 && m <= 4) return 'spring';
+    if (m >= 5 && m <= 7) return 'summer';
+    if (m >= 8 && m <= 10) return 'autumn';
+    return 'winter';
+  }
+
+  function applySceneTheme() {
+    const hour = new Date().getHours();
+    const isNight = hour < 6 || hour >= 19;
+    document.getElementById('sceneDay').style.display = isNight ? 'none' : '';
+    document.getElementById('sceneNight').style.display = isNight ? '' : 'none';
+    document.getElementById('skyStop1').setAttribute('stop-color', isNight ? '#1B2A4A' : '#BFE3F5');
+    document.getElementById('skyStop2').setAttribute('stop-color', isNight ? '#3A4B6B' : '#E8F5EC');
+    document.getElementById('clouds').style.opacity = isNight ? '0.35' : '1';
+    document.getElementById('clouds2').style.opacity = isNight ? '0.3' : '0.9';
+
+    const season = SEASON_PALETTES[currentSeason()];
+    document.getElementById('backHill').setAttribute('fill', season.backHill);
+    document.getElementById('frontHill').setAttribute('fill', season.frontHill);
+    document.getElementById('canopy1').setAttribute('fill', season.canopy);
+    document.getElementById('canopy2').setAttribute('fill', season.canopy2);
+    document.getElementById('canopy3').setAttribute('fill', season.canopy2);
+    ['fruit1', 'fruit2', 'fruit3'].forEach((id) => document.getElementById(id).setAttribute('fill', season.fruit));
+
+    const [a, b, c] = season.meadow;
+    const content = document.querySelector('.garden-page-content');
+    content.style.background =
+      `repeating-linear-gradient(100deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 9px), ` +
+      `linear-gradient(180deg, ${a} 0%, ${b} 40%, ${c} 100%)`;
+  }
+
+  document.getElementById('btnGarden').onclick = () => { applySceneTheme(); gardenPage.classList.add('open'); };
   document.getElementById('gardenBack').onclick = () => gardenPage.classList.remove('open');
+
+  // ---- Share the garden as an image ----
+  async function loadHtml2Canvas() {
+    if (window.html2canvas) return window.html2canvas;
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Could not load the image export library — check your connection.'));
+      document.head.appendChild(s);
+    });
+    return window.html2canvas;
+  }
+
+  document.getElementById('gardenShareBtn').onclick = async () => {
+    const btn = document.getElementById('gardenShareBtn');
+    const original = btn.textContent;
+    btn.textContent = '⏳';
+    btn.disabled = true;
+    try {
+      const html2canvas = await loadHtml2Canvas();
+      const canvas = await html2canvas(document.getElementById('gardenPage'), {
+        backgroundColor: null, useCORS: true, scale: 2
+      });
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], 'our-garden.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'Our Garden' });
+          } catch (e) { /* user cancelled the share sheet — not an error */ }
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'our-garden.png';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Garden share failed:', err);
+      alert('Could not create the image: ' + err.message);
+    } finally {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  };
 
   // ---- Export memories as a PDF keepsake ----
   document.getElementById('exportBtn').onclick = async () => {
@@ -916,6 +1030,8 @@
   const memoryList = document.getElementById('memoryList');
   const memorySearch = document.getElementById('memorySearch');
   const gardenBed = document.getElementById('gardenBed');
+  const photoPeek = document.getElementById('photoPeek');
+  const photoPeekImg = document.getElementById('photoPeekImg');
   const gardenDetail = document.getElementById('gardenDetail');
   const gardenDetailContent = document.getElementById('gardenDetailContent');
   let latestLogs = [];
@@ -1055,7 +1171,7 @@
         const shortDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
         const bloomInner = log.photo
           ? `<img class="meadow-bloom-photo" src="${log.photo}">`
-          : sp.emoji;
+          : iconWithColor(sp);
 
         const flower = document.createElement('div');
         flower.className = 'meadow-flower';
@@ -1067,11 +1183,35 @@
           </div>
           <div class="meadow-stem" style="height:${ROW_STEM_H[i]}px"></div>
           <div class="meadow-date">${shortDate}</div>`;
-        flower.onclick = () => {
+
+        // Long-press (hold ~350ms) previews the photo full-size; a normal tap opens the memory.
+        let pressTimer = null;
+        let longPressFired = false;
+        const openDetail = () => {
           gardenBed.style.display = 'none';
           gardenDetail.classList.add('show');
           gardenDetailContent.innerHTML = '';
           gardenDetailContent.appendChild(buildMemoryCard(log));
+        };
+        flower.addEventListener('pointerdown', () => {
+          longPressFired = false;
+          if (!log.photo) return;
+          pressTimer = setTimeout(() => {
+            longPressFired = true;
+            photoPeekImg.src = log.photo;
+            photoPeek.classList.add('show');
+          }, 350);
+        });
+        const endPress = () => {
+          clearTimeout(pressTimer);
+          photoPeek.classList.remove('show');
+        };
+        flower.addEventListener('pointerup', endPress);
+        flower.addEventListener('pointerleave', endPress);
+        flower.addEventListener('pointercancel', endPress);
+        flower.onclick = () => {
+          if (longPressFired) { longPressFired = false; return; } // long-press already showed the peek — don't also open detail
+          openDetail();
         };
         row.appendChild(flower);
       });
@@ -1166,5 +1306,7 @@
     window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
   }
 </script>
+
+<div class="photo-peek" id="photoPeek"><img id="photoPeekImg" src=""></div>
 </body>
 </html>
