@@ -148,6 +148,8 @@
   .photo-picker-label{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
 
   .photo-preview-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .photo-date-notice{ display:none; margin-top:8px; font-size:11.5px; color:var(--moss); font-weight:700; }
+  .photo-date-notice.show{ display:block; }
   .photo-preview-thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; }
   .photo-preview-thumb img{ width:100%; height:100%; object-fit:cover; }
   .photo-preview-remove{ position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(20,20,20,0.65);
@@ -422,6 +424,7 @@
       <span class="photo-picker-label" id="photoPickerLabel">Tap to add photos from this date</span>
     </div>
     <div class="photo-preview-row" id="photoPreviewRow"></div>
+    <div class="photo-date-notice" id="photoDateNotice"></div>
     <div class="sheet-actions">
       <button class="btn-cancel" id="logCancel">Cancel</button>
       <button class="btn-confirm" id="logSave">Water it</button>
@@ -676,15 +679,18 @@
     step();
   }
 
-  // Scatters up to 4 recent photo memories as small circles around the scene.
+  // Scatters up to 8 recent photo memories as small circles around the scene,
+  // roughly ringing the plant without overlapping it.
   const DOT_POSITIONS = [
-    { top: '8%', left: '12%' }, { top: '14%', right: '10%' },
-    { bottom: '18%', left: '6%' }, { bottom: '10%', right: '8%' }
+    { top: '6%', left: '10%' }, { top: '10%', right: '8%' },
+    { top: '36%', left: '2%' }, { top: '40%', right: '3%' },
+    { bottom: '34%', left: '4%' }, { bottom: '38%', right: '5%' },
+    { bottom: '8%', left: '14%' }, { bottom: '6%', right: '12%' }
   ];
   function renderPhotoDots(logs) {
     const wrap = document.getElementById('photoDots');
     const sceneWrap = document.getElementById('sceneWrap');
-    const withPhotos = logs.filter((l) => getPhotos(l).length).slice(0, 4);
+    const withPhotos = logs.filter((l) => getPhotos(l).length).slice(0, DOT_POSITIONS.length);
     wrap.innerHTML = '';
     withPhotos.forEach((log, i) => {
       const img = document.createElement('img');
@@ -784,12 +790,99 @@
   const todayISO = new Date().toISOString().slice(0, 10);
   logDateInput.max = todayISO; // no future-dating entries
 
+  // ---- EXIF date extraction ----
+  // Reads a JPEG's embedded capture date (EXIF DateTimeOriginal, falling back
+  // to DateTime) directly from the file bytes — no library needed. Returns
+  // "YYYY-MM-DD" or null if the file has no EXIF data (e.g. screenshots, PNGs).
+  function extractExifDate(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const view = new DataView(e.target.result);
+          if (view.getUint16(0) !== 0xFFD8) return resolve(null); // not a JPEG
+          let offset = 2;
+          while (offset < view.byteLength - 2) {
+            const marker = view.getUint16(offset);
+            if (marker === 0xFFE1) { // APP1 — where EXIF lives
+              const exifStart = offset + 4;
+              if (view.getUint32(exifStart) !== 0x45786966) return resolve(null); // "Exif"
+              const tiffStart = exifStart + 6;
+              const little = view.getUint16(tiffStart) === 0x4949;
+              const ifd0Offset = tiffStart + view.getUint32(tiffStart + 4, little);
+              const found = findExifDate(view, tiffStart, ifd0Offset, little);
+              return resolve(found);
+            }
+            if ((marker & 0xFF00) !== 0xFF00) break; // no longer in marker segments
+            offset += 2 + view.getUint16(offset + 2);
+          }
+          resolve(null);
+        } catch (err) { resolve(null); } // any parsing hiccup just means "no date found" — never blocks the save
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsArrayBuffer(file.slice(0, 128 * 1024)); // EXIF lives near the start; no need to read the whole file
+    });
+  }
+
+  function findExifDate(view, tiffStart, dirOffset, little) {
+    const entries = view.getUint16(dirOffset, little);
+    let exifIfdOffset = null;
+    let dateTime = null;
+    for (let i = 0; i < entries; i++) {
+      const entryOffset = dirOffset + 2 + i * 12;
+      const tag = view.getUint16(entryOffset, little);
+      if (tag === 0x8769) exifIfdOffset = tiffStart + view.getUint32(entryOffset + 8, little); // pointer to sub-IFD
+      if (tag === 0x0132) dateTime = readAsciiTag(view, tiffStart, entryOffset, little); // DateTime (fallback)
+    }
+    if (exifIfdOffset) {
+      const subEntries = view.getUint16(exifIfdOffset, little);
+      for (let i = 0; i < subEntries; i++) {
+        const entryOffset = exifIfdOffset + 2 + i * 12;
+        const tag = view.getUint16(entryOffset, little);
+        if (tag === 0x9003) { // DateTimeOriginal — the actual "when the photo was taken"
+          const val = readAsciiTag(view, tiffStart, entryOffset, little);
+          if (val) return val;
+        }
+      }
+    }
+    return dateTime;
+  }
+
+  function readAsciiTag(view, tiffStart, entryOffset, little) {
+    const count = view.getUint32(entryOffset + 4, little);
+    if (count > 4) {
+      const valueOffset = tiffStart + view.getUint32(entryOffset + 8, little);
+      let str = '';
+      for (let j = 0; j < count - 1; j++) str += String.fromCharCode(view.getUint8(valueOffset + j));
+      return exifDateToISO(str);
+    }
+    return null;
+  }
+
+  // EXIF dates look like "2026:07:20 14:32:01" — convert to "2026-07-20".
+  function exifDateToISO(str) {
+    const m = str.match(/^(\d{4}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const [, y, mo, d] = m;
+    const iso = `${y}-${mo}-${d}`;
+    if (iso > todayISO) return null; // ignore obviously-wrong future dates (bad camera clocks happen)
+    return iso;
+  }
+
   const photoPicker = document.getElementById('photoPicker');
   const photoInput = document.getElementById('logPhotoInput');
   const photoPreviewRow = document.getElementById('photoPreviewRow');
   const photoPickerLabel = document.getElementById('photoPickerLabel');
+  const photoDateNotice = document.getElementById('photoDateNotice');
   const MAX_PHOTOS = 5;
   let pendingPhotos = [];
+  let dateWasAutoSet = false;
+
+  logDateInput.addEventListener('input', () => {
+    if (!dateWasAutoSet) return; // only relevant if we're the ones who set it
+    dateWasAutoSet = false;
+    photoDateNotice.classList.remove('show');
+  });
 
   function renderPhotoPreviews() {
     photoPreviewRow.innerHTML = '';
@@ -827,9 +920,21 @@
     if (!files.length) return;
     photoPickerLabel.textContent = 'Compressing…';
     try {
+      // Only try to auto-set the date from the first photo of a fresh batch (not
+      // if the person already picked a specific date themselves this session).
+      const isFirstBatch = pendingPhotos.length === 0;
       for (const file of files) {
         const compressed = await compressImage(file);
         pendingPhotos.push(compressed);
+      }
+      if (isFirstBatch && !dateWasAutoSet && logDateInput.value === todayISO) {
+        const exifDate = await extractExifDate(files[0]);
+        if (exifDate) {
+          logDateInput.value = exifDate;
+          dateWasAutoSet = true;
+          photoDateNotice.textContent = `📅 Date set from photo: ${exifDate}`;
+          photoDateNotice.classList.add('show');
+        }
       }
       renderPhotoPreviews();
       updatePhotoLabel();
@@ -845,6 +950,8 @@
     resetDurationInput();
     photoInput.value = '';
     pendingPhotos = [];
+    dateWasAutoSet = false;
+    photoDateNotice.classList.remove('show');
     renderPhotoPreviews();
     updatePhotoLabel();
   }
