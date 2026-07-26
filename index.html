@@ -36,8 +36,8 @@
   .title{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:30px; margin-top:2px; }
   .title em{ font-style:normal; color:var(--moss); }
 
-  .chips{ display:flex; gap:8px; margin-top:14px; }
-  .chip{ background:#F1EEE3; border-radius:999px; padding:7px 14px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  .chips{ display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
+  .chip{ background:#F1EEE3; border-radius:999px; padding:6px 11px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-soft); display:flex; align-items:center; gap:5px; }
   .chip b{ color:var(--ink); }
   .chip.streak{ background:linear-gradient(90deg, #FDEEDF, #FBE2CE); color:var(--coral); }
   .chip.streak b{ color:var(--coral); }
@@ -205,14 +205,19 @@
   .harvest-btn{ margin-top:12px; padding:12px 20px; border-radius:999px; border:none; cursor:pointer;
     background:linear-gradient(135deg,var(--coral),var(--plum)); color:#fff; font-family:'Bricolage Grotesque',sans-serif;
     font-weight:700; font-size:14px; box-shadow:0 10px 20px -8px rgba(140,90,120,0.5); display:none; }
-  .harvest-btn.show{ display:inline-block; }
+  .owned-decor-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .owned-decor{ width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.75); display:flex; align-items:center; justify-content:center; font-size:19px; }
+  .owned-decor-empty{ font-size:12.5px; color:#2A3B1F; background:rgba(255,255,255,0.7); padding:10px 12px; border-radius:12px; }
 
-  .bouquet-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
-  .bouquet-item{ width:52px; display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .bouquet-flower{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:2.5px solid rgba(255,255,255,0.85); }
-  .bouquet-flower svg{ width:80%; height:80%; }
-  .bouquet-date{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#2A3B1F; background:rgba(255,255,255,0.7); padding:1px 5px; border-radius:5px; }
-  .bouquet-empty{ font-size:12.5px; color:#2A3B1F; margin-top:6px; background:rgba(255,255,255,0.75); padding:12px; border-radius:12px; }
+  .shop-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-top:8px; }
+  .shop-item{ background:rgba(255,255,255,0.85); border-radius:14px; padding:12px; text-align:center; }
+  .shop-item.owned{ opacity:0.7; }
+  .shop-icon{ font-size:26px; }
+  .shop-name{ font-size:11.5px; font-weight:700; color:var(--ink); margin:4px 0 8px; }
+  .shop-owned{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--moss); font-weight:700; }
+  .shop-buy{ width:100%; padding:8px; border-radius:10px; border:none; background:var(--moss); color:#fff;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:11.5px; cursor:pointer; }
+  .shop-buy:disabled{ background:#C7C2B4; cursor:not-allowed; }
 
   .search-input{ width:100%; padding:11px 14px; border:1.5px solid #E4E1D6; border-radius:12px; font-family:'Inter'; font-size:14px; background:#FBFAF6; margin-bottom:10px; }
 
@@ -325,8 +330,8 @@
   <div class="welcome-card">
     <div class="welcome-emoji">🌱</div>
     <h2>Welcome to bloom.</h2>
-    <p>This little plant grows every time you two spend real time together — a date, a walk, just being in the same room on purpose. Log it, and it grows. Complete the odd challenge, and it grows faster.</p>
-    <p>When it fully blooms, you harvest it into a bouquet and start a new one — so it keeps changing, not just filling up.</p>
+    <p>Every time you log real time together — a date, a walk, just being in the same room on purpose — a flower blooms right then and there and gets planted in your garden. One entry, one flower, forever.</p>
+    <p>Points from logging (and the odd challenge) become currency to buy little decorations for the garden itself.</p>
     <p>Everything syncs between both your phones. It's just for the two of you.</p>
     <button class="welcome-start" id="welcomeStart">Let's grow something 🌱</button>
   </div>
@@ -340,13 +345,14 @@
     <div class="title">bloom<em>.</em></div>
     <div class="chips">
       <div class="chip streak">🔥 <b id="streakChip">—</b> day streak</div>
-      <div class="chip">🌱 <b id="pointsChip">—</b> pts</div>
+      <div class="chip">🌸 <b id="flowerCountChip">—</b> grown</div>
+      <div class="chip">🪙 <b id="pointsChip">—</b></div>
     </div>
   </div>
 
   <div class="scene-wrap" id="sceneWrap">
-    <div class="aura stage-seed" id="aura"></div>
-    <div class="scene" data-stage="seed" id="scene">
+    <div class="aura stage-budding" id="aura"></div>
+    <div class="scene" data-stage="budding" id="scene">
       <div class="pot"></div>
       <div class="soil"></div>
       <div class="stem" id="stem"></div>
@@ -373,10 +379,8 @@
   </div>
 
   <div class="progress-wrap">
-    <div class="stage-name" id="stageName">Seed</div>
-    <div class="stage-sub" id="stageSub">loading…</div>
-    <div class="bar"><div class="bar-fill" id="barFill"></div></div>
-    <button class="harvest-btn" id="harvestBtn">Add to bouquet 💐</button>
+    <div class="stage-name" id="stageName">Ready to bloom</div>
+    <div class="stage-sub" id="stageSub">Log time together and this becomes today's flower</div>
   </div>
 
   <div class="actionbar">
@@ -502,8 +506,8 @@
   </div>
 
   <div class="garden-page-content">
-    <label>Bouquet</label>
-    <div class="bouquet-grid" id="bouquetGrid"></div>
+    <label>Your decorations</label>
+    <div class="owned-decor-row" id="ownedDecorRow"></div>
 
     <label>The garden bed</label>
     <div class="garden-bed" id="gardenBed"></div>
@@ -511,6 +515,10 @@
       <button class="garden-detail-back" id="gardenDetailBack">← Back to garden</button>
       <div id="gardenDetailContent"></div>
     </div>
+
+    <label>🪙 Garden Shop</label>
+    <p style="margin:0 0 10px;">Spend points earned from logging time and challenges on things for the garden.</p>
+    <div class="shop-grid" id="shopGrid"></div>
   </div>
 </div>
 
@@ -559,9 +567,9 @@
 
 <div class="backdrop" id="menuBackdrop">
   <div class="sheet">
-    <h3>Your garden</h3>
-    <div class="stat-row"><span>Current stage</span><b id="menuStage">Seed</b></div>
-    <div class="stat-row"><span>Total growth points</span><b id="menuPoints">0</b></div>
+    <h3>Your stats</h3>
+    <div class="stat-row"><span>Flowers grown</span><b id="menuFlowers">0</b></div>
+    <div class="stat-row"><span>Points (spendable)</span><b id="menuPoints">0</b></div>
     <div class="stat-row"><span>Streak</span><b id="menuStreak">0 days</b></div>
 
     <label>This week</label>
@@ -571,12 +579,12 @@
       <div class="box"><b id="weekChallenges">0</b><span>Challenges</span></div>
     </div>
 
-    <label>Unlocked decorations</label>
-    <div class="decor-grid" id="decorGrid"></div>
     <div class="anniversary-row" id="anniversaryRow" style="display:none;">
       <div class="icon">💍</div>
-      <div class="txt">Anniversary decoration unlocked — happy anniversary!</div>
+      <div class="txt">Anniversary bonus unlocked this year — happy anniversary!</div>
     </div>
+
+    <p style="margin:14px 0 0;">Want to spend your points on something for the garden? Head to the 🌷 Garden page — the Shop is down at the bottom.</p>
 
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
@@ -595,10 +603,10 @@
 </div>
 
 <script type="module">
-  import { initFirebase, isConfigured, currentStage, currentSpecies, todaysChallenge, watchState, watchLogs,
-           logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback, harvestFlower,
+  import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
+           logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
-           STAGES, SPECIES, DECOR_ICONS, ANNIVERSARY_ICON }
+           purchaseDecoration, SPECIES, DECOR_SHOP }
     from './app.js';
 
   // Injects the species' dark shade as the icon's color (icons use fill="currentColor").
@@ -606,8 +614,7 @@
     return sp.icon.replace('<svg ', `<svg style="color:${sp.dark}" `);
   }
 
-  let latestState = { points: 0, streak: 0, unlockedDecorations: [0], totalHarvests: 0, bouquet: [] };
-  let lastStageKey = null;
+  let latestState = { points: 0, streak: 0, unlockedDecorations: [], totalFlowers: 0 };
   // pendingPhotos array is declared near the photo picker setup below
 
   // Small synthesized chime — no audio file needed. Falls back silently if
@@ -632,14 +639,41 @@
     if (navigator.vibrate) navigator.vibrate(happy ? [30, 40, 30] : 25);
   }
 
-  function celebrateStageUp(name) {
-    playChime(true);
-    const toast = document.createElement('div');
-    toast.className = 'celebrate-toast';
-    toast.textContent = `🎉 Your plant grew to ${name}!`;
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('show'));
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
+  // The core payoff: on a successful log/challenge, the idle bud blooms all
+  // the way to full flower over ~1.5s, then settles back to budding — ready
+  // for next time. The flower itself was already permanently planted in the
+  // garden the moment the save succeeded (that's just how watchLogs works).
+  let blooming = false;
+  function plantBloomAnimation(speciesName) {
+    if (blooming) return;
+    blooming = true;
+    const sceneEl = document.getElementById('scene');
+    const auraEl = document.getElementById('aura');
+    const sequence = ['blooming', 'flourishing'];
+    let i = 0;
+    const step = () => {
+      if (i >= sequence.length) {
+        playChime(true);
+        const toast = document.createElement('div');
+        toast.className = 'celebrate-toast';
+        toast.textContent = `🌸 Today's flower: ${speciesName}!`;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2600);
+
+        setTimeout(() => {
+          sceneEl.setAttribute('data-stage', 'budding');
+          auraEl.className = 'aura stage-budding';
+          blooming = false;
+        }, 2200);
+        return;
+      }
+      sceneEl.setAttribute('data-stage', sequence[i]);
+      auraEl.className = 'aura stage-' + sequence[i];
+      i++;
+      setTimeout(step, 550);
+    };
+    step();
   }
 
   // Scatters up to 4 recent photo memories as small circles around the scene.
@@ -664,43 +698,19 @@
 
   function render(state) {
     latestState = state;
-    const stage = currentStage(state.points || 0);
-    const species = currentSpecies(state.totalHarvests || 0);
-
-    if (lastStageKey && stage.key !== lastStageKey) celebrateStageUp(stage.name);
-    lastStageKey = stage.key;
+    const species = currentSpecies(state.totalFlowers || 0);
 
     const sceneEl = document.getElementById('scene');
-    sceneEl.setAttribute('data-stage', stage.key);
     sceneEl.style.setProperty('--petal-light', species.light);
     sceneEl.style.setProperty('--petal-dark', species.dark);
 
-    document.getElementById('aura').className = 'aura stage-' + stage.key;
-    document.getElementById('stageName').textContent = stage.name + ' · ' + species.name;
     document.getElementById('streakChip').textContent = state.streak || 0;
     document.getElementById('pointsChip').textContent = state.points || 0;
+    document.getElementById('flowerCountChip').textContent = state.totalFlowers || 0;
+    document.getElementById('stageSub').textContent = `Next up: a ${species.name.toLowerCase()}`;
 
-    const harvestBtn = document.getElementById('harvestBtn');
-    harvestBtn.classList.toggle('show', stage.key === 'flourishing');
-
-    renderBouquet(state);
-
-    if (stage.next) {
-      const pct = Math.min(100, Math.round(((state.points - stage.min) / (stage.next - stage.min)) * 100));
-      document.getElementById('barFill').style.width = pct + '%';
-      const nextName = STAGES[STAGES.indexOf(stage) + 1].name;
-      document.getElementById('stageSub').textContent = `${state.points} / ${stage.next} points to ${nextName.toLowerCase()}`;
-    } else {
-      document.getElementById('barFill').style.width = '100%';
-      document.getElementById('stageSub').textContent = 'Fully grown — ready to harvest 🌸';
-    }
+    renderShop(state);
   }
-
-  document.getElementById('harvestBtn').onclick = async () => {
-    await harvestFlower();
-    playChime(true);
-    if (!isConfigured) render(latestState);
-  };
 
   // ---- Duration input: quick chips, or optional start/end time ----
   let pendingHours = 1;
@@ -852,10 +862,11 @@
       return;
     }
     try {
+      const speciesForThis = currentSpecies(latestState.totalFlowers || 0);
       await logTime(pendingHours, activity, date, pendingPhotos);
-      playChime(false);
       logBackdrop.classList.remove('open');
       resetLogSheet();
+      plantBloomAnimation(speciesForThis.name);
       if (!isConfigured) render(latestState);
     } catch (err) {
       // error already shown to the user inside logTime() — just leave the sheet open so they can retry
@@ -868,28 +879,18 @@
   document.getElementById('btnChallenge').onclick = () => challengeBackdrop.classList.add('open');
   document.getElementById('challengeCancel').onclick = () => challengeBackdrop.classList.remove('open');
   document.getElementById('challengeDone').onclick = async () => {
+    const speciesForThis = currentSpecies(latestState.totalFlowers || 0);
     await completeChallenge(currentChallengeText);
-    playChime(true);
     challengeBackdrop.classList.remove('open');
+    plantBloomAnimation(speciesForThis.name);
     if (!isConfigured) render(latestState);
   };
 
   const menuBackdrop = document.getElementById('menuBackdrop');
   document.getElementById('btnMenu').onclick = () => {
-    const stage = currentStage(latestState.points || 0);
-    document.getElementById('menuStage').textContent = stage.name;
+    document.getElementById('menuFlowers').textContent = latestState.totalFlowers || 0;
     document.getElementById('menuPoints').textContent = latestState.points || 0;
     document.getElementById('menuStreak').textContent = (latestState.streak || 0) + ' days';
-
-    const grid = document.getElementById('decorGrid');
-    grid.innerHTML = '';
-    const unlocked = new Set(latestState.unlockedDecorations || [0]);
-    DECOR_ICONS.forEach((icon, i) => {
-      const el = document.createElement('div');
-      el.className = 'decor-item' + (unlocked.has(i) ? '' : ' locked');
-      el.textContent = icon;
-      grid.appendChild(el);
-    });
 
     const currentYear = new Date().toISOString().slice(0, 4);
     document.getElementById('anniversaryRow').style.display =
@@ -906,25 +907,48 @@
   };
   document.getElementById('menuClose').onclick = () => menuBackdrop.classList.remove('open');
 
-  // ---- Garden page (bouquet + meadow) ----
+  // ---- Garden page (shop + meadow) ----
   const gardenPage = document.getElementById('gardenPage');
-  function renderBouquet(state) {
-    const bouquetGrid = document.getElementById('bouquetGrid');
-    const bouquet = state.bouquet || [];
-    if (!bouquet.length) {
-      bouquetGrid.innerHTML = '<div class="bouquet-empty">Grow your first plant to Flourishing and harvest it to start your bouquet.</div>';
-      return;
-    }
-    bouquetGrid.innerHTML = '';
-    [...bouquet].reverse().forEach((item) => {
-      const sp = SPECIES[item.speciesIndex % SPECIES.length];
+  function renderShop(state) {
+    const shopGrid = document.getElementById('shopGrid');
+    if (!shopGrid) return;
+    const owned = new Set(state.unlockedDecorations || []);
+    shopGrid.innerHTML = '';
+    DECOR_SHOP.forEach((item) => {
+      const isOwned = owned.has(item.id);
+      const canAfford = (state.points || 0) >= item.cost;
       const el = document.createElement('div');
-      el.className = 'bouquet-item';
+      el.className = 'shop-item' + (isOwned ? ' owned' : '');
       el.innerHTML = `
-        <div class="bouquet-flower" style="background:#FBF8F0">${iconWithColor(sp)}</div>
-        <div class="bouquet-date">${item.date}</div>`;
-      bouquetGrid.appendChild(el);
+        <div class="shop-icon">${item.icon}</div>
+        <div class="shop-name">${item.name}</div>
+        ${isOwned
+          ? `<div class="shop-owned">Owned</div>`
+          : `<button class="shop-buy" ${canAfford ? '' : 'disabled'} data-id="${item.id}" data-cost="${item.cost}">🪙 ${item.cost}</button>`}
+      `;
+      shopGrid.appendChild(el);
     });
+    shopGrid.querySelectorAll('.shop-buy').forEach((btn) => {
+      btn.onclick = async () => {
+        btn.disabled = true;
+        try {
+          const bought = await purchaseDecoration(btn.dataset.id, parseInt(btn.dataset.cost));
+          if (bought) {
+            playChime(false);
+            if (!isConfigured) render(latestState);
+          }
+        } catch (err) { /* error already alerted */ }
+        finally { btn.disabled = false; }
+      };
+    });
+
+    const ownedRow = document.getElementById('ownedDecorRow');
+    if (ownedRow) {
+      const ownedItems = DECOR_SHOP.filter((d) => owned.has(d.id));
+      ownedRow.innerHTML = ownedItems.length
+        ? ownedItems.map((d) => `<span class="owned-decor">${d.icon}</span>`).join('')
+        : '<span class="owned-decor-empty">Nothing bought yet — check the Shop below.</span>';
+    }
   }
   // ---- Day/night + seasonal theming for the garden scene ----
   const SEASON_PALETTES = {

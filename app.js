@@ -1,16 +1,22 @@
 import { firebaseConfig, COUPLE_ID, ANNIVERSARY_MD } from './firebase-config.js';
 
-export const STAGES = [
-  { key: 'seed', name: 'Seed', min: 0, next: 20 },
-  { key: 'sprout', name: 'Sprout', min: 20, next: 50 },
-  { key: 'budding', name: 'Budding', min: 50, next: 100 },
-  { key: 'blooming', name: 'Blooming', min: 100, next: 200 },
-  { key: 'flourishing', name: 'Flourishing', min: 200, next: null }
-];
+// Stage keys used purely for the plant-bloom animation sequence when you log
+// an entry (seed → ... → flourishing over a couple seconds) — no longer tied
+// to accumulated points. The resting/idle state between entries is "budding".
+export const STAGE_KEYS = ['seed', 'sprout', 'budding', 'blooming', 'flourishing'];
 
-// Regular challenge-unlocked decorations. The anniversary decoration (💍) is
-// separate and tracked with its own flag so it can never be earned any other way.
-export const DECOR_ICONS = ['🦋', '✨', '🌈', '🕯️', '🐝', '🌙', '☀️'];
+// Garden Shop — decorations you buy with points earned from logging time and
+// completing challenges. Purely cosmetic, shown scattered in the garden once owned.
+export const DECOR_SHOP = [
+  { id: 'butterfly', icon: '🦋', name: 'Butterflies', cost: 15 },
+  { id: 'lantern', icon: '🕯️', name: 'Garden lantern', cost: 20 },
+  { id: 'bench', icon: '🪑', name: 'Little bench', cost: 30 },
+  { id: 'lights', icon: '✨', name: 'Fairy lights', cost: 35 },
+  { id: 'birdbath', icon: '⛲', name: 'Birdbath', cost: 40 },
+  { id: 'rainbow', icon: '🌈', name: 'Rainbow', cost: 45 },
+  { id: 'chime', icon: '🎐', name: 'Wind chime', cost: 50 },
+  { id: 'sundial', icon: '☀️', name: 'Sundial', cost: 60 }
+];
 export const ANNIVERSARY_ICON = '💍';
 
 // ---- Botanical icon generator ----
@@ -120,8 +126,8 @@ const lilyIcon = svg(`
   }).join('')}
 `);
 
-// Flower species — cycles each time you harvest a fully-bloomed plant into
-// the bouquet, so the plant you're growing looks different each round.
+// Flower species — cycles by how many flowers have been planted total, so
+// each new entry's flower looks different from the last.
 export const SPECIES = [
   { name: 'Rose', light: '#F0A8AE', dark: '#C63D52', icon: roseIcon },
   { name: 'Peony', light: '#F3C6D9', dark: '#D77FA1', icon: peonyIcon },
@@ -166,11 +172,10 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 function mmdd(dateStr) { return dateStr.slice(5); }
 function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
 
-export function currentStage(points) {
-  return [...STAGES].reverse().find((s) => points >= s.min);
-}
-export function currentSpecies(totalHarvests) {
-  return SPECIES[(totalHarvests || 0) % SPECIES.length];
+// Which species the *next* planted flower will be — cycles by how many
+// flowers have been grown so far, so the plant always previews accurately.
+export function currentSpecies(totalFlowers) {
+  return SPECIES[(totalFlowers || 0) % SPECIES.length];
 }
 export function todaysChallenge() {
   return DEFAULT_CHALLENGES[new Date().getDate() % DEFAULT_CHALLENGES.length];
@@ -190,8 +195,8 @@ export function findFlashback(logs) {
 
 const DEMO_STATE = {
   points: 0, streak: 1, lastActiveDate: null,
-  unlockedDecorations: [0], todayChallengeCompletedDate: null,
-  anniversaryUnlockedYear: null, totalHarvests: 0, bouquet: []
+  unlockedDecorations: [], todayChallengeCompletedDate: null,
+  anniversaryUnlockedYear: null, totalFlowers: 0
 };
 const DEMO_LOGS = [
   { id: 'demo-1', activity: 'Coffee and a walk (demo entry)', hours: 0.7, points: 4, date: todayStr(), photo: null, note: '' }
@@ -251,32 +256,31 @@ async function maybeUnlockAnniversary(data) {
   }
 }
 
-// Harvests a fully-bloomed plant into the bouquet, then starts a new plant
-// (a different species) growing from any leftover points above 200.
-export async function harvestFlower() {
+// Buys a decoration from the Garden Shop with points. Guards against buying
+// something you already own or can't afford.
+export async function purchaseDecoration(decorId, cost) {
   if (!isConfigured) {
-    if (DEMO_STATE.points < 200) return;
-    const speciesIdx = DEMO_STATE.totalHarvests % SPECIES.length;
-    DEMO_STATE.bouquet.push({ speciesIndex: speciesIdx, date: todayStr() });
-    DEMO_STATE.totalHarvests += 1;
-    DEMO_STATE.points = Math.max(0, DEMO_STATE.points - 200);
-    return DEMO_STATE;
+    if (DEMO_STATE.unlockedDecorations.includes(decorId)) return false;
+    if (DEMO_STATE.points < cost) return false;
+    DEMO_STATE.points -= cost;
+    DEMO_STATE.unlockedDecorations.push(decorId);
+    return true;
   }
   try {
     const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
     const snap = await getDoc(ref);
     const data = snap.exists() ? snap.data() : DEMO_STATE;
-    if ((data.points || 0) < 200) return;
-    const speciesIdx = (data.totalHarvests || 0) % SPECIES.length;
-    const newPoints = Math.max(0, data.points - 200);
+    const owned = data.unlockedDecorations || [];
+    if (owned.includes(decorId)) return false;
+    if ((data.points || 0) < cost) return false;
     await setDoc(ref, {
-      points: newPoints,
-      totalHarvests: increment(1),
-      bouquet: arrayUnion({ speciesIndex: speciesIdx, date: todayStr() })
+      points: increment(-cost),
+      unlockedDecorations: arrayUnion(decorId)
     }, { merge: true });
+    return true;
   } catch (err) {
-    console.error('harvestFlower failed:', err);
-    alert('Could not harvest that flower: ' + err.message);
+    console.error('purchaseDecoration failed:', err);
+    alert('Could not buy that: ' + err.message);
     throw err;
   }
 }
@@ -312,6 +316,7 @@ export async function logTime(hours, activity = '', dateStr = null, photos = [])
 
   if (!isConfigured) {
     DEMO_STATE.points += gained;
+    DEMO_STATE.totalFlowers += 1;
     if (entryDate === todayStr()) DEMO_STATE.lastActiveDate = entryDate;
     DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, hours, points: gained, date: entryDate, photos, note: '' });
     return DEMO_STATE;
@@ -323,7 +328,7 @@ export async function logTime(hours, activity = '', dateStr = null, photos = [])
     const data = snap.exists() ? snap.data() : DEMO_STATE;
     const today = todayStr();
 
-    const update = { points: increment(gained) };
+    const update = { points: increment(gained), totalFlowers: increment(1) };
     if (entryDate === today) {
       let streak = data.streak || 1;
       if (data.lastActiveDate) {
@@ -354,7 +359,7 @@ export async function completeChallenge(challengeText = '') {
   if (!isConfigured) {
     if (DEMO_STATE.todayChallengeCompletedDate !== todayStr()) {
       DEMO_STATE.points += 15;
-      DEMO_STATE.unlockedDecorations.push(DEMO_STATE.unlockedDecorations.length % DECOR_ICONS.length);
+      DEMO_STATE.totalFlowers += 1;
       DEMO_STATE.todayChallengeCompletedDate = todayStr();
       DEMO_LOGS.unshift({ id: 'demo-c-' + Date.now(), type: 'challenge', activity: 'Challenge: ' + challengeText, hours: 0, points: 15, date: todayStr(), photo: null, note: '' });
     }
@@ -366,11 +371,10 @@ export async function completeChallenge(challengeText = '') {
     const data = snap.exists() ? snap.data() : DEMO_STATE;
     const today = todayStr();
     if (data.todayChallengeCompletedDate === today) return;
-    const nextDecorIdx = (data.unlockedDecorations?.length || 0) % DECOR_ICONS.length;
     await setDoc(ref, {
       points: increment(15),
-      todayChallengeCompletedDate: today,
-      unlockedDecorations: arrayUnion(nextDecorIdx)
+      totalFlowers: increment(1),
+      todayChallengeCompletedDate: today
     }, { merge: true });
 
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
