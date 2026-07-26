@@ -196,7 +196,7 @@ export function findFlashback(logs) {
 const DEMO_STATE = {
   points: 0, streak: 1, lastActiveDate: null,
   unlockedDecorations: [], todayChallengeCompletedDate: null,
-  anniversaryUnlockedYear: null, totalFlowers: 0
+  anniversaryUnlockedYear: null, totalFlowers: 0, challengeEnabled: true
 };
 const DEMO_LOGS = [
   { id: 'demo-1', activity: 'Coffee and a walk (demo entry)', points: 8, date: todayStr(), photo: null, note: '' }
@@ -258,6 +258,23 @@ async function maybeUnlockAnniversary(data) {
 
 // Buys a decoration from the Garden Shop with points. Guards against buying
 // something you already own or can't afford.
+// Toggles a simple boolean setting (currently just whether the Challenge
+// button is shown) — shared between both phones since it changes the UI itself.
+export async function setSetting(key, value) {
+  if (!isConfigured) {
+    DEMO_STATE[key] = value;
+    return;
+  }
+  try {
+    const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
+    await setDoc(ref, { [key]: value }, { merge: true });
+  } catch (err) {
+    console.error('setSetting failed:', err);
+    alert('Could not save that setting: ' + err.message);
+    throw err;
+  }
+}
+
 export async function purchaseDecoration(decorId, cost) {
   if (!isConfigured) {
     if (DEMO_STATE.unlockedDecorations.includes(decorId)) return false;

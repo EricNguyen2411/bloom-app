@@ -31,7 +31,10 @@
     text-align:center; padding:8px 16px; display:none; }
   .config-banner.show{ display:block; }
 
-  .top{ padding:calc(env(safe-area-inset-top) + 22px) 26px 8px; }
+  .top{ padding:calc(env(safe-area-inset-top) + 22px) 26px 8px; position:relative; }
+  .settings-btn{ position:absolute; top:calc(env(safe-area-inset-top) + 16px); right:20px; background:#F1EEE3;
+    border:none; width:38px; height:38px; border-radius:50%; font-size:16px; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; }
   .eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:2px; color:var(--ink-soft); text-transform:uppercase; }
   .title{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:30px; margin-top:2px; }
   .title em{ font-style:normal; color:var(--moss); }
@@ -77,6 +80,19 @@
     background:var(--plum); opacity:0; transform:scale(0.3); transition:all .7s ease; }
 
   .sparkle{ position:absolute; border-radius:50%; background:var(--gold); opacity:0; transition:all .8s ease; }
+
+  .helper{ position:absolute; right:-6px; bottom:78px; width:60px; height:70px; opacity:0; transform:scale(0.6) translateY(10px);
+    transition:all .5s cubic-bezier(.34,1.4,.4,1); z-index:6; pointer-events:none; }
+  .helper.show{ opacity:1; transform:scale(1) translateY(0); }
+  .helper .can{ animation:none; }
+  .helper.pouring .can{ animation:tiltPour 0.6s ease-in-out infinite alternate; }
+  .helper .drop{ opacity:0; }
+  .helper.pouring .drop{ animation:dropFall 0.7s ease-in infinite; }
+  .helper.pouring .drop1{ animation-delay:0s; }
+  .helper.pouring .drop2{ animation-delay:.2s; }
+  .helper.pouring .drop3{ animation-delay:.4s; }
+  @keyframes tiltPour{ from{ transform:rotate(0deg); } to{ transform:rotate(-18deg); } }
+  @keyframes dropFall{ 0%{ opacity:0; transform:translateY(0); } 20%{ opacity:1; } 100%{ opacity:0; transform:translateY(14px); } }
   .s1{ width:6px; height:6px; bottom:270px; left:calc(50% + 40px); }
   .s2{ width:5px; height:5px; bottom:250px; left:calc(50% - 58px); }
   .s3{ width:7px; height:7px; bottom:290px; left:calc(50% - 20px); background:var(--plum); }
@@ -221,6 +237,16 @@
     font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:11.5px; cursor:pointer; }
   .shop-buy:disabled{ background:#C7C2B4; cursor:not-allowed; }
 
+  .setting-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:8px; }
+  .setting-name{ font-size:13.5px; font-weight:700; color:var(--ink); }
+  .setting-desc{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; line-height:1.4; }
+  .toggle-switch{ flex:0 0 auto; width:46px; height:26px; border-radius:999px; border:none; background:var(--moss);
+    position:relative; cursor:pointer; transition:background .2s ease; }
+  .toggle-switch[aria-checked="false"]{ background:#D8D3C3; }
+  .toggle-knob{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff;
+    box-shadow:0 2px 4px rgba(0,0,0,0.2); transition:left .2s ease; }
+  .toggle-switch[aria-checked="true"] .toggle-knob{ left:23px; }
+
   .search-input{ width:100%; padding:11px 14px; border:1.5px solid #E4E1D6; border-radius:12px; font-family:'Inter'; font-size:14px; background:#FBFAF6; margin-bottom:10px; }
 
   .view-toggle{ display:flex; gap:6px; margin-bottom:10px; }
@@ -332,6 +358,7 @@
   <div class="config-banner" id="configBanner">demo mode — connect Firebase in firebase-config.js to sync between phones</div>
 
   <div class="top">
+    <button class="settings-btn" id="btnSettings">⚙️</button>
     <div class="eyebrow">for her</div>
     <div class="title">bloom<em>.</em></div>
     <div class="chips">
@@ -357,6 +384,23 @@
         <div class="flower-center"></div>
       </div>
       <div class="sparkle s1"></div><div class="sparkle s2"></div><div class="sparkle s3"></div>
+      <div class="helper" id="helperChar">
+        <svg viewBox="0 0 60 70">
+          <ellipse cx="28" cy="42" rx="17" ry="19" fill="#A8D97A" stroke="#2A1B12" stroke-opacity="0.15" stroke-width="1"/>
+          <circle cx="22.5" cy="36" r="2" fill="#2A1B12"/>
+          <circle cx="33.5" cy="36" r="2" fill="#2A1B12"/>
+          <g class="can" style="transform-origin:46px 38px;">
+            <rect x="38" y="32" width="13" height="9" rx="3" fill="#7A8B6C"/>
+            <path d="M51,34 L59,28" stroke="#7A8B6C" stroke-width="3" stroke-linecap="round"/>
+            <path d="M42,28 Q45,22 48,28" stroke="#7A8B6C" stroke-width="2.2" fill="none"/>
+          </g>
+          <g class="drops">
+            <circle class="drop drop1" cx="57" cy="30" r="1.5" fill="#8FB3CC"/>
+            <circle class="drop drop2" cx="60" cy="34" r="1.3" fill="#8FB3CC"/>
+            <circle class="drop drop3" cx="55" cy="36" r="1.2" fill="#8FB3CC"/>
+          </g>
+        </svg>
+      </div>
     </div>
     <div id="photoDots"></div>
   </div>
@@ -380,7 +424,6 @@
     <button class="action" id="btnGarden"><div class="action-icon">🌷</div><div class="action-label">Garden</div></button>
     <button class="action" id="btnMemories"><div class="action-icon">📷</div><div class="action-label">Memories</div></button>
     <button class="action" id="btnBucket"><div class="action-icon">💡</div><div class="action-label">Ideas</div></button>
-    <button class="action" id="btnMenu"><div class="action-icon">☰</div><div class="action-label">Stats</div></button>
   </div>
 </div>
 
@@ -545,7 +588,7 @@
 
 <div class="backdrop" id="menuBackdrop">
   <div class="sheet">
-    <h3>Your stats</h3>
+    <h3>Settings</h3>
     <div class="stat-row"><span>Flowers grown</span><b id="menuFlowers">0</b></div>
     <div class="stat-row"><span>Points (spendable)</span><b id="menuPoints">0</b></div>
     <div class="stat-row"><span>Streak</span><b id="menuStreak">0 days</b></div>
@@ -563,6 +606,15 @@
     </div>
 
     <p style="margin:14px 0 0;">Want to spend your points on something for the garden? Head to the 🌷 Garden page — the Shop is down at the bottom.</p>
+
+    <label>App settings</label>
+    <div class="setting-row">
+      <div>
+        <div class="setting-name">Daily Challenge button</div>
+        <div class="setting-desc">Turn off if you're not using this yet — hides it from the home screen for both of you.</div>
+      </div>
+      <button class="toggle-switch" id="toggleChallenge" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
+    </div>
 
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
@@ -584,7 +636,7 @@
   import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
-           purchaseDecoration, SPECIES, DECOR_SHOP }
+           purchaseDecoration, setSetting, SPECIES, DECOR_SHOP }
     from './app.js';
 
   // Injects the species' dark shade as the icon's color (icons use fill="currentColor").
@@ -628,8 +680,13 @@
     blooming = true;
     const sceneEl = document.getElementById('scene');
     const auraEl = document.getElementById('aura');
+    const helperEl = document.getElementById('helperChar');
     const sequence = ['sprout', 'budding', 'blooming', 'flourishing'];
     let i = 0;
+
+    helperEl.classList.add('show');
+    setTimeout(() => helperEl.classList.add('pouring'), 150);
+
     const step = () => {
       if (i >= sequence.length) {
         playChime(true);
@@ -649,6 +706,11 @@
       }
       sceneEl.setAttribute('data-stage', sequence[i]);
       auraEl.className = 'aura stage-' + sequence[i];
+      // The little gardener finishes watering once the sprout is up, then steps back for the bloom.
+      if (sequence[i] === 'budding') {
+        helperEl.classList.remove('pouring');
+        helperEl.classList.remove('show');
+      }
       i++;
       setTimeout(step, 500);
     };
@@ -720,6 +782,8 @@
     document.getElementById('pointsChip').textContent = state.points || 0;
     document.getElementById('flowerCountChip').textContent = state.totalFlowers || 0;
     document.getElementById('stageSub').textContent = `Next up: a ${species.name.toLowerCase()}`;
+
+    document.getElementById('btnChallenge').style.display = state.challengeEnabled === false ? 'none' : '';
 
     renderShop(state);
   }
@@ -928,7 +992,8 @@
   };
 
   const menuBackdrop = document.getElementById('menuBackdrop');
-  document.getElementById('btnMenu').onclick = () => {
+  const toggleChallengeBtn = document.getElementById('toggleChallenge');
+  document.getElementById('btnSettings').onclick = () => {
     document.getElementById('menuFlowers').textContent = latestState.totalFlowers || 0;
     document.getElementById('menuPoints').textContent = latestState.points || 0;
     document.getElementById('menuStreak').textContent = (latestState.streak || 0) + ' days';
@@ -944,9 +1009,22 @@
     document.getElementById('weekPoints').textContent = thisWeek.reduce((sum, l) => sum + (l.points || 0), 0);
     document.getElementById('weekChallenges').textContent = thisWeek.filter((l) => l.type === 'challenge').length;
 
+    toggleChallengeBtn.setAttribute('aria-checked', latestState.challengeEnabled !== false ? 'true' : 'false');
+
     menuBackdrop.classList.add('open');
   };
   document.getElementById('menuClose').onclick = () => menuBackdrop.classList.remove('open');
+
+  toggleChallengeBtn.onclick = async () => {
+    const newValue = toggleChallengeBtn.getAttribute('aria-checked') !== 'true';
+    toggleChallengeBtn.setAttribute('aria-checked', newValue ? 'true' : 'false'); // optimistic, feels instant
+    try {
+      await setSetting('challengeEnabled', newValue);
+      if (!isConfigured) render(latestState);
+    } catch (err) {
+      toggleChallengeBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false'); // revert on failure
+    }
+  };
 
   // ---- Garden page (shop + meadow) ----
   const gardenPage = document.getElementById('gardenPage');
@@ -1108,7 +1186,7 @@
 
         docPdf.setFontSize(9);
         docPdf.setTextColor(150, 100, 70);
-        docPdf.text(log.date + (log.backfilled ? '  ·  backfilled' : ''), margin, y);
+        docPdf.text(log.date, margin, y);
         y += 5;
 
         docPdf.setFontSize(13);
@@ -1241,7 +1319,7 @@
     card.innerHTML = `
       ${thumb}
       <div class="memory-body">
-        <div class="memory-date">${dateStr}${log.backfilled ? ' · backfilled' : ''}</div>
+        <div class="memory-date">${dateStr}</div>
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
         <div class="memory-meta">+${log.points} pts</div>
         ${galleryHtml}
