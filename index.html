@@ -221,9 +221,39 @@
 
   .export-btn{ width:100%; margin-top:14px; padding:12px; border-radius:14px; border:1.5px solid var(--moss); background:none;
     color:var(--moss); font-family:'Inter'; font-weight:700; font-size:13.5px; cursor:pointer; }
+
+  .memory-actions{ display:flex; gap:12px; margin-top:5px; }
+  .memory-actions button{ background:none; border:none; padding:0; font-size:11px; font-weight:700; cursor:pointer; }
+  .memory-edit-btn{ color:var(--ink-soft); }
+  .memory-delete-btn{ color:#C1432E; }
+  .memory-edit-input{ display:flex; gap:6px; margin-top:5px; }
+  .memory-edit-input input{ flex:1; padding:7px 10px; border:1.5px solid #E4E1D6; border-radius:8px; font-family:'Inter'; font-size:12.5px; }
+  .memory-edit-input button{ padding:0 12px; border-radius:8px; border:none; background:var(--moss); color:#fff; font-weight:700; font-size:11.5px; cursor:pointer; }
+
+  .welcome-overlay{ position:fixed; inset:0; background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom)); z-index:80;
+    display:flex; align-items:center; justify-content:center; padding:30px; }
+  .welcome-overlay.hide{ display:none; }
+  .welcome-card{ max-width:340px; text-align:center; }
+  .welcome-emoji{ font-size:48px; }
+  .welcome-card h2{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px; margin:10px 0 6px; }
+  .welcome-card p{ font-size:14px; color:var(--ink-soft); line-height:1.6; margin:0 0 10px; }
+  .welcome-start{ margin-top:14px; padding:14px 28px; border-radius:999px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--lime),var(--moss)); color:#fff; font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:700; font-size:15px; box-shadow:0 12px 24px -8px rgba(79,122,74,0.4); }
 </style>
 </head>
 <body>
+<div class="welcome-overlay" id="welcomeOverlay">
+  <div class="welcome-card">
+    <div class="welcome-emoji">🌱</div>
+    <h2>Welcome to bloom.</h2>
+    <p>This little plant grows every time you two spend real time together — a date, a walk, just being in the same room on purpose. Log it, and it grows. Complete the odd challenge, and it grows faster.</p>
+    <p>When it fully blooms, you harvest it into a bouquet and start a new one — so it keeps changing, not just filling up.</p>
+    <p>Everything syncs between both your phones. It's just for the two of you.</p>
+    <button class="welcome-start" id="welcomeStart">Let's grow something 🌱</button>
+  </div>
+</div>
+
 <div class="app">
   <div class="config-banner" id="configBanner">demo mode — connect Firebase in firebase-config.js to sync between phones</div>
 
@@ -380,7 +410,7 @@
 
 <script type="module">
   import { initFirebase, isConfigured, currentStage, currentSpecies, todaysChallenge, watchState, watchLogs,
-           logTime, completeChallenge, addNoteToLog, compressImage, findFlashback, harvestFlower,
+           logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback, harvestFlower,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem,
            STAGES, SPECIES, DECOR_ICONS, ANNIVERSARY_ICON }
     from './app.js';
@@ -697,11 +727,48 @@
         ${thumb}
         <div class="memory-body">
           <div class="memory-date">${dateStr}${log.backfilled ? ' · backfilled' : ''}</div>
-          <div class="memory-activity">${log.activity || 'Time together'}</div>
+          <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
           <div class="memory-meta">${log.hours ? log.hours + ' hr' + (log.hours === 1 ? '' : 's') + ' · ' : ''}+${log.points} pts</div>
           <div class="note-slot">${noteHtml}</div>
+          <div class="memory-actions">
+            <button class="memory-edit-btn" data-id="${log.id}">Edit</button>
+            <button class="memory-delete-btn" data-id="${log.id}">Delete</button>
+          </div>
         </div>`;
       memoryList.appendChild(card);
+    });
+
+    memoryList.querySelectorAll('.memory-edit-btn').forEach((btn) => {
+      btn.onclick = () => {
+        const body = btn.closest('.memory-body');
+        const activityEl = body.querySelector('.memory-activity');
+        const currentText = activityEl.textContent;
+        const actionsEl = body.querySelector('.memory-actions');
+        actionsEl.style.display = 'none';
+        const editRow = document.createElement('div');
+        editRow.className = 'memory-edit-input';
+        editRow.innerHTML = `<input type="text" value="${currentText.replace(/"/g, '&quot;')}"><button>Save</button>`;
+        body.insertBefore(editRow, actionsEl);
+        const input = editRow.querySelector('input');
+        input.focus();
+        editRow.querySelector('button').onclick = async () => {
+          const newText = input.value.trim();
+          if (!newText) return;
+          try {
+            await editLog(btn.dataset.id, newText);
+            activityEl.textContent = newText;
+            editRow.remove();
+            actionsEl.style.display = 'flex';
+          } catch (err) { /* error already alerted */ }
+        };
+      };
+    });
+
+    memoryList.querySelectorAll('.memory-delete-btn').forEach((btn) => {
+      btn.onclick = async () => {
+        if (!confirm('Delete this memory? This can\'t be undone. (The plant keeps the growth it already earned.)')) return;
+        try { await deleteLog(btn.dataset.id); } catch (err) { /* error already alerted */ }
+      };
     });
 
     memoryList.querySelectorAll('.memory-add-note').forEach((btn) => {
@@ -784,6 +851,16 @@
     bucketInput.value = '';
   };
   bucketInput.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('bucketAddBtn').click(); };
+
+  // ---- First-open welcome screen (per-device, via localStorage) ----
+  const welcomeOverlay = document.getElementById('welcomeOverlay');
+  if (localStorage.getItem('bloom_welcomed') === 'true') {
+    welcomeOverlay.classList.add('hide');
+  }
+  document.getElementById('welcomeStart').onclick = () => {
+    localStorage.setItem('bloom_welcomed', 'true');
+    welcomeOverlay.classList.add('hide');
+  };
 
   async function boot() {
     await initFirebase();

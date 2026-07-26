@@ -280,6 +280,41 @@ export async function addNoteToLog(logId, note) {
   }
 }
 
+// Deletes a memory entry. Note: this does NOT reverse the growth points it
+// already earned — the plant keeps what it grew, this just removes the
+// record from the gallery (e.g. for a duplicate or a mistaken entry).
+export async function deleteLog(logId) {
+  if (!isConfigured) {
+    const idx = DEMO_LOGS.findIndex((l) => l.id === logId);
+    if (idx >= 0) DEMO_LOGS.splice(idx, 1);
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`));
+  } catch (err) {
+    console.error('deleteLog failed:', err);
+    alert('Could not delete that entry: ' + err.message);
+    throw err;
+  }
+}
+
+// Edits the activity description of an existing memory entry (hours/points
+// are left alone to avoid re-triggering streak logic).
+export async function editLog(logId, activity) {
+  if (!isConfigured) {
+    const entry = DEMO_LOGS.find((l) => l.id === logId);
+    if (entry) entry.activity = activity;
+    return;
+  }
+  try {
+    await setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), { activity }, { merge: true });
+  } catch (err) {
+    console.error('editLog failed:', err);
+    alert('Could not save that edit: ' + err.message);
+    throw err;
+  }
+}
+
 // ---- Bucket list (shared future date ideas) ----
 export function watchBucketList(renderFn) {
   if (!isConfigured) { renderFn(DEMO_BUCKET); return; }
