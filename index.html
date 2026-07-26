@@ -146,8 +146,17 @@
   .photo-picker{ margin-top:6px; border:1.5px dashed #D8D3C3; border-radius:14px; padding:14px; text-align:center; cursor:pointer; background:#FBFAF6; }
   .photo-picker input{ display:none; }
   .photo-picker-label{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
-  .photo-preview{ margin-top:10px; width:100%; max-height:160px; object-fit:cover; border-radius:12px; display:none; }
-  .photo-preview.show{ display:block; }
+
+  .photo-preview-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .photo-preview-thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; }
+  .photo-preview-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .photo-preview-remove{ position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(20,20,20,0.65);
+    color:#fff; border:none; font-size:11px; line-height:18px; padding:0; cursor:pointer; }
+
+  .photo-count-badge{ position:absolute; bottom:2px; right:2px; background:rgba(20,20,20,0.72); color:#fff;
+    font-family:'IBM Plex Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:6px; z-index:3; }
+  .memory-gallery{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .memory-gallery img{ width:44px; height:44px; border-radius:8px; object-fit:cover; cursor:pointer; }
 
   .memory-list{ max-height:60vh; overflow-y:auto; margin-top:6px; }
   .memory-card{ display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #F0EDE2; }
@@ -403,12 +412,12 @@
     <label>Date</label>
     <input type="date" id="logDateInput">
     <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
-    <label>Photo (optional)</label>
+    <label>Photos (optional, up to 5)</label>
     <div class="photo-picker" id="photoPicker">
-      <input type="file" id="logPhotoInput" accept="image/*">
-      <span class="photo-picker-label" id="photoPickerLabel">Tap to take a photo or choose from your library</span>
-      <img class="photo-preview" id="photoPreview">
+      <input type="file" id="logPhotoInput" accept="image/*" multiple>
+      <span class="photo-picker-label" id="photoPickerLabel">Tap to add photos from this date</span>
     </div>
+    <div class="photo-preview-row" id="photoPreviewRow"></div>
     <div class="sheet-actions">
       <button class="btn-cancel" id="logCancel">Cancel</button>
       <button class="btn-confirm" id="logSave">Water it</button>
@@ -571,6 +580,14 @@
 
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
+    <label>Data backup</label>
+    <p style="margin:0 0 8px;">A full backup of everything — points, streak, every memory, notes, photos, bucket list. Keep this somewhere safe; it's the real way to make sure nothing's ever lost, separate from the pretty PDF above.</p>
+    <div style="display:flex; gap:10px;">
+      <button class="export-btn" id="backupExportBtn" style="margin-top:0;">⬇️ Backup (JSON)</button>
+      <button class="export-btn" id="backupImportBtn" style="margin-top:0;">⬆️ Restore</button>
+      <input type="file" id="backupImportInput" accept="application/json" style="display:none;">
+    </div>
+
     <div class="sheet-actions">
       <button class="btn-confirm" id="menuClose">Close</button>
     </div>
@@ -580,7 +597,7 @@
 <script type="module">
   import { initFirebase, isConfigured, currentStage, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback, harvestFlower,
-           watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem,
+           watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
            STAGES, SPECIES, DECOR_ICONS, ANNIVERSARY_ICON }
     from './app.js';
 
@@ -591,7 +608,7 @@
 
   let latestState = { points: 0, streak: 0, unlockedDecorations: [0], totalHarvests: 0, bouquet: [] };
   let lastStageKey = null;
-  let pendingPhoto = null; // compressed base64 data-url, or null
+  // pendingPhotos array is declared near the photo picker setup below
 
   // Small synthesized chime — no audio file needed. Falls back silently if
   // Web Audio isn't available (never throws, never blocks the UI).
@@ -633,12 +650,12 @@
   function renderPhotoDots(logs) {
     const wrap = document.getElementById('photoDots');
     const sceneWrap = document.getElementById('sceneWrap');
-    const withPhotos = logs.filter((l) => l.photo).slice(0, 4);
+    const withPhotos = logs.filter((l) => getPhotos(l).length).slice(0, 4);
     wrap.innerHTML = '';
     withPhotos.forEach((log, i) => {
       const img = document.createElement('img');
       img.className = 'photo-dot';
-      img.src = log.photo;
+      img.src = getPhotos(log)[0];
       Object.assign(img.style, { position: 'absolute', ...DOT_POSITIONS[i] });
       wrap.appendChild(img);
     });
@@ -759,33 +776,67 @@
 
   const photoPicker = document.getElementById('photoPicker');
   const photoInput = document.getElementById('logPhotoInput');
-  const photoPreview = document.getElementById('photoPreview');
+  const photoPreviewRow = document.getElementById('photoPreviewRow');
   const photoPickerLabel = document.getElementById('photoPickerLabel');
+  const MAX_PHOTOS = 5;
+  let pendingPhotos = [];
 
-  photoPicker.onclick = () => photoInput.click();
+  function renderPhotoPreviews() {
+    photoPreviewRow.innerHTML = '';
+    pendingPhotos.forEach((src, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'photo-preview-thumb';
+      thumb.innerHTML = `<img src="${src}"><button class="photo-preview-remove" data-i="${i}">✕</button>`;
+      photoPreviewRow.appendChild(thumb);
+    });
+    photoPreviewRow.querySelectorAll('.photo-preview-remove').forEach((btn) => {
+      btn.onclick = () => {
+        pendingPhotos.splice(parseInt(btn.dataset.i), 1);
+        renderPhotoPreviews();
+        updatePhotoLabel();
+      };
+    });
+  }
+
+  function updatePhotoLabel() {
+    if (!pendingPhotos.length) {
+      photoPickerLabel.textContent = 'Tap to add photos from this date';
+    } else if (pendingPhotos.length >= MAX_PHOTOS) {
+      photoPickerLabel.textContent = `${pendingPhotos.length} photos added (max reached)`;
+    } else {
+      photoPickerLabel.textContent = `${pendingPhotos.length} photo${pendingPhotos.length === 1 ? '' : 's'} added — tap to add more`;
+    }
+  }
+
+  photoPicker.onclick = () => {
+    if (pendingPhotos.length >= MAX_PHOTOS) return;
+    photoInput.click();
+  };
   photoInput.onchange = async () => {
-    const file = photoInput.files[0];
-    if (!file) return;
+    const files = Array.from(photoInput.files || []).slice(0, MAX_PHOTOS - pendingPhotos.length);
+    if (!files.length) return;
     photoPickerLabel.textContent = 'Compressing…';
     try {
-      pendingPhoto = await compressImage(file);
-      photoPreview.src = pendingPhoto;
-      photoPreview.classList.add('show');
-      photoPickerLabel.textContent = 'Tap to change photo';
+      for (const file of files) {
+        const compressed = await compressImage(file);
+        pendingPhotos.push(compressed);
+      }
+      renderPhotoPreviews();
+      updatePhotoLabel();
     } catch (err) {
       alert('Could not process that photo: ' + err.message);
-      photoPickerLabel.textContent = 'Tap to take a photo or choose from your library';
+      updatePhotoLabel();
     }
+    photoInput.value = '';
   };
 
   function resetLogSheet() {
     document.getElementById('logActivity').value = '';
     resetDurationInput();
     photoInput.value = '';
-    photoPreview.classList.remove('show');
-    photoPreview.src = '';
-    photoPickerLabel.textContent = 'Tap to take a photo or choose from your library';
-    pendingPhoto = null;
+    pendingPhotos = [];
+    renderPhotoPreviews();
+    updatePhotoLabel();
   }
 
   document.getElementById('btnLog').onclick = () => {
@@ -801,7 +852,7 @@
       return;
     }
     try {
-      await logTime(pendingHours, activity, date, pendingPhoto);
+      await logTime(pendingHours, activity, date, pendingPhotos);
       playChime(false);
       logBackdrop.classList.remove('open');
       resetLogSheet();
@@ -985,7 +1036,9 @@
       const ordered = [...latestLogs].reverse(); // oldest first
       let y = margin;
       ordered.forEach((log) => {
-        const blockHeight = log.photo ? 62 : 26;
+        const photos = getPhotos(log);
+        const photoRowHeight = photos.length ? 30 : 0;
+        const blockHeight = 26 + photoRowHeight;
         if (y + blockHeight > pageH - margin) { docPdf.addPage(); y = margin; }
 
         docPdf.setFontSize(9);
@@ -998,11 +1051,15 @@
         docPdf.text(log.activity || 'Time together', margin, y);
         y += 6;
 
-        if (log.photo) {
-          try {
-            docPdf.addImage(log.photo, 'JPEG', margin, y, 50, 50);
-          } catch (e) { /* skip image if it fails to embed */ }
-          y += 54;
+        if (photos.length) {
+          const size = 26;
+          const gap = 3;
+          photos.slice(0, 4).forEach((p, i) => {
+            try {
+              docPdf.addImage(p, 'JPEG', margin + i * (size + gap), y, size, size);
+            } catch (e) { /* skip image if it fails to embed */ }
+          });
+          y += size + 4;
         }
 
         if (log.note) {
@@ -1022,6 +1079,53 @@
     } finally {
       btn.textContent = 'Export memories as PDF';
       btn.disabled = false;
+    }
+  };
+
+  // ---- Full data backup (export/import) — the real "nothing is lost" safety net ----
+  document.getElementById('backupExportBtn').onclick = async () => {
+    const btn = document.getElementById('backupExportBtn');
+    const original = btn.textContent;
+    btn.textContent = '⏳ Gathering…';
+    btn.disabled = true;
+    try {
+      const data = await exportBackup();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url; a.download = `bloom-backup-${stamp}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Backup export failed:', err);
+      alert('Could not create the backup: ' + err.message);
+    } finally {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  };
+
+  const backupImportInput = document.getElementById('backupImportInput');
+  document.getElementById('backupImportBtn').onclick = () => backupImportInput.click();
+  backupImportInput.onchange = async () => {
+    const file = backupImportInput.files[0];
+    if (!file) return;
+    if (!confirm('This will merge the backup file into your current garden (matching entries update in place, nothing is duplicated). Continue?')) {
+      backupImportInput.value = '';
+      return;
+    }
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const count = await importBackup(data);
+      alert(`Restored ${count} item(s) from the backup.`);
+    } catch (err) {
+      console.error('Backup import failed:', err);
+      alert('Could not restore that backup: ' + err.message);
+    } finally {
+      backupImportInput.value = '';
     }
   };
 
@@ -1059,9 +1163,13 @@
     card.className = 'memory-card';
     const d = new Date(log.date + 'T00:00:00');
     const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-    const thumb = log.photo
-      ? `<img class="memory-thumb" src="${log.photo}">`
+    const photos = getPhotos(log);
+    const thumb = photos.length
+      ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${photos[0]}">${photos.length > 1 ? `<div class="photo-count-badge">+${photos.length - 1}</div>` : ''}</div>`
       : `<div class="memory-thumb-empty">${log.type === 'challenge' ? '✦' : '🌿'}</div>`;
+    const galleryHtml = photos.length > 1
+      ? `<div class="memory-gallery">${photos.map((p) => `<img src="${p}">`).join('')}</div>`
+      : '';
     const noteHtml = log.note
       ? `<div class="memory-note">${log.note}</div>`
       : `<button class="memory-add-note" data-id="${log.id}">+ Add a note</button>`;
@@ -1071,12 +1179,17 @@
         <div class="memory-date">${dateStr}${log.backfilled ? ' · backfilled' : ''}</div>
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
         <div class="memory-meta">${log.hours ? log.hours + ' hr' + (log.hours === 1 ? '' : 's') + ' · ' : ''}+${log.points} pts</div>
+        ${galleryHtml}
         <div class="note-slot">${noteHtml}</div>
         <div class="memory-actions">
           <button class="memory-edit-btn" data-id="${log.id}">Edit</button>
           <button class="memory-delete-btn" data-id="${log.id}">Delete</button>
         </div>
       </div>`;
+
+    card.querySelectorAll('.memory-gallery img').forEach((img) => {
+      img.onclick = () => { photoPeekImg.src = img.src; photoPeek.classList.add('show'); setTimeout(() => photoPeek.classList.remove('show'), 1800); };
+    });
 
     card.querySelector('.memory-edit-btn').onclick = () => {
       const body = card.querySelector('.memory-body');
@@ -1169,8 +1282,9 @@
         const sp = SPECIES[speciesIdx % SPECIES.length];
         const d = new Date(log.date + 'T00:00:00');
         const shortDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
-        const bloomInner = log.photo
-          ? `<img class="meadow-bloom-photo" src="${log.photo}">`
+        const photos = getPhotos(log);
+        const bloomInner = photos.length
+          ? `<img class="meadow-bloom-photo" src="${photos[0]}">`
           : iconWithColor(sp);
 
         const flower = document.createElement('div');
@@ -1180,11 +1294,12 @@
           <div class="meadow-bloom" style="background:linear-gradient(160deg,${sp.light},${sp.dark})">
             ${bloomInner}
             ${log.type === 'challenge' ? '<div class="meadow-badge">✦</div>' : ''}
+            ${photos.length > 1 ? `<div class="photo-count-badge">+${photos.length - 1}</div>` : ''}
           </div>
           <div class="meadow-stem" style="height:${ROW_STEM_H[i]}px"></div>
           <div class="meadow-date">${shortDate}</div>`;
 
-        // Long-press (hold ~350ms) previews the photo full-size; a normal tap opens the memory.
+        // Long-press (hold ~350ms) previews the first photo full-size; a normal tap opens the memory.
         let pressTimer = null;
         let longPressFired = false;
         const openDetail = () => {
@@ -1195,10 +1310,10 @@
         };
         flower.addEventListener('pointerdown', () => {
           longPressFired = false;
-          if (!log.photo) return;
+          if (!photos.length) return;
           pressTimer = setTimeout(() => {
             longPressFired = true;
-            photoPeekImg.src = log.photo;
+            photoPeekImg.src = photos[0];
             photoPeek.classList.add('show');
           }, 350);
         });
@@ -1235,8 +1350,9 @@
     const label = daysAgo === 365 ? 'a year ago' : daysAgo === 30 ? 'a month ago' : 'a week ago';
     document.getElementById('flashbackText').textContent = `${label}: ${log.activity || 'time together'}`;
     const thumbWrap = document.getElementById('flashbackThumbWrap');
-    thumbWrap.innerHTML = log.photo
-      ? `<img src="${log.photo}">`
+    const flashbackPhotos = getPhotos(log);
+    thumbWrap.innerHTML = flashbackPhotos.length
+      ? `<img src="${flashbackPhotos[0]}">`
       : `<div class="flashback-icon">✨</div>`;
     flashbackEl.classList.add('show');
     flashbackEl.onclick = () => memoriesBackdrop.classList.add('open');

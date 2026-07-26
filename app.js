@@ -71,8 +71,8 @@ const DEFAULT_CHALLENGES = [
 ];
 
 const isConfigured = firebaseConfig.apiKey !== "REPLACE_ME";
-let db, addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc,
-    arrayUnion, increment, query, orderBy, limit;
+let db, addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
+    arrayUnion, increment, query, orderBy, limit, writeBatch;
 
 async function initFirebase() {
   if (!isConfigured) return false;
@@ -84,8 +84,8 @@ async function initFirebase() {
   const auth = authMod.getAuth(app);
   await authMod.signInAnonymously(auth);
   db = fsMod.getFirestore(app);
-  ({ addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc,
-     arrayUnion, increment, query, orderBy, limit } = fsMod);
+  ({ addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
+     arrayUnion, increment, query, orderBy, limit, writeBatch } = fsMod);
   return true;
 }
 
@@ -219,18 +219,28 @@ export function watchLogs(renderFn, max = 200) {
   );
 }
 
-export async function logTime(hours, activity = '', dateStr = null, photo = null) {
+// Normalizes a log entry's photos into an array, whether it was saved with
+// the old single "photo" field or the newer "photos" array — so nothing
+// written before this update breaks.
+export function getPhotos(log) {
+  if (log.photos && log.photos.length) return log.photos;
+  if (log.photo) return [log.photo];
+  return [];
+}
+
+export async function logTime(hours, activity = '', dateStr = null, photos = []) {
   const entryDate = dateStr || todayStr();
   const gained = Math.max(4, Math.min(12, Math.round(hours * 6)));
 
-  if (photo && photo.length > 900000) {
-    throw new Error('That photo is too large even after compression — try a different one.');
+  const totalSize = photos.reduce((sum, p) => sum + p.length, 0);
+  if (totalSize > 900000) {
+    throw new Error('Those photos are too large together even after compression — try removing one or two.');
   }
 
   if (!isConfigured) {
     DEMO_STATE.points += gained;
     if (entryDate === todayStr()) DEMO_STATE.lastActiveDate = entryDate;
-    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, hours, points: gained, date: entryDate, photo: photo || null, note: '' });
+    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, hours, points: gained, date: entryDate, photos, note: '' });
     return DEMO_STATE;
   }
 
@@ -257,7 +267,7 @@ export async function logTime(hours, activity = '', dateStr = null, photo = null
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
       type: 'log', hours, activity, points: gained,
       date: entryDate, backfilled: entryDate !== today,
-      photo: photo || null, note: '',
+      photos, note: '',
       createdAt: serverTimestamp()
     });
   } catch (err) {
@@ -401,6 +411,67 @@ export async function deleteBucketItem(id) {
   } catch (err) {
     console.error('deleteBucketItem failed:', err);
   }
+}
+
+// ---- Full data backup (export/import) ----
+// This is a complete, lossless snapshot — unlike watchLogs(), which caps at
+// a limited number for performance, this fetches everything, unlimited,
+// specifically so nothing is left out of a backup.
+export async function exportBackup() {
+  if (!isConfigured) {
+    return {
+      exportedAt: new Date().toISOString(),
+      state: DEMO_STATE,
+      logs: DEMO_LOGS,
+      bucketlist: DEMO_BUCKET
+    };
+  }
+  const stateSnap = await getDoc(doc(db, `couples/${COUPLE_ID}/state/current`));
+  const logsSnap = await getDocs(collection(db, `couples/${COUPLE_ID}/logs`));
+  const bucketSnap = await getDocs(collection(db, `couples/${COUPLE_ID}/bucketlist`));
+
+  return {
+    exportedAt: new Date().toISOString(),
+    coupleId: COUPLE_ID,
+    state: stateSnap.exists() ? stateSnap.data() : {},
+    logs: logsSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+    bucketlist: bucketSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  };
+}
+
+// Restores a backup produced by exportBackup(). Uses each item's original ID
+// so importing the same file twice merges cleanly instead of duplicating.
+export async function importBackup(data) {
+  if (!isConfigured) {
+    throw new Error('Firebase isn\'t configured yet, so there\'s nothing to import into. See README.md.');
+  }
+  if (!data || typeof data !== 'object' || !Array.isArray(data.logs)) {
+    throw new Error('That doesn\'t look like a valid bloom backup file.');
+  }
+
+  const batch = writeBatch(db);
+  let opCount = 0;
+
+  if (data.state && typeof data.state === 'object') {
+    batch.set(doc(db, `couples/${COUPLE_ID}/state/current`), data.state, { merge: true });
+    opCount++;
+  }
+  (data.logs || []).forEach((log) => {
+    if (!log.id) return;
+    const { id, ...rest } = log;
+    batch.set(doc(db, `couples/${COUPLE_ID}/logs/${id}`), rest, { merge: true });
+    opCount++;
+  });
+  (data.bucketlist || []).forEach((item) => {
+    if (!item.id) return;
+    const { id, ...rest } = item;
+    batch.set(doc(db, `couples/${COUPLE_ID}/bucketlist/${id}`), rest, { merge: true });
+    opCount++;
+  });
+
+  if (opCount === 0) throw new Error('That backup file had nothing in it to restore.');
+  await batch.commit();
+  return opCount;
 }
 
 // Resizes/compresses an image file client-side to a small JPEG data-URL,
