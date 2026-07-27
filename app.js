@@ -1,4 +1,4 @@
-import { firebaseConfig, COUPLE_ID, ANNIVERSARY_MD } from './firebase-config.js';
+import { firebaseConfig, COUPLE_ID, ANNIVERSARY_MD, RELATIONSHIP_START_DATE } from './firebase-config.js';
 
 // Stage keys used purely for the plant-bloom animation sequence when you log
 // an entry (seed → ... → flourishing over a couple seconds) — no longer tied
@@ -6,18 +6,40 @@ import { firebaseConfig, COUPLE_ID, ANNIVERSARY_MD } from './firebase-config.js'
 export const STAGE_KEYS = ['seed', 'sprout', 'budding', 'blooming', 'flourishing'];
 
 // Garden Shop — decorations you buy with points earned from logging time and
-// completing challenges. Purely cosmetic, shown scattered in the garden once owned.
+// completing challenges. Each has a preset spot (as a % of the illustrated
+// garden scene) so it actually appears in the scene once bought, not just in a list.
 export const DECOR_SHOP = [
-  { id: 'butterfly', icon: '🦋', name: 'Butterflies', cost: 15 },
-  { id: 'lantern', icon: '🕯️', name: 'Garden lantern', cost: 20 },
-  { id: 'bench', icon: '🪑', name: 'Little bench', cost: 30 },
-  { id: 'lights', icon: '✨', name: 'Fairy lights', cost: 35 },
-  { id: 'birdbath', icon: '⛲', name: 'Birdbath', cost: 40 },
-  { id: 'rainbow', icon: '🌈', name: 'Rainbow', cost: 45 },
-  { id: 'chime', icon: '🎐', name: 'Wind chime', cost: 50 },
-  { id: 'sundial', icon: '☀️', name: 'Sundial', cost: 60 }
+  { id: 'lantern', icon: '🕯️', name: 'Garden lantern', cost: 15, scenePos: { left: '62%', top: '74%' } },
+  { id: 'bench', icon: '🪑', name: 'Little bench', cost: 25, scenePos: { left: '78%', top: '78%' } },
+  { id: 'lights', icon: '✨', name: 'Fairy lights', cost: 30, scenePos: { left: '13%', top: '36%' } },
+  { id: 'fountain', icon: '⛲', name: 'Fountain', cost: 40, scenePos: { left: '88%', top: '68%' } },
+  { id: 'chime', icon: '🎐', name: 'Wind chime', cost: 45, scenePos: { left: '7%', top: '55%' } },
+  { id: 'rainbow', icon: '🌈', name: 'Rainbow', cost: 50, scenePos: { left: '58%', top: '10%' } },
+  { id: 'bridge', icon: '🌉', name: 'Little bridge', cost: 60, scenePos: { left: '40%', top: '82%' } },
+  { id: 'pond', icon: '🪷', name: 'Lily pond', cost: 70, scenePos: { left: '22%', top: '86%' } },
+  { id: 'statue', icon: '🗿', name: 'Garden statue', cost: 80, scenePos: { left: '93%', top: '82%' } },
+  { id: 'gazebo', icon: '⛩️', name: 'Gazebo', cost: 95, scenePos: { left: '52%', top: '66%' } }
 ];
 export const ANNIVERSARY_ICON = '💍';
+
+// A handful of date-night ideas the app can suggest if you haven't logged
+// anything in a while — a gentle nudge, not a notification.
+export const DATE_IDEAS = [
+  'A picnic somewhere new',
+  'Mini golf',
+  'A cooking class together',
+  'Watch the sunset at the beach',
+  'Ice skating',
+  'A local museum you haven\'t been to',
+  'Board game night',
+  'A hike with a view',
+  'Try every stall at a food market',
+  'A drive-in or backyard movie night',
+  'A pottery or paint class',
+  'Karaoke',
+  'A long bike ride',
+  'Stargazing somewhere dark'
+];
 
 // ---- Botanical icon generator ----
 // Builds real flower structure (layered petal rings, not abstract shapes) as
@@ -256,6 +278,13 @@ async function maybeUnlockAnniversary(data) {
   }
 }
 
+// Whether today is the configured anniversary date — used to trigger the
+// once-a-year celebration animation on the dashboard.
+export function isAnniversaryToday() {
+  if (!ANNIVERSARY_MD) return false;
+  return mmdd(todayStr()) === ANNIVERSARY_MD;
+}
+
 // Buys a decoration from the Garden Shop with points. Guards against buying
 // something you already own or can't afford.
 // Toggles a simple boolean setting (currently just whether the Challenge
@@ -332,13 +361,54 @@ export async function countFlowers() {
   }
 }
 
+// "We've..." stats — only things the app can actually know from real data
+// (no distance/venue tracking, since that would mean typing more per entry,
+// which works against keeping logging fast).
+export async function computeFunStats() {
+  const today = todayStr();
+  const daysTogether = RELATIONSHIP_START_DATE ? daysBetween(RELATIONSHIP_START_DATE, today) : null;
+
+  if (!isConfigured) {
+    const photosCount = DEMO_LOGS.reduce((sum, l) => sum + getPhotos(l).length, 0);
+    return {
+      datesLogged: DEMO_LOGS.filter((l) => l.type !== 'challenge').length,
+      challengesCompleted: DEMO_LOGS.filter((l) => l.type === 'challenge').length,
+      photosCount,
+      flowersGrown: DEMO_LOGS.length,
+      daysTogether,
+      longestStreak: DEMO_STATE.longestStreak || DEMO_STATE.streak || 0
+    };
+  }
+
+  try {
+    const [logsSnap, stateSnap] = await Promise.all([
+      getDocs(collection(db, `couples/${COUPLE_ID}/logs`)),
+      getDoc(doc(db, `couples/${COUPLE_ID}/state/current`))
+    ]);
+    const logs = logsSnap.docs.map((d) => d.data());
+    const state = stateSnap.exists() ? stateSnap.data() : {};
+    const photosCount = logs.reduce((sum, l) => sum + getPhotos(l).length, 0);
+    return {
+      datesLogged: logs.filter((l) => l.type !== 'challenge').length,
+      challengesCompleted: logs.filter((l) => l.type === 'challenge').length,
+      photosCount,
+      flowersGrown: logs.length,
+      daysTogether,
+      longestStreak: state.longestStreak || state.streak || 0
+    };
+  } catch (err) {
+    console.error('computeFunStats failed:', err);
+    return null;
+  }
+}
+
 export function getPhotos(log) {
   if (log.photos && log.photos.length) return log.photos;
   if (log.photo) return [log.photo];
   return [];
 }
 
-export async function logTime(activity = '', dateStr = null, photos = []) {
+export async function logTime(activity = '', dateStr = null, photos = [], loggedBy = null) {
   const entryDate = dateStr || todayStr();
   const gained = 8; // flat reward per logged memory — duration no longer factors in
 
@@ -351,7 +421,7 @@ export async function logTime(activity = '', dateStr = null, photos = []) {
     DEMO_STATE.points += gained;
     DEMO_STATE.totalFlowers += 1;
     if (entryDate === todayStr()) DEMO_STATE.lastActiveDate = entryDate;
-    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, points: gained, date: entryDate, photos, note: '' });
+    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, points: gained, date: entryDate, photos, note: '', loggedBy });
     return DEMO_STATE;
   }
 
@@ -371,6 +441,7 @@ export async function logTime(activity = '', dateStr = null, photos = []) {
       }
       update.streak = streak;
       update.lastActiveDate = today;
+      if (streak > (data.longestStreak || 0)) update.longestStreak = streak;
     }
 
     await setDoc(ref, update, { merge: true });
@@ -378,7 +449,7 @@ export async function logTime(activity = '', dateStr = null, photos = []) {
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
       type: 'log', activity, points: gained,
       date: entryDate, backfilled: entryDate !== today,
-      photos, note: '',
+      photos, note: '', loggedBy,
       createdAt: serverTimestamp()
     });
   } catch (err) {

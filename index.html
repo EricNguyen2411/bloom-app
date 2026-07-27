@@ -172,6 +172,15 @@
   .photo-picker-label{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
 
   .photo-preview-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+
+  .who-toggle{ display:flex; gap:8px; }
+  .who-btn{ flex:1; padding:11px; border-radius:12px; border:1.5px solid #E4E1D6; background:#FBFAF6;
+    font-family:'Inter'; font-weight:700; font-size:13.5px; color:var(--ink-soft); cursor:pointer; }
+  .who-btn.active{ background:var(--moss); border-color:var(--moss); color:#fff; }
+  .who-badge{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:8.5px; font-weight:700;
+    padding:2px 7px; border-radius:6px; margin-left:6px; text-transform:uppercase; letter-spacing:0.5px; }
+  .who-badge.me{ background:#DCE9D0; color:var(--moss); }
+  .who-badge.her{ background:#F6DCE4; color:#B24E70; }
   .photo-date-notice{ display:none; margin-top:8px; font-size:11.5px; color:var(--moss); font-weight:700; }
   .photo-date-notice.show{ display:block; }
   .photo-preview-thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; }
@@ -209,6 +218,9 @@
     display:flex; align-items:center; justify-content:center; font-size:18px; }
   .flashback-tag{ font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:1px; color:var(--coral); text-transform:uppercase; }
   .flashback-text{ font-size:12.5px; font-weight:600; margin-top:1px; }
+  .idea-banner{ background:linear-gradient(135deg,#F1E6F5,#E9D9F0); border-color:#E4D2EC; cursor:default; }
+  .idea-banner .flashback-icon{ background:linear-gradient(160deg,var(--plum),#6E4058); }
+  .idea-banner .flashback-tag{ color:var(--plum); }
 
   .photo-dot{ position:absolute; width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #fff;
     box-shadow:0 6px 14px -6px rgba(30,42,32,0.4); opacity:0; transition:opacity .6s ease .3s; }
@@ -224,6 +236,10 @@
   .anniversary-row .icon{ font-size:20px; }
   .anniversary-row .txt{ font-size:12px; color:var(--ink-soft); }
   .weekly-recap{ display:flex; gap:8px; margin-top:8px; }
+  .fun-stats-list{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .fun-stat-row{ display:flex; align-items:center; gap:12px; background:#F6F4EC; border-radius:14px; padding:12px 14px; }
+  .fun-stat-num{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:22px; color:var(--moss); flex:0 0 auto; min-width:44px; }
+  .fun-stat-label{ font-size:13px; color:var(--ink); }
   .weekly-recap .box{ flex:1; background:#F6F4EC; border-radius:12px; padding:10px; text-align:center; }
   .weekly-recap .box b{ display:block; font-family:'Bricolage Grotesque',sans-serif; font-size:18px; color:var(--moss); }
   .weekly-recap .box span{ font-size:9.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.5px; }
@@ -272,6 +288,58 @@
     background:rgba(255,255,255,0.75); padding:8px 16px; border-radius:999px; backdrop-filter:blur(4px); }
 
   .garden-scene{ flex:0 0 auto; height:200px; position:relative; overflow:hidden; }
+
+  /* ---- Living garden: ambient life ---- */
+  #treeSway{ animation:treeSway 4.5s ease-in-out infinite; transform-origin:46px 142px; }
+  @keyframes treeSway{ 0%,100%{ transform:translate(46px,108px) rotate(0deg); } 50%{ transform:translate(46px,108px) rotate(-1.2deg); } }
+
+  .butterfly{ transform-box:fill-box; transform-origin:center; }
+  .butterfly .wings{ animation:wingFlap 0.35s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+  @keyframes wingFlap{ from{ transform:scaleX(1); } to{ transform:scaleX(0.55); } }
+  .bfly1{ animation:flutter1 13s ease-in-out infinite; }
+  .bfly2{ animation:flutter2 16s ease-in-out infinite 2s; }
+  @keyframes flutter1{
+    0%{ transform:translate(30px,150px); } 20%{ transform:translate(100px,110px); }
+    40%{ transform:translate(180px,140px); } 60%{ transform:translate(250px,100px); }
+    80%{ transform:translate(320px,130px); } 100%{ transform:translate(30px,150px); }
+  }
+  @keyframes flutter2{
+    0%{ transform:translate(340px,90px); } 25%{ transform:translate(260px,60px); }
+    50%{ transform:translate(180px,85px); } 75%{ transform:translate(100px,55px); }
+    100%{ transform:translate(340px,90px); }
+  }
+  .bee{ animation:beeLoop 6s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+  @keyframes beeLoop{
+    0%{ transform:translate(150px,155px); } 25%{ transform:translate(168px,148px); }
+    50%{ transform:translate(150px,140px); } 75%{ transform:translate(132px,148px); }
+    100%{ transform:translate(150px,155px); }
+  }
+  .rabbit{ animation:rabbitHop 18s linear infinite; opacity:0; }
+  @keyframes rabbitHop{
+    0%{ transform:translate(-20px,178px) scale(1); opacity:0; }
+    5%{ opacity:1; } 10%{ transform:translate(20px,172px) scale(1,0.9); }
+    15%{ transform:translate(40px,178px) scale(1); } 20%{ transform:translate(60px,172px) scale(1,0.9); }
+    25%{ transform:translate(80px,178px) scale(1); } 28%{ opacity:1; } 32%{ opacity:0; }
+    100%{ transform:translate(80px,178px) scale(1); opacity:0; }
+  }
+  .firefly{ opacity:0; }
+  .garden-scene.night .firefly{ animation:fireflyBlink 2.4s ease-in-out infinite; }
+  .garden-scene.night .f1{ animation-delay:0s; } .garden-scene.night .f2{ animation-delay:.5s; }
+  .garden-scene.night .f3{ animation-delay:1s; } .garden-scene.night .f4{ animation-delay:1.5s; }
+  .garden-scene.night .f5{ animation-delay:.8s; }
+  @keyframes fireflyBlink{ 0%,100%{ opacity:0; transform:translate(0,0); } 50%{ opacity:0.9; transform:translate(6px,-8px); } }
+
+  #rainLayer{ opacity:0; }
+  .garden-scene.raining #rainLayer{ opacity:0.6; animation:none; }
+  .garden-scene.raining .raindrop{ animation:rainFall 0.5s linear infinite; }
+  .garden-scene.raining .r2{ animation-delay:.1s; } .garden-scene.raining .r3{ animation-delay:.2s; }
+  .garden-scene.raining .r4{ animation-delay:.05s; } .garden-scene.raining .r5{ animation-delay:.25s; }
+  .garden-scene.raining .r6{ animation-delay:.15s; } .garden-scene.raining .r7{ animation-delay:.3s; }
+  .garden-scene.raining .r8{ animation-delay:.22s; }
+  @keyframes rainFall{ 0%{ transform:translateY(0); opacity:0; } 20%{ opacity:1; } 100%{ transform:translateY(190px); opacity:0.3; } }
+
+  .decor-layer{ position:absolute; top:0; left:0; right:0; height:200px; pointer-events:none; }
+  .decor-item-scene{ position:absolute; transform:translate(-50%,-50%); font-size:20px; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
   .garden-scene svg{ width:100%; height:100%; display:block; }
 
   .garden-page-content{ flex:1; overflow-y:auto; padding:10px 20px calc(30px + env(safe-area-inset-bottom));
@@ -302,6 +370,11 @@
   .garden-empty{ text-align:center; padding:30px 14px; color:#2A3B1F; font-size:13px; width:100%;
     background:rgba(255,255,255,0.75); border-radius:14px; }
 
+  .jump-date-input{ padding:6px 10px; border-radius:999px; border:none; background:rgba(255,255,255,0.85);
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink); }
+  @keyframes jumpPulse{ 0%,100%{ filter:none; } 50%{ filter:drop-shadow(0 0 10px rgba(227,185,79,0.9)); } }
+  .meadow-flower.jump-highlight .meadow-bloom{ animation:jumpPulse 0.7s ease-in-out 3; }
+
   .garden-detail{ display:none; }
   .garden-detail.show{ display:block; background:var(--card); border-radius:18px; padding:16px; box-shadow:0 12px 26px -10px rgba(20,30,15,0.4); }
   .garden-detail-back{ background:none; border:none; color:var(--moss); font-weight:700; font-size:12.5px; cursor:pointer; padding:0; margin-bottom:10px; }
@@ -311,6 +384,24 @@
   .photo-peek.show{ display:flex; }
   .photo-peek img{ max-width:100%; max-height:100%; border-radius:20px; box-shadow:0 20px 50px -10px rgba(0,0,0,0.5);
     border:4px solid #fff; }
+
+  .anniversary-overlay{ position:fixed; inset:0; z-index:95; display:none; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 40%, #3A2A4A, #1B1425 80%); overflow:hidden; }
+  .anniversary-overlay.show{ display:flex; }
+  .fireworks{ position:absolute; inset:0; }
+  .firework-particle{ position:absolute; width:6px; height:6px; border-radius:50%; opacity:0; }
+  @keyframes fireworkBurst{
+    0%{ transform:translate(0,0) scale(1); opacity:1; }
+    100%{ transform:translate(var(--fx), var(--fy)) scale(0.3); opacity:0; }
+  }
+  .anniversary-message{ position:relative; z-index:2; text-align:center; background:rgba(255,255,255,0.95);
+    border-radius:24px; padding:32px 28px; max-width:320px; margin:20px; box-shadow:0 20px 60px -10px rgba(0,0,0,0.5);
+    animation:annMsgIn .5s cubic-bezier(.34,1.4,.4,1); }
+  @keyframes annMsgIn{ from{ opacity:0; transform:scale(0.7) translateY(20px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+  .anniversary-message h2{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; margin:8px 0 6px; color:var(--ink); }
+  .anniversary-message p{ font-size:13.5px; color:var(--ink-soft); line-height:1.5; margin:0 0 18px; }
+  .anniversary-message button{ padding:12px 28px; border-radius:999px; border:none; background:var(--moss); color:#fff;
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:14px; cursor:pointer; }
 
   .bucket-list{ max-height:50vh; overflow-y:auto; margin-top:6px; }
   .bucket-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #F0EDE2; }
@@ -449,6 +540,14 @@
     </div>
   </div>
 
+  <div class="flashback idea-banner" id="ideaBanner">
+    <div class="flashback-icon">💡</div>
+    <div>
+      <div class="flashback-tag">DATE IDEA</div>
+      <div class="flashback-text" id="ideaText"></div>
+    </div>
+  </div>
+
   <div class="progress-wrap">
     <div class="stage-name" id="stageName">Ready to bloom</div>
     <div class="stage-sub" id="stageSub">Log time together and this becomes today's flower</div>
@@ -469,6 +568,11 @@
     <p>What'd you two do? Real time together is what grows this.</p>
     <label>What you did</label>
     <input type="text" id="logActivity" placeholder="e.g. cooked dinner, watched a movie">
+    <label>Logged by</label>
+    <div class="who-toggle" id="whoToggle">
+      <button type="button" class="who-btn" data-who="me">Me</button>
+      <button type="button" class="who-btn" data-who="her">Her</button>
+    </div>
     <label>Date</label>
     <input type="date" id="logDateInput">
     <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
@@ -549,8 +653,8 @@
       <path id="backHill" d="M0,140 Q100,100 200,130 T400,120 V200 H0 Z" fill="#B7D98C"/>
       <path id="frontHill" d="M0,175 Q120,135 230,165 T400,155 V200 H0 Z" fill="#8CBB70"/>
 
-      <!-- little tree -->
-      <g transform="translate(46,108)">
+      <!-- little tree, gently swaying -->
+      <g id="treeSway" transform="translate(46,108)">
         <rect x="-5" y="30" width="10" height="34" rx="4" fill="#A9713F"/>
         <circle id="canopy1" cx="0" cy="14" r="26" fill="#6FA84A"/>
         <circle id="canopy2" cx="-18" cy="24" r="18" fill="#7DB857"/>
@@ -559,7 +663,44 @@
         <circle id="fruit2" cx="12" cy="8" r="3.5" fill="#D8567A"/>
         <circle id="fruit3" cx="2" cy="20" r="3.5" fill="#D8567A"/>
       </g>
+
+      <!-- living garden: small ambient life, always present -->
+      <g class="butterfly bfly1">
+        <g class="wings"><ellipse cx="-3" cy="0" rx="4" ry="6" fill="#D8567A"/><ellipse cx="3" cy="0" rx="4" ry="6" fill="#E88AA6"/></g>
+      </g>
+      <g class="butterfly bfly2">
+        <g class="wings"><ellipse cx="-3" cy="0" rx="3.5" ry="5" fill="#E3B94F"/><ellipse cx="3" cy="0" rx="3.5" ry="5" fill="#F2D488"/></g>
+      </g>
+      <g class="bee">
+        <ellipse cx="0" cy="0" rx="4" ry="3" fill="#3A2A1E"/>
+        <ellipse cx="0" cy="0" rx="4" ry="3" fill="#E3B94F" opacity="0.7"/>
+        <ellipse cx="-4" cy="-2" rx="3" ry="2" fill="#fff" opacity="0.6"/>
+      </g>
+      <g class="rabbit">
+        <ellipse cx="0" cy="4" rx="9" ry="6" fill="#EDE6D6"/>
+        <ellipse cx="-6" cy="-4" rx="2" ry="7" fill="#EDE6D6"/>
+        <ellipse cx="-2" cy="-5" rx="2" ry="7" fill="#EDE6D6"/>
+        <circle cx="7" cy="1" r="1" fill="#2A1B12"/>
+      </g>
+      <g id="fireflies" fill="#F2D488">
+        <circle class="firefly f1" cx="90" cy="90" r="2"/>
+        <circle class="firefly f2" cx="150" cy="70" r="1.7"/>
+        <circle class="firefly f3" cx="200" cy="100" r="2"/>
+        <circle class="firefly f4" cx="260" cy="75" r="1.6"/>
+        <circle class="firefly f5" cx="120" cy="120" r="1.8"/>
+      </g>
+      <g id="rainLayer" stroke="#9FC3D9" stroke-width="2" stroke-linecap="round" opacity="0">
+        <line class="raindrop r1" x1="40" y1="0" x2="34" y2="16"/>
+        <line class="raindrop r2" x1="110" y1="0" x2="104" y2="16"/>
+        <line class="raindrop r3" x1="180" y1="0" x2="174" y2="16"/>
+        <line class="raindrop r4" x1="250" y1="0" x2="244" y2="16"/>
+        <line class="raindrop r5" x1="320" y1="0" x2="314" y2="16"/>
+        <line class="raindrop r6" x1="75" y1="0" x2="69" y2="16"/>
+        <line class="raindrop r7" x1="215" y1="0" x2="209" y2="16"/>
+        <line class="raindrop r8" x1="360" y1="0" x2="354" y2="16"/>
+      </g>
     </svg>
+    <div class="decor-layer" id="decorLayer"></div>
   </div>
 
   <div class="garden-page-content">
@@ -568,7 +709,10 @@
       <div class="owned-decor-row" id="ownedDecorRow"></div>
     </div>
 
-    <label>The garden bed</label>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 8px;">
+      <label style="margin:0;">The garden bed</label>
+      <input type="date" id="gardenJumpDate" class="jump-date-input" title="Jump to a date">
+    </div>
     <div class="garden-bed" id="gardenBed"></div>
     <div class="garden-detail" id="gardenDetail">
       <button class="garden-detail-back" id="gardenDetailBack">← Back to garden</button>
@@ -647,6 +791,8 @@
 
     <p style="margin:14px 0 0;">Want to spend your points on something for the garden? Head to the 🌷 Garden page — the Shop is down at the bottom.</p>
 
+    <button class="export-btn" id="funStatsBtn">🎉 See our fun stats</button>
+
     <label>App settings</label>
     <div class="setting-row">
       <div>
@@ -679,11 +825,23 @@
   </div>
 </div>
 
+<div class="backdrop" id="funStatsBackdrop">
+  <div class="sheet">
+    <h3>We've...</h3>
+    <p>The real numbers, straight from your garden.</p>
+    <div id="funStatsList" class="fun-stats-list"></div>
+    <div class="sheet-actions">
+      <button class="btn-confirm" id="funStatsClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
-           purchaseDecoration, setSetting, countFlowers, SPECIES, DECOR_SHOP }
+           purchaseDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
+           SPECIES, DECOR_SHOP, DATE_IDEAS }
     from './app.js';
 
   // Injects the species' dark shade as the icon's color (icons use fill="currentColor").
@@ -837,6 +995,54 @@
     gardenDetailContent.appendChild(buildMemoryCard(log));
   }
 
+  // ---- Anniversary celebration (once per year, only on the actual day) ----
+  let anniversaryCelebrated = false;
+  function checkAnniversaryCelebration(state) {
+    if (anniversaryCelebrated) return;
+    if (!isAnniversaryToday()) return;
+    const currentYear = new Date().toISOString().slice(0, 4);
+    if (state.anniversaryUnlockedYear !== currentYear) return;
+    anniversaryCelebrated = true;
+    showAnniversaryCelebration();
+  }
+
+  function launchFireworkBurst() {
+    const layer = document.getElementById('fireworksLayer');
+    const cx = 20 + Math.random() * 60;
+    const cy = 15 + Math.random() * 45;
+    const colors = ['#E8B84B', '#D8567A', '#8FB3CC', '#A7C96E', '#B487A3'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    for (let i = 0; i < 16; i++) {
+      const angle = (Math.PI * 2 * i) / 16;
+      const dist = 55 + Math.random() * 45;
+      const p = document.createElement('div');
+      p.className = 'firework-particle';
+      p.style.left = cx + '%';
+      p.style.top = cy + '%';
+      p.style.background = color;
+      p.style.setProperty('--fx', Math.cos(angle) * dist + 'px');
+      p.style.setProperty('--fy', Math.sin(angle) * dist + 'px');
+      p.style.animation = 'fireworkBurst 1s ease-out forwards';
+      layer.appendChild(p);
+      setTimeout(() => p.remove(), 1000);
+    }
+  }
+
+  function showAnniversaryCelebration() {
+    document.getElementById('anniversaryOverlay').classList.add('show');
+    playChime(true);
+    launchFireworkBurst();
+    let bursts = 1;
+    const interval = setInterval(() => {
+      launchFireworkBurst();
+      bursts++;
+      if (bursts >= 7) clearInterval(interval);
+    }, 550);
+  }
+  document.getElementById('anniversaryDismiss').onclick = () => {
+    document.getElementById('anniversaryOverlay').classList.remove('show');
+  };
+
   function render(state) {
     latestState = state;
 
@@ -845,6 +1051,18 @@
 
     document.getElementById('btnChallenge').style.display = state.challengeEnabled === false ? 'none' : '';
 
+    // Gentle nudge if it's been a while — never a notification, just a quiet banner.
+    const ideaBanner = document.getElementById('ideaBanner');
+    const gapDays = state.lastActiveDate ? Math.round((new Date(todayISO) - new Date(state.lastActiveDate)) / 86400000) : 0;
+    if (state.lastActiveDate && gapDays >= 5) {
+      const idea = DATE_IDEAS[new Date().getDate() % DATE_IDEAS.length];
+      document.getElementById('ideaText').textContent = `It's been ${gapDays} days — maybe: ${idea.toLowerCase()}?`;
+      ideaBanner.classList.add('show');
+    } else {
+      ideaBanner.classList.remove('show');
+    }
+
+    checkAnniversaryCelebration(state);
     renderShop(state);
   }
 
@@ -1018,8 +1236,19 @@
     updatePhotoLabel();
   }
 
+  // ---- Who's logging this — remembered per-device so it doesn't reset each time ----
+  const whoButtons = document.querySelectorAll('.who-btn');
+  let selectedWho = localStorage.getItem('bloom_last_logger') || 'me';
+  function setWho(who) {
+    selectedWho = who;
+    whoButtons.forEach((b) => b.classList.toggle('active', b.dataset.who === who));
+    localStorage.setItem('bloom_last_logger', who);
+  }
+  whoButtons.forEach((b) => { b.onclick = () => setWho(b.dataset.who); });
+
   document.getElementById('btnLog').onclick = () => {
     logDateInput.value = todayISO; // reset to today each time it's opened
+    setWho(selectedWho); // reflect the remembered choice in the UI
     logBackdrop.classList.add('open');
   };
   document.getElementById('logCancel').onclick = () => { logBackdrop.classList.remove('open'); resetLogSheet(); };
@@ -1028,7 +1257,7 @@
     const date = logDateInput.value || todayISO;
     try {
       const speciesForThis = currentSpecies(liveFlowerCount);
-      await logTime(activity, date, pendingPhotos);
+      await logTime(activity, date, pendingPhotos, selectedWho);
       logBackdrop.classList.remove('open');
       resetLogSheet();
       plantBloomAnimation(speciesForThis.name);
@@ -1101,6 +1330,42 @@
     }
   };
 
+  // ---- Fun Stats ----
+  const funStatsBackdrop = document.getElementById('funStatsBackdrop');
+  document.getElementById('funStatsBtn').onclick = async () => {
+    const btn = document.getElementById('funStatsBtn');
+    const original = btn.textContent;
+    btn.textContent = '⏳ Counting…';
+    btn.disabled = true;
+    try {
+      const stats = await computeFunStats();
+      const list = document.getElementById('funStatsList');
+      if (!stats) {
+        list.innerHTML = '<div class="fun-stat-row"><div class="fun-stat-label">Couldn\'t load stats right now — try again in a moment.</div></div>';
+      } else {
+        const rows = [
+          [stats.datesLogged, 'dates logged together'],
+          [stats.flowersGrown, 'flowers grown in the garden'],
+          [stats.photosCount, 'photos saved to memories'],
+          [stats.challengesCompleted, 'challenges completed'],
+          [stats.longestStreak, 'day longest streak']
+        ];
+        if (stats.daysTogether !== null) rows.push([stats.daysTogether, 'days together']);
+        list.innerHTML = rows.map(([num, label]) =>
+          `<div class="fun-stat-row"><div class="fun-stat-num">${num}</div><div class="fun-stat-label">${label}</div></div>`
+        ).join('');
+      }
+      funStatsBackdrop.classList.add('open');
+    } catch (err) {
+      console.error('Fun stats failed:', err);
+      alert('Could not load stats: ' + err.message);
+    } finally {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  };
+  document.getElementById('funStatsClose').onclick = () => funStatsBackdrop.classList.remove('open');
+
   // ---- Garden page (shop + meadow) ----
   const gardenPage = document.getElementById('gardenPage');
   function renderShop(state) {
@@ -1169,12 +1434,17 @@
   function applySceneTheme() {
     const hour = new Date().getHours();
     const isNight = hour < 6 || hour >= 19;
+    const sceneEl = document.querySelector('.garden-scene');
     document.getElementById('sceneDay').style.display = isNight ? 'none' : '';
     document.getElementById('sceneNight').style.display = isNight ? '' : 'none';
     document.getElementById('skyStop1').setAttribute('stop-color', isNight ? '#1B2A4A' : '#BFE3F5');
     document.getElementById('skyStop2').setAttribute('stop-color', isNight ? '#3A4B6B' : '#E8F5EC');
     document.getElementById('clouds').style.opacity = isNight ? '0.35' : '1';
     document.getElementById('clouds2').style.opacity = isNight ? '0.3' : '0.9';
+    sceneEl.classList.toggle('night', isNight);
+
+    // A gentle chance of rain each visit, purely atmospheric.
+    sceneEl.classList.toggle('raining', Math.random() < 0.18);
 
     const season = SEASON_PALETTES[currentSeason()];
     document.getElementById('backHill').setAttribute('fill', season.backHill);
@@ -1189,9 +1459,54 @@
     content.style.background =
       `repeating-linear-gradient(100deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 9px), ` +
       `linear-gradient(180deg, ${a} 0%, ${b} 40%, ${c} 100%)`;
+
+    renderSceneDecor(latestState);
+  }
+
+  // ---- Decorations placed visually in the scene once bought ----
+  function renderSceneDecor(state) {
+    const layer = document.getElementById('decorLayer');
+    if (!layer) return;
+    const owned = new Set(state.unlockedDecorations || []);
+    layer.innerHTML = '';
+    DECOR_SHOP.forEach((item) => {
+      if (!owned.has(item.id) || !item.scenePos) return;
+      const el = document.createElement('div');
+      el.className = 'decor-item-scene';
+      el.textContent = item.icon;
+      el.style.left = item.scenePos.left;
+      el.style.top = item.scenePos.top;
+      layer.appendChild(el);
+    });
   }
 
   document.getElementById('btnGarden').onclick = () => { applySceneTheme(); gardenPage.classList.add('open'); };
+
+  // ---- Jump to a date in the garden bed ----
+  document.getElementById('gardenJumpDate').addEventListener('change', (e) => {
+    const targetDate = e.target.value;
+    if (!targetDate) return;
+    const flowers = Array.from(document.querySelectorAll('.meadow-flower'));
+    if (!flowers.length) return;
+
+    let target = flowers.find((f) => f.dataset.date === targetDate);
+    if (!target) {
+      // No exact match (e.g. no memory logged that day) — find the closest one instead.
+      let closestDiff = Infinity;
+      flowers.forEach((f) => {
+        const diff = Math.abs(new Date(f.dataset.date) - new Date(targetDate));
+        if (diff < closestDiff) { closestDiff = diff; target = f; }
+      });
+    }
+    if (target) {
+      gardenBed.style.display = '';
+      gardenDetail.classList.remove('show');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('jump-highlight');
+      setTimeout(() => target.classList.remove('jump-highlight'), 2200);
+    }
+    e.target.value = '';
+  });
   document.getElementById('gardenBack').onclick = () => gardenPage.classList.remove('open');
 
   // ---- Export memories as a PDF keepsake ----
@@ -1352,10 +1667,13 @@
     const noteHtml = log.note
       ? `<div class="memory-note">${log.note}</div>`
       : `<button class="memory-add-note" data-id="${log.id}">+ Add a note</button>`;
+    const whoBadge = log.loggedBy
+      ? `<span class="who-badge ${log.loggedBy}">${log.loggedBy === 'me' ? 'Me' : 'Her'}</span>`
+      : '';
     card.innerHTML = `
       ${thumb}
       <div class="memory-body">
-        <div class="memory-date">${dateStr}</div>
+        <div class="memory-date">${dateStr}${whoBadge}</div>
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
         <div class="memory-meta">+${log.points} pts</div>
         ${galleryHtml}
@@ -1469,6 +1787,7 @@
         const flower = document.createElement('div');
         flower.className = 'meadow-flower';
         flower.style.left = ROW_X[i];
+        flower.dataset.date = log.date;
         const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
         flower.innerHTML = `
           <div class="meadow-bloom" style="background:${bloomBg}">
@@ -1605,5 +1924,15 @@
 </script>
 
 <div class="photo-peek" id="photoPeek"><img id="photoPeekImg" src=""></div>
+
+<div class="anniversary-overlay" id="anniversaryOverlay">
+  <div class="fireworks" id="fireworksLayer"></div>
+  <div class="anniversary-message">
+    <div style="font-size:44px;">💍🎉</div>
+    <h2>Happy Anniversary</h2>
+    <p>Here's to every day since, and every one still coming.</p>
+    <button id="anniversaryDismiss">Close</button>
+  </div>
+</div>
 </body>
 </html>
