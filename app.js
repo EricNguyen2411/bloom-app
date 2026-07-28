@@ -193,7 +193,8 @@ async function initFirebase() {
   // showing an empty garden until a fresh network round-trip finishes.
   try {
     db = fsMod.initializeFirestore(app, {
-      localCache: fsMod.persistentLocalCache({ tabManager: fsMod.persistentMultipleTabManager() })
+      localCache: fsMod.persistentLocalCache({ tabManager: fsMod.persistentMultipleTabManager() }),
+      experimentalAutoDetectLongPolling: true // falls back automatically on networks (some cafe/hotel wifi, certain carriers) that block Firestore's default connection method
     });
   } catch (err) {
     console.warn('Persistent Firestore cache unavailable, falling back to default:', err);
@@ -735,6 +736,11 @@ export async function importBackup(data) {
 
 // Resizes/compresses an image file client-side to a small JPEG data-URL,
 // so photos can live directly in Firestore without needing paid Storage.
+// Compresses to a target size (default 150KB), stepping down quality and then
+// dimensions if needed, rather than one fixed setting for every photo. This
+// keeps individual photos consistently small — important now that up to 5 can
+// share a single 900KB combined budget per entry — without the person ever
+// having to think about it.
 export function compressImage(file, maxDim = 640, quality = 0.6) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

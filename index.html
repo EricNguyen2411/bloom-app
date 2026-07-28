@@ -180,8 +180,9 @@
   .photo-preview-remove{ position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(20,20,20,0.65);
     color:#fff; border:none; font-size:11px; line-height:18px; padding:0; cursor:pointer; }
 
-  .photo-count-badge{ position:absolute; bottom:2px; right:2px; background:rgba(20,20,20,0.72); color:#fff;
-    font-family:'IBM Plex Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:6px; z-index:3; }
+  .photo-count-badge{ position:absolute; bottom:-2px; right:-2px; width:17px; height:17px; border-radius:50%;
+    background:#FBF8F0; border:1.5px solid rgba(0,0,0,0.08); color:var(--moss); display:flex; align-items:center;
+    justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:3; }
   .memory-gallery{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
   .memory-gallery img{ width:44px; height:44px; border-radius:8px; object-fit:cover; cursor:pointer; }
 
@@ -395,6 +396,20 @@
   .photo-peek.show{ display:flex; }
   .photo-peek img{ max-width:100%; max-height:100%; border-radius:20px; box-shadow:0 20px 50px -10px rgba(0,0,0,0.5);
     border:4px solid #fff; }
+
+  .photo-viewer{ position:fixed; inset:0; z-index:96; display:none; flex-direction:column;
+    background:rgba(10,14,8,0.94); }
+  .photo-viewer.show{ display:flex; }
+  .photo-viewer-close{ position:absolute; top:calc(env(safe-area-inset-top) + 14px); right:18px; z-index:2;
+    width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.15); border:none; color:#fff;
+    font-size:16px; display:flex; align-items:center; justify-content:center; }
+  .photo-viewer-stage{ flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden;
+    touch-action:pan-y; padding:20px; }
+  .photo-viewer-stage img{ max-width:100%; max-height:100%; border-radius:14px; -webkit-user-select:none; user-select:none;
+    box-shadow:0 20px 50px -10px rgba(0,0,0,0.5); }
+  .photo-viewer-dots{ display:flex; justify-content:center; gap:6px; padding:6px 16px calc(20px + env(safe-area-inset-bottom)); }
+  .photo-viewer-dot{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.3); transition:all .2s ease; }
+  .photo-viewer-dot.active{ background:#fff; width:16px; border-radius:3px; }
 
   .anniversary-overlay{ position:fixed; inset:0; z-index:95; display:none; align-items:center; justify-content:center;
     background:radial-gradient(circle at 50% 40%, #3A2A4A, #1B1425 80%); overflow:hidden; }
@@ -1386,6 +1401,9 @@
   document.getElementById('editCancel').onclick = () => editEntryBackdrop.classList.remove('open');
   document.getElementById('editSave').onclick = async () => {
     if (!editingLogId) return;
+    const btn = document.getElementById('editSave');
+    if (btn.disabled) return;
+    btn.disabled = true;
     const activity = editActivityInput.value.trim();
     const date = editDateInput.value || todayISO;
     try {
@@ -1397,6 +1415,8 @@
       if (!isConfigured) { renderMemoryList(filteredLogs()); renderGardenBed(latestLogs); }
     } catch (err) {
       // error already alerted inside editLog
+    } finally {
+      btn.disabled = false;
     }
   };
 
@@ -1406,6 +1426,9 @@
   };
   document.getElementById('logCancel').onclick = () => { logBackdrop.classList.remove('open'); resetLogSheet(); };
   document.getElementById('logSave').onclick = async () => {
+    const btn = document.getElementById('logSave');
+    if (btn.disabled) return; // guards against a fast double-tap creating a duplicate entry
+    btn.disabled = true;
     const activity = document.getElementById('logActivity').value.trim();
     const date = logDateInput.value || todayISO;
     try {
@@ -1418,6 +1441,8 @@
       if (!isConfigured) render(latestState);
     } catch (err) {
       // error already shown to the user inside logTime() — just leave the sheet open so they can retry
+    } finally {
+      btn.disabled = false;
     }
   };
 
@@ -1427,12 +1452,19 @@
   document.getElementById('btnChallenge').onclick = () => challengeBackdrop.classList.add('open');
   document.getElementById('challengeCancel').onclick = () => challengeBackdrop.classList.remove('open');
   document.getElementById('challengeDone').onclick = async () => {
-    const speciesForThis = currentSpecies(liveFlowerCount);
-    await completeChallenge(currentChallengeText);
-    challengeBackdrop.classList.remove('open');
-    plantBloomAnimation(speciesForThis.name);
-    refreshFlowerCount();
-    if (!isConfigured) render(latestState);
+    const btn = document.getElementById('challengeDone');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const speciesForThis = currentSpecies(liveFlowerCount);
+      await completeChallenge(currentChallengeText);
+      challengeBackdrop.classList.remove('open');
+      plantBloomAnimation(speciesForThis.name);
+      refreshFlowerCount();
+      if (!isConfigured) render(latestState);
+    } finally {
+      btn.disabled = false;
+    }
   };
 
   const menuBackdrop = document.getElementById('menuBackdrop');
@@ -1697,7 +1729,12 @@
   }
   document.getElementById('coupleBench').addEventListener('click', randomizeBenchPose);
 
-  document.getElementById('btnGarden').onclick = () => { applySceneTheme(); gardenPage.classList.add('open'); };
+  document.getElementById('btnGarden').onclick = () => {
+    applySceneTheme();
+    gardenDetail.classList.remove('show');
+    gardenBed.style.display = '';
+    gardenPage.classList.add('open');
+  };
 
   // ---- Jump to a date in the garden bed ----
   document.getElementById('gardenJumpDate').addEventListener('change', (e) => {
@@ -1849,6 +1886,38 @@
   const photoPeekImg = document.getElementById('photoPeekImg');
   const gardenDetail = document.getElementById('gardenDetail');
   const gardenDetailContent = document.getElementById('gardenDetailContent');
+
+  // ---- Full photo viewer: manual close, swipe between all photos on an entry ----
+  const photoViewer = document.getElementById('photoViewer');
+  const photoViewerImg = document.getElementById('photoViewerImg');
+  const photoViewerStage = document.getElementById('photoViewerStage');
+  const photoViewerDots = document.getElementById('photoViewerDots');
+  let viewerPhotos = [];
+  let viewerIndex = 0;
+
+  function renderViewerPhoto() {
+    photoViewerImg.src = viewerPhotos[viewerIndex];
+    photoViewerDots.innerHTML = viewerPhotos.length > 1
+      ? viewerPhotos.map((_, i) => `<div class="photo-viewer-dot${i === viewerIndex ? ' active' : ''}"></div>`).join('')
+      : '';
+  }
+  function openPhotoViewer(photos, startIndex = 0) {
+    viewerPhotos = photos;
+    viewerIndex = Math.max(0, Math.min(startIndex, photos.length - 1));
+    renderViewerPhoto();
+    photoViewer.classList.add('show');
+  }
+  document.getElementById('photoViewerClose').onclick = () => photoViewer.classList.remove('show');
+
+  let viewerTouchStartX = 0;
+  photoViewerStage.addEventListener('touchstart', (e) => { viewerTouchStartX = e.touches[0].clientX; }, { passive: true });
+  photoViewerStage.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - viewerTouchStartX;
+    if (Math.abs(dx) < 40) return; // not a real swipe, just a tap
+    if (dx < 0 && viewerIndex < viewerPhotos.length - 1) viewerIndex++;
+    else if (dx > 0 && viewerIndex > 0) viewerIndex--;
+    renderViewerPhoto();
+  }, { passive: true });
   let latestLogs = [];
 
   function renderMemories(logs) {
@@ -1875,8 +1944,11 @@
     const d = new Date(log.date + 'T00:00:00');
     const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
     const photos = getPhotos(log);
+    const countBadge = photos.length > 1
+      ? `<div class="photo-count-badge"><svg width="9" height="9" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="2.5" fill="currentColor" opacity="0.5"/><rect x="1" y="1" width="10" height="10" rx="2.5" fill="currentColor"/></svg></div>`
+      : '';
     const thumb = photos.length
-      ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${photos[0]}">${photos.length > 1 ? `<div class="photo-count-badge">+${photos.length - 1}</div>` : ''}</div>`
+      ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${photos[0]}" style="cursor:pointer;">${countBadge}</div>`
       : `<div class="memory-thumb-empty">${log.type === 'challenge' ? '✦' : '🌿'}</div>`;
     const galleryHtml = photos.length > 1
       ? `<div class="memory-gallery">${photos.map((p) => `<img src="${p}">`).join('')}</div>`
@@ -1898,8 +1970,10 @@
         </div>
       </div>`;
 
-    card.querySelectorAll('.memory-gallery img').forEach((img) => {
-      img.onclick = () => { photoPeekImg.src = img.src; photoPeek.classList.add('show'); setTimeout(() => photoPeek.classList.remove('show'), 1800); };
+    const primaryThumb = card.querySelector('.memory-thumb');
+    if (primaryThumb) primaryThumb.onclick = () => openPhotoViewer(photos, 0);
+    card.querySelectorAll('.memory-gallery img').forEach((img, i) => {
+      img.onclick = () => openPhotoViewer(photos, i);
     });
 
     card.querySelector('.memory-edit-btn').onclick = () => openEditEntry(log);
@@ -2117,6 +2191,14 @@
 </script>
 
 <div class="photo-peek" id="photoPeek"><img id="photoPeekImg" src=""></div>
+
+<div class="photo-viewer" id="photoViewer">
+  <button class="photo-viewer-close" id="photoViewerClose">✕</button>
+  <div class="photo-viewer-stage" id="photoViewerStage">
+    <img id="photoViewerImg" src="">
+  </div>
+  <div class="photo-viewer-dots" id="photoViewerDots"></div>
+</div>
 
 <div class="anniversary-overlay" id="anniversaryOverlay">
   <div class="fireworks" id="fireworksLayer"></div>
