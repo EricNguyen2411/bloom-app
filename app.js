@@ -476,7 +476,7 @@ export function getPhotos(log) {
   return [];
 }
 
-export async function logTime(activity = '', dateStr = null, photos = []) {
+export async function logTime(activity = '', dateStr = null, photos = [], location = null) {
   const entryDate = dateStr || todayStr();
   const gained = 8; // flat reward per logged memory — duration no longer factors in
 
@@ -489,7 +489,7 @@ export async function logTime(activity = '', dateStr = null, photos = []) {
     DEMO_STATE.points += gained;
     DEMO_STATE.totalFlowers += 1;
     if (entryDate === todayStr()) DEMO_STATE.lastActiveDate = entryDate;
-    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, points: gained, date: entryDate, photos, note: '' });
+    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, points: gained, date: entryDate, photos, note: '', location });
     return DEMO_STATE;
   }
 
@@ -516,7 +516,7 @@ export async function logTime(activity = '', dateStr = null, photos = []) {
 
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
       type: 'log', activity, points: gained,
-      date: entryDate, backfilled: entryDate !== today,
+      date: entryDate, backfilled: entryDate !== today, location,
       photos, note: '',
       createdAt: serverTimestamp()
     });

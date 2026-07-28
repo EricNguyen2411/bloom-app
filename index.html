@@ -148,7 +148,7 @@
 
   .backdrop{ display:none; position:fixed; inset:0; background:rgba(30,42,32,0.4); z-index:40; align-items:flex-end; justify-content:center; }
   .backdrop.open{ display:flex; }
-  .sheet{ background:var(--card); width:100%; max-width:420px; border-radius:28px 28px 0 0; padding:26px 26px 34px; animation:up .3s cubic-bezier(.3,.9,.4,1); }
+  .sheet{ background:var(--card); width:100%; max-width:420px; border-radius:28px 28px 0 0; padding:26px 26px 34px; animation:up .3s cubic-bezier(.3,.9,.4,1); max-height:85vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   @keyframes up{ from{transform:translateY(40px); opacity:0;} to{transform:translateY(0); opacity:1;} }
   .sheet h3{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:22px; margin:0 0 6px; }
   .sheet p{ font-size:13.5px; color:var(--ink-soft); line-height:1.5; margin:0 0 16px; }
@@ -174,16 +174,21 @@
   .photo-preview-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
 
   .photo-date-notice{ display:none; margin-top:8px; font-size:11.5px; color:var(--moss); font-weight:700; }
+  .edit-location-status{ font-size:12.5px; color:var(--ink-soft); margin:0 0 8px; }
+  .edit-location-status.has-location{ color:var(--moss); font-weight:700; }
   .photo-date-notice.show{ display:block; }
   .photo-preview-thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; }
   .photo-preview-thumb img{ width:100%; height:100%; object-fit:cover; }
   .photo-preview-remove{ position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(20,20,20,0.65);
     color:#fff; border:none; font-size:11px; line-height:18px; padding:0; cursor:pointer; }
 
-  .photo-count-badge{ position:absolute; bottom:-2px; right:-2px; width:17px; height:17px; border-radius:50%;
-    background:#FBF8F0; border:1.5px solid rgba(0,0,0,0.08); color:var(--moss); display:flex; align-items:center;
-    justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:3; }
+  .photo-count-badge{ position:absolute; bottom:-1px; right:-1px; min-width:13px; height:13px; border-radius:50%;
+    background:rgba(20,20,20,0.75); color:#fff; display:flex; align-items:center;
+    justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:7px; font-weight:700; padding:0 2px; z-index:3; }
   .memory-gallery{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .memory-map{ margin-top:8px; }
+  .memory-map iframe{ width:100%; height:130px; border:1px solid #E4E1D6; border-radius:10px; display:block; }
+  .memory-map a{ display:block; margin-top:4px; font-size:11px; color:var(--moss); font-weight:700; text-decoration:none; }
   .memory-gallery img{ width:44px; height:44px; border-radius:8px; object-fit:cover; cursor:pointer; }
 
   .memory-list{ max-height:60vh; overflow-y:auto; margin-top:6px; }
@@ -274,6 +279,7 @@
   .view-toggle button.active{ background:var(--moss); border-color:var(--moss); color:#fff; }
 
   .garden-page{ display:none; position:fixed; inset:0; z-index:70; flex-direction:column; background:#EAF3FB; }
+  #editEntryBackdrop{ z-index:80; }
   .garden-page.open{ display:flex; }
   .garden-page-header{ position:absolute; top:0; left:0; right:0; z-index:10; display:flex; align-items:center; justify-content:space-between;
     padding:calc(env(safe-area-inset-top) + 14px) 18px 10px; }
@@ -293,6 +299,7 @@
   @keyframes wingFlap{ from{ transform:scaleX(1); } to{ transform:scaleX(0.55); } }
   .bfly1{ animation:flutter1 13s ease-in-out infinite; }
   .bfly2{ animation:flutter2 16s ease-in-out infinite 2s; }
+  .garden-scene.night .butterfly{ display:none; }
   @keyframes flutter1{
     0%{ transform:translate(30px,150px); } 20%{ transform:translate(100px,110px); }
     40%{ transform:translate(180px,140px); } 60%{ transform:translate(250px,100px); }
@@ -311,6 +318,7 @@
     100%{ transform:translate(150px,155px); }
   }
   .rabbit{ animation:rabbitHop 18s linear infinite; opacity:0; }
+  .garden-scene.night .rabbit{ display:none; }
   @keyframes rabbitHop{
     0%{ transform:translate(-20px,178px) scale(1); opacity:0; }
     5%{ opacity:1; } 10%{ transform:translate(20px,172px) scale(1,0.9); }
@@ -324,6 +332,22 @@
   .garden-scene.night .f3{ animation-delay:1s; } .garden-scene.night .f4{ animation-delay:1.5s; }
   .garden-scene.night .f5{ animation-delay:.8s; }
   @keyframes fireflyBlink{ 0%,100%{ opacity:0; transform:translate(0,0); } 50%{ opacity:0.9; transform:translate(6px,-8px); } }
+
+  .shooting-star{ opacity:0; }
+  @keyframes shootStar1{
+    0%{ opacity:0; transform:translate(20px,6px); }
+    2%{ opacity:1; }
+    7%{ opacity:0; transform:translate(130px,58px); }
+    100%{ opacity:0; transform:translate(130px,58px); }
+  }
+  @keyframes shootStar2{
+    0%{ opacity:0; transform:translate(230px,55px); }
+    2%{ opacity:1; }
+    7%{ opacity:0; transform:translate(320px,100px); }
+    100%{ opacity:0; transform:translate(320px,100px); }
+  }
+  .garden-scene.night .star1{ animation:shootStar1 27s linear infinite 5s; }
+  .garden-scene.night .star2{ animation:shootStar2 33s linear infinite 16s; }
 
   #rainLayer{ opacity:0; }
   .garden-scene.raining #rainLayer{ opacity:0.6; animation:none; }
@@ -380,16 +404,23 @@
   .garden-empty{ text-align:center; padding:30px 14px; color:#2A3B1F; font-size:13px; width:100%;
     background:rgba(255,255,255,0.75); border-radius:14px; }
 
-  .jump-date-wrap{ position:relative; display:inline-flex; align-items:center; padding:8px 14px; border-radius:999px;
-    background:var(--moss); box-shadow:0 4px 10px -4px rgba(79,122,74,0.5); }
-  .jump-date-wrap span{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; color:#fff; letter-spacing:0.3px; pointer-events:none; }
-  .jump-date-wrap input[type=date]{ position:absolute; inset:0; opacity:0; width:100%; height:100%; border:none; cursor:pointer; }
+  .jump-date-wrap{ display:inline-flex; align-items:center; padding:8px 14px; border-radius:999px; border:none;
+    background:var(--moss); box-shadow:0 4px 10px -4px rgba(79,122,74,0.5); cursor:pointer; }
+  .jump-date-wrap span{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; color:#fff; letter-spacing:0.3px; }
+  .jump-date-list{ max-height:50vh; overflow-y:auto; margin-top:8px; }
+  .jump-date-item{ width:100%; text-align:left; background:none; border:none; border-bottom:1px solid #F0EDE2;
+    padding:12px 4px; font-family:'Inter'; font-size:14px; color:var(--ink); cursor:pointer; display:flex;
+    justify-content:space-between; align-items:center; }
+  .jump-date-item:last-child{ border-bottom:none; }
+  .jump-date-item span{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); }
+  .jump-date-empty{ font-size:13px; color:var(--ink-soft); padding:12px 4px; }
   @keyframes jumpPulse{ 0%,100%{ filter:none; } 50%{ filter:drop-shadow(0 0 10px rgba(227,185,79,0.9)); } }
   .meadow-flower.jump-highlight .meadow-bloom{ animation:jumpPulse 0.7s ease-in-out 3; }
 
   .garden-detail{ display:none; }
   .garden-detail.show{ display:block; background:var(--card); border-radius:18px; padding:16px; box-shadow:0 12px 26px -10px rgba(20,30,15,0.4); }
-  .garden-detail-back{ background:none; border:none; color:var(--moss); font-weight:700; font-size:12.5px; cursor:pointer; padding:0; margin-bottom:10px; }
+  .garden-detail-back{ background:#F6F4EC; border:1.5px solid #E4E1D6; color:var(--moss); font-weight:700; font-size:12.5px;
+    cursor:pointer; padding:9px 16px; border-radius:999px; margin-bottom:12px; }
 
   .photo-peek{ position:fixed; inset:0; z-index:90; display:none; align-items:center; justify-content:center;
     background:rgba(20,30,15,0.55); padding:40px; pointer-events:none; }
@@ -611,6 +642,17 @@
   </div>
 </div>
 
+<div class="backdrop" id="jumpDateBackdrop">
+  <div class="sheet">
+    <h3>Jump to a date</h3>
+    <p>Only days you've actually logged something show up here.</p>
+    <div class="jump-date-list" id="jumpDateList"></div>
+    <div class="sheet-actions">
+      <button class="btn-confirm" id="jumpDateClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="backdrop" id="editEntryBackdrop">
   <div class="sheet">
     <h3>Edit memory</h3>
@@ -625,6 +667,16 @@
       <span class="photo-picker-label" id="editPhotoPickerLabel">Tap to add photos</span>
     </div>
     <div class="photo-preview-row" id="editPhotoPreviewRow"></div>
+
+    <label>Location</label>
+    <div id="editLocationStatus" class="edit-location-status">No location on this entry.</div>
+    <div style="display:flex; gap:10px;">
+      <button class="export-btn" id="editAddLocationBtn" style="margin-top:0; flex:1;">📍 Add from a photo</button>
+      <button class="export-btn" id="editRemoveLocationBtn" style="margin-top:0; flex:0 0 auto; display:none;">Remove</button>
+    </div>
+    <input type="file" id="editLocationPhotoInput" accept="image/*" style="display:none;">
+    <p style="margin:6px 0 0; font-size:11.5px;">Doesn't add the photo to this entry — just reads where it was taken and uses that. Works with the original photo from your camera roll, even if it's not one you've already uploaded here.</p>
+
     <div class="sheet-actions">
       <button class="btn-cancel" id="editCancel">Cancel</button>
       <button class="btn-confirm" id="editSave">Save changes</button>
@@ -678,6 +730,8 @@
           <circle cx="40" cy="60" r="1.4"/>
           <circle cx="130" cy="60" r="1.6"/>
         </g>
+        <line class="shooting-star star1" x1="0" y1="0" x2="26" y2="10" stroke="#F4EEDC" stroke-width="2" stroke-linecap="round"/>
+        <line class="shooting-star star2" x1="0" y1="0" x2="22" y2="9" stroke="#F4EEDC" stroke-width="1.6" stroke-linecap="round"/>
       </g>
 
       <!-- clouds -->
@@ -807,10 +861,7 @@
   <div class="garden-page-content">
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 8px;">
       <label style="margin:0;">The garden bed</label>
-      <div class="jump-date-wrap">
-        <span>📅 Jump to date</span>
-        <input type="date" id="gardenJumpDate" title="Jump to a date">
-      </div>
+      <button class="jump-date-wrap" id="gardenJumpBtn"><span>📅 Jump to date</span></button>
     </div>
     <div class="garden-bed" id="gardenBed"></div>
     <div class="garden-detail" id="gardenDetail">
@@ -1175,38 +1226,72 @@
   const todayISO = new Date().toISOString().slice(0, 10);
   logDateInput.max = todayISO; // no future-dating entries
 
-  // ---- EXIF date extraction ----
-  // Reads a JPEG's embedded capture date (EXIF DateTimeOriginal, falling back
-  // to DateTime) directly from the file bytes — no library needed. Returns
-  // "YYYY-MM-DD" or null if the file has no EXIF data (e.g. screenshots, PNGs).
-  function extractExifDate(file) {
+  // ---- EXIF date + GPS extraction ----
+  // Reads a JPEG's embedded capture date and GPS coordinates (if any) directly
+  // from the file bytes — no library needed. Returns { date, lat, lon }, with
+  // any field null if that data isn't present (e.g. screenshots have neither;
+  // some shared/downloaded photos have a date but no GPS).
+  function extractExifData(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const view = new DataView(e.target.result);
-          if (view.getUint16(0) !== 0xFFD8) return resolve(null); // not a JPEG
+          if (view.getUint16(0) !== 0xFFD8) return resolve({ date: null, lat: null, lon: null });
           let offset = 2;
           while (offset < view.byteLength - 2) {
             const marker = view.getUint16(offset);
             if (marker === 0xFFE1) { // APP1 — where EXIF lives
               const exifStart = offset + 4;
-              if (view.getUint32(exifStart) !== 0x45786966) return resolve(null); // "Exif"
+              if (view.getUint32(exifStart) !== 0x45786966) return resolve({ date: null, lat: null, lon: null }); // "Exif"
               const tiffStart = exifStart + 6;
               const little = view.getUint16(tiffStart) === 0x4949;
               const ifd0Offset = tiffStart + view.getUint32(tiffStart + 4, little);
-              const found = findExifDate(view, tiffStart, ifd0Offset, little);
-              return resolve(found);
+              const date = findExifDate(view, tiffStart, ifd0Offset, little);
+              const gps = findExifGPS(view, tiffStart, ifd0Offset, little);
+              return resolve({ date, lat: gps ? gps.lat : null, lon: gps ? gps.lon : null });
             }
             if ((marker & 0xFF00) !== 0xFF00) break; // no longer in marker segments
             offset += 2 + view.getUint16(offset + 2);
           }
-          resolve(null);
-        } catch (err) { resolve(null); } // any parsing hiccup just means "no date found" — never blocks the save
+          resolve({ date: null, lat: null, lon: null });
+        } catch (err) { resolve({ date: null, lat: null, lon: null }); } // any parsing hiccup just means "nothing found" — never blocks the save
       };
-      reader.onerror = () => resolve(null);
+      reader.onerror = () => resolve({ date: null, lat: null, lon: null });
       reader.readAsArrayBuffer(file.slice(0, 128 * 1024)); // EXIF lives near the start; no need to read the whole file
     });
+  }
+
+  function findExifGPS(view, tiffStart, dirOffset, little) {
+    const entries = view.getUint16(dirOffset, little);
+    let gpsIfdOffset = null;
+    for (let i = 0; i < entries; i++) {
+      const entryOffset = dirOffset + 2 + i * 12;
+      if (view.getUint16(entryOffset, little) === 0x8825) gpsIfdOffset = tiffStart + view.getUint32(entryOffset + 8, little);
+    }
+    if (!gpsIfdOffset) return null;
+    const subEntries = view.getUint16(gpsIfdOffset, little);
+    let latRef = null, lonRef = null, lat = null, lon = null;
+    for (let i = 0; i < subEntries; i++) {
+      const entryOffset = gpsIfdOffset + 2 + i * 12;
+      const tag = view.getUint16(entryOffset, little);
+      if (tag === 0x0001) latRef = String.fromCharCode(view.getUint8(entryOffset + 8));
+      if (tag === 0x0003) lonRef = String.fromCharCode(view.getUint8(entryOffset + 8));
+      if (tag === 0x0002) lat = readGPSRational(view, tiffStart, entryOffset, little);
+      if (tag === 0x0004) lon = readGPSRational(view, tiffStart, entryOffset, little);
+    }
+    if (lat === null || lon === null) return null;
+    if (latRef === 'S') lat = -lat;
+    if (lonRef === 'W') lon = -lon;
+    return { lat, lon };
+  }
+
+  function readGPSRational(view, tiffStart, entryOffset, little) {
+    const valueOffset = tiffStart + view.getUint32(entryOffset + 8, little);
+    const deg = view.getUint32(valueOffset, little) / view.getUint32(valueOffset + 4, little);
+    const min = view.getUint32(valueOffset + 8, little) / view.getUint32(valueOffset + 12, little);
+    const sec = view.getUint32(valueOffset + 16, little) / view.getUint32(valueOffset + 20, little);
+    return deg + min / 60 + sec / 3600;
   }
 
   function findExifDate(view, tiffStart, dirOffset, little) {
@@ -1300,24 +1385,33 @@
     if (pendingPhotos.length >= MAX_PHOTOS) return;
     photoInput.click();
   };
+  let pendingLocation = null;
   photoInput.onchange = async () => {
     const files = Array.from(photoInput.files || []).slice(0, MAX_PHOTOS - pendingPhotos.length);
     if (!files.length) return;
     photoPickerLabel.textContent = 'Compressing…';
     try {
-      // Only try to auto-set the date from the first photo of a fresh batch (not
-      // if the person already picked a specific date themselves this session).
+      // Only try to auto-set the date/location from the first photo of a fresh
+      // batch (not if the person already picked a specific date themselves).
       const isFirstBatch = pendingPhotos.length === 0;
       for (const file of files) {
         const compressed = await compressImage(file);
         pendingPhotos.push(compressed);
       }
-      if (isFirstBatch && !dateWasAutoSet && logDateInput.value === todayISO) {
-        const exifDate = await extractExifDate(files[0]);
-        if (exifDate) {
-          logDateInput.value = exifDate;
+      if (isFirstBatch) {
+        const exif = await extractExifData(files[0]);
+        const notices = [];
+        if (!dateWasAutoSet && logDateInput.value === todayISO && exif.date) {
+          logDateInput.value = exif.date;
           dateWasAutoSet = true;
-          photoDateNotice.textContent = `📅 Date set from photo: ${exifDate}`;
+          notices.push(`📅 Date set from photo: ${exif.date}`);
+        }
+        if (exif.lat !== null && exif.lon !== null) {
+          pendingLocation = { lat: exif.lat, lon: exif.lon };
+          notices.push('📍 Location added from photo');
+        }
+        if (notices.length) {
+          photoDateNotice.textContent = notices.join(' · ');
           photoDateNotice.classList.add('show');
         }
       }
@@ -1334,6 +1428,7 @@
     document.getElementById('logActivity').value = '';
     photoInput.value = '';
     pendingPhotos = [];
+    pendingLocation = null;
     dateWasAutoSet = false;
     photoDateNotice.classList.remove('show');
     renderPhotoPreviews();
@@ -1351,6 +1446,45 @@
   editDateInput.max = todayISO;
   let editingLogId = null;
   let editPendingPhotos = [];
+  let editingLogLocation = null;
+
+  function renderEditLocationStatus() {
+    const statusEl = document.getElementById('editLocationStatus');
+    const removeBtn = document.getElementById('editRemoveLocationBtn');
+    if (editingLogLocation) {
+      statusEl.textContent = '📍 Location added';
+      statusEl.classList.add('has-location');
+      removeBtn.style.display = '';
+    } else {
+      statusEl.textContent = 'No location on this entry.';
+      statusEl.classList.remove('has-location');
+      removeBtn.style.display = 'none';
+    }
+  }
+  document.getElementById('editAddLocationBtn').onclick = () => document.getElementById('editLocationPhotoInput').click();
+  document.getElementById('editRemoveLocationBtn').onclick = () => {
+    editingLogLocation = null;
+    renderEditLocationStatus();
+  };
+  document.getElementById('editLocationPhotoInput').onchange = async () => {
+    const input = document.getElementById('editLocationPhotoInput');
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    const statusEl = document.getElementById('editLocationStatus');
+    statusEl.textContent = 'Reading location…';
+    try {
+      const exif = await extractExifData(file);
+      if (exif.lat !== null && exif.lon !== null) {
+        editingLogLocation = { lat: exif.lat, lon: exif.lon };
+      } else {
+        alert("Couldn't find location data on that photo — it may have been stripped when it was shared or saved from somewhere else. Try the original photo straight from your camera roll.");
+      }
+    } catch (err) {
+      alert('Could not read that photo: ' + err.message);
+    }
+    renderEditLocationStatus();
+  };
 
   function renderEditPhotoPreviews() {
     editPhotoPreviewRow.innerHTML = '';
@@ -1394,8 +1528,10 @@
     editActivityInput.value = log.activity || '';
     editDateInput.value = log.date;
     editPendingPhotos = [...getPhotos(log)];
+    editingLogLocation = log.location || null;
     renderEditPhotoPreviews();
     updateEditPhotoLabel();
+    renderEditLocationStatus();
     editEntryBackdrop.classList.add('open');
   }
   document.getElementById('editCancel').onclick = () => editEntryBackdrop.classList.remove('open');
@@ -1409,7 +1545,7 @@
     try {
       await editLog(editingLogId, {
         activity, date, photos: editPendingPhotos,
-        backfilled: date !== todayISO
+        backfilled: date !== todayISO, location: editingLogLocation
       });
       editEntryBackdrop.classList.remove('open');
       if (!isConfigured) { renderMemoryList(filteredLogs()); renderGardenBed(latestLogs); }
@@ -1433,7 +1569,7 @@
     const date = logDateInput.value || todayISO;
     try {
       const speciesForThis = currentSpecies(liveFlowerCount);
-      await logTime(activity, date, pendingPhotos);
+      await logTime(activity, date, pendingPhotos, pendingLocation);
       logBackdrop.classList.remove('open');
       resetLogSheet();
       plantBloomAnimation(speciesForThis.name);
@@ -1718,16 +1854,25 @@
     document.getElementById('petWhite').classList.toggle('owned', owned.has('pet_pom_white'));
   }
 
-  // The couple on the bench show a different little pose each time the garden
-  // opens — or tap them for a new one on demand.
+  // A different pose each time the garden opens (random) — but tapping the
+  // couple directly cycles through the poses in a fixed order, so it's
+  // predictable rather than sometimes landing on the same one twice in a row.
   const BENCH_POSES = ['poseLean', 'poseHands', 'poseTogether'];
-  function randomizeBenchPose() {
-    const pick = BENCH_POSES[Math.floor(Math.random() * BENCH_POSES.length)];
-    BENCH_POSES.forEach((id) => {
-      document.getElementById(id).style.display = id === pick ? '' : 'none';
+  let benchPoseIndex = 0;
+  function showBenchPose(id) {
+    BENCH_POSES.forEach((pid) => {
+      document.getElementById(pid).style.display = pid === id ? '' : 'none';
     });
   }
-  document.getElementById('coupleBench').addEventListener('click', randomizeBenchPose);
+  function randomizeBenchPose() {
+    benchPoseIndex = Math.floor(Math.random() * BENCH_POSES.length);
+    showBenchPose(BENCH_POSES[benchPoseIndex]);
+  }
+  function cycleBenchPose() {
+    benchPoseIndex = (benchPoseIndex + 1) % BENCH_POSES.length;
+    showBenchPose(BENCH_POSES[benchPoseIndex]);
+  }
+  document.getElementById('coupleBench').addEventListener('click', cycleBenchPose);
 
   document.getElementById('btnGarden').onclick = () => {
     applySceneTheme();
@@ -1736,31 +1881,36 @@
     gardenPage.classList.add('open');
   };
 
-  // ---- Jump to a date in the garden bed ----
-  document.getElementById('gardenJumpDate').addEventListener('change', (e) => {
-    const targetDate = e.target.value;
-    if (!targetDate) return;
-    const flowers = Array.from(document.querySelectorAll('.meadow-flower'));
-    if (!flowers.length) return;
-
-    let target = flowers.find((f) => f.dataset.date === targetDate);
-    if (!target) {
-      // No exact match (e.g. no memory logged that day) — find the closest one instead.
-      let closestDiff = Infinity;
-      flowers.forEach((f) => {
-        const diff = Math.abs(new Date(f.dataset.date) - new Date(targetDate));
-        if (diff < closestDiff) { closestDiff = diff; target = f; }
-      });
-    }
-    if (target) {
-      gardenBed.style.display = '';
-      gardenDetail.classList.remove('show');
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      target.classList.add('jump-highlight');
-      setTimeout(() => target.classList.remove('jump-highlight'), 2200);
-    }
-    e.target.value = '';
-  });
+  // ---- Jump to a date in the garden bed — only dates that actually have entries ----
+  function scrollToMeadowDate(targetDate) {
+    const target = document.querySelector(`.meadow-flower[data-date="${targetDate}"]`);
+    if (!target) return;
+    gardenBed.style.display = '';
+    gardenDetail.classList.remove('show');
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.classList.add('jump-highlight');
+    setTimeout(() => target.classList.remove('jump-highlight'), 2200);
+  }
+  const jumpDateBackdrop = document.getElementById('jumpDateBackdrop');
+  document.getElementById('gardenJumpBtn').onclick = () => {
+    const uniqueDates = [...new Set(latestLogs.map((l) => l.date))].sort().reverse();
+    const list = document.getElementById('jumpDateList');
+    list.innerHTML = uniqueDates.length
+      ? uniqueDates.map((dateStr) => {
+          const d = new Date(dateStr + 'T00:00:00');
+          const label = d.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+          return `<button class="jump-date-item" data-date="${dateStr}">${label} <span>${dateStr}</span></button>`;
+        }).join('')
+      : '<div class="jump-date-empty">Nothing logged yet.</div>';
+    list.querySelectorAll('.jump-date-item').forEach((btn) => {
+      btn.onclick = () => {
+        jumpDateBackdrop.classList.remove('open');
+        scrollToMeadowDate(btn.dataset.date);
+      };
+    });
+    jumpDateBackdrop.classList.add('open');
+  };
+  document.getElementById('jumpDateClose').onclick = () => jumpDateBackdrop.classList.remove('open');
   document.getElementById('gardenBack').onclick = () => gardenPage.classList.remove('open');
 
   // ---- Export memories as a PDF keepsake ----
@@ -1908,6 +2058,13 @@
     photoViewer.classList.add('show');
   }
   document.getElementById('photoViewerClose').onclick = () => photoViewer.classList.remove('show');
+  // Tapping anywhere outside the photo itself (the dark background, not the image) also closes it.
+  photoViewerStage.addEventListener('click', (e) => {
+    if (e.target === photoViewerStage) photoViewer.classList.remove('show');
+  });
+  photoViewer.addEventListener('click', (e) => {
+    if (e.target === photoViewer) photoViewer.classList.remove('show');
+  });
 
   let viewerTouchStartX = 0;
   photoViewerStage.addEventListener('touchstart', (e) => { viewerTouchStartX = e.touches[0].clientX; }, { passive: true });
@@ -1945,7 +2102,7 @@
     const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
     const photos = getPhotos(log);
     const countBadge = photos.length > 1
-      ? `<div class="photo-count-badge"><svg width="9" height="9" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="2.5" fill="currentColor" opacity="0.5"/><rect x="1" y="1" width="10" height="10" rx="2.5" fill="currentColor"/></svg></div>`
+      ? `<div class="photo-count-badge">+${photos.length - 1}</div>`
       : '';
     const thumb = photos.length
       ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${photos[0]}" style="cursor:pointer;">${countBadge}</div>`
@@ -1956,6 +2113,19 @@
     const noteHtml = log.note
       ? `<div class="memory-note">${log.note}</div>`
       : `<button class="memory-add-note" data-id="${log.id}">+ Add a note</button>`;
+    const mapHtml = log.location
+      ? (() => {
+          const { lat, lon } = log.location;
+          const d = 0.006;
+          const bbox = `${lon - d}%2C${lat - d * 0.7}%2C${lon + d}%2C${lat + d * 0.7}`;
+          const embedSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`;
+          const bigMapUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
+          return `<div class="memory-map">
+            <iframe src="${embedSrc}" loading="lazy" title="Map of where this was"></iframe>
+            <a href="${bigMapUrl}" target="_blank" rel="noopener">Open full map ↗</a>
+          </div>`;
+        })()
+      : '';
     card.innerHTML = `
       ${thumb}
       <div class="memory-body">
@@ -1963,6 +2133,7 @@
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
         <div class="memory-meta">+${log.points} pts</div>
         ${galleryHtml}
+        ${mapHtml}
         <div class="note-slot">${noteHtml}</div>
         <div class="memory-actions">
           <button class="memory-edit-btn" data-id="${log.id}">Edit</button>
