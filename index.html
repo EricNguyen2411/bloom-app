@@ -174,8 +174,6 @@
   .photo-preview-row{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
 
   .photo-date-notice{ display:none; margin-top:8px; font-size:11.5px; color:var(--moss); font-weight:700; }
-  .edit-location-status{ font-size:12.5px; color:var(--ink-soft); margin:0 0 8px; }
-  .edit-location-status.has-location{ color:var(--moss); font-weight:700; }
   .photo-date-notice.show{ display:block; }
   .photo-preview-thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; }
   .photo-preview-thumb img{ width:100%; height:100%; object-fit:cover; }
@@ -186,9 +184,6 @@
     background:rgba(20,20,20,0.75); color:#fff; display:flex; align-items:center;
     justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:7px; font-weight:700; padding:0 2px; z-index:3; }
   .memory-gallery{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-  .memory-map{ margin-top:8px; }
-  .memory-map iframe{ width:100%; height:130px; border:1px solid #E4E1D6; border-radius:10px; display:block; }
-  .memory-map a{ display:block; margin-top:4px; font-size:11px; color:var(--moss); font-weight:700; text-decoration:none; }
   .memory-gallery img{ width:44px; height:44px; border-radius:8px; object-fit:cover; cursor:pointer; }
 
   .memory-list{ max-height:60vh; overflow-y:auto; margin-top:6px; }
@@ -280,6 +275,7 @@
 
   .garden-page{ display:none; position:fixed; inset:0; z-index:70; flex-direction:column; background:#EAF3FB; }
   #editEntryBackdrop{ z-index:80; }
+  #jumpDateBackdrop{ z-index:80; }
   .garden-page.open{ display:flex; }
   .garden-page-header{ position:absolute; top:0; left:0; right:0; z-index:10; display:flex; align-items:center; justify-content:space-between;
     padding:calc(env(safe-area-inset-top) + 14px) 18px 10px; }
@@ -326,13 +322,6 @@
     25%{ transform:translate(80px,178px) scale(1); } 28%{ opacity:1; } 32%{ opacity:0; }
     100%{ transform:translate(80px,178px) scale(1); opacity:0; }
   }
-  .firefly{ opacity:0; }
-  .garden-scene.night .firefly{ animation:fireflyBlink 2.4s ease-in-out infinite; }
-  .garden-scene.night .f1{ animation-delay:0s; } .garden-scene.night .f2{ animation-delay:.5s; }
-  .garden-scene.night .f3{ animation-delay:1s; } .garden-scene.night .f4{ animation-delay:1.5s; }
-  .garden-scene.night .f5{ animation-delay:.8s; }
-  @keyframes fireflyBlink{ 0%,100%{ opacity:0; transform:translate(0,0); } 50%{ opacity:0.9; transform:translate(6px,-8px); } }
-
   .shooting-star{ opacity:0; }
   @keyframes shootStar1{
     0%{ opacity:0; transform:translate(20px,6px); }
@@ -388,6 +377,16 @@
 
   .garden-bed{ padding:6px 2px 4px; }
   .meadow-row{ position:relative; height:150px; margin-bottom:24px; }
+
+  .year-divider{ position:relative; height:56px; margin:6px 0 30px; }
+  .fence-rail{ position:absolute; left:0; right:0; height:5px; background:#8A5A2E; border-radius:3px; }
+  .fence-rail-top{ top:16px; }
+  .fence-rail-bottom{ top:38px; }
+  .fence-pickets{ position:absolute; left:0; right:0; top:8px; bottom:8px; display:flex; justify-content:space-between; align-items:stretch; }
+  .picket{ width:7px; background:#A9713F; border-radius:5px 5px 0 0; border:1px solid #8A5A2E; }
+  .year-sign{ position:absolute; left:50%; top:-8px; transform:translateX(-50%); background:#FBF8F0;
+    border:2px solid #8A5A2E; border-radius:12px; padding:6px 16px; font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:800; font-size:14px; color:#4A2E12; box-shadow:0 4px 10px rgba(0,0,0,0.18); z-index:2; white-space:nowrap; }
   .meadow-flower{ position:absolute; bottom:12px; display:flex; flex-direction:column; align-items:center; cursor:pointer;
     transition:transform .15s ease; transform:translateX(-50%); }
   .meadow-flower:active{ transform:translateX(-50%) scale(0.92); }
@@ -668,15 +667,6 @@
     </div>
     <div class="photo-preview-row" id="editPhotoPreviewRow"></div>
 
-    <label>Location</label>
-    <div id="editLocationStatus" class="edit-location-status">No location on this entry.</div>
-    <div style="display:flex; gap:10px;">
-      <button class="export-btn" id="editAddLocationBtn" style="margin-top:0; flex:1;">📍 Add from a photo</button>
-      <button class="export-btn" id="editRemoveLocationBtn" style="margin-top:0; flex:0 0 auto; display:none;">Remove</button>
-    </div>
-    <input type="file" id="editLocationPhotoInput" accept="image/*" style="display:none;">
-    <p style="margin:6px 0 0; font-size:11.5px;">Doesn't add the photo to this entry — just reads where it was taken and uses that. Works with the original photo from your camera roll, even if it's not one you've already uploaded here.</p>
-
     <div class="sheet-actions">
       <button class="btn-cancel" id="editCancel">Cancel</button>
       <button class="btn-confirm" id="editSave">Save changes</button>
@@ -777,13 +767,6 @@
         <ellipse cx="-6" cy="-4" rx="2" ry="7" fill="#EDE6D6"/>
         <ellipse cx="-2" cy="-5" rx="2" ry="7" fill="#EDE6D6"/>
         <circle cx="7" cy="1" r="1" fill="#2A1B12"/>
-      </g>
-      <g id="fireflies" fill="#F2D488">
-        <circle class="firefly f1" cx="90" cy="90" r="2"/>
-        <circle class="firefly f2" cx="150" cy="70" r="1.7"/>
-        <circle class="firefly f3" cx="200" cy="100" r="2"/>
-        <circle class="firefly f4" cx="260" cy="75" r="1.6"/>
-        <circle class="firefly f5" cx="120" cy="120" r="1.8"/>
       </g>
       <g id="rainLayer" stroke="#9FC3D9" stroke-width="2" stroke-linecap="round" opacity="0">
         <line class="raindrop r1" x1="40" y1="0" x2="34" y2="16"/>
@@ -1400,19 +1383,14 @@
       }
       if (isFirstBatch) {
         const exif = await extractExifData(files[0]);
-        const notices = [];
         if (!dateWasAutoSet && logDateInput.value === todayISO && exif.date) {
           logDateInput.value = exif.date;
           dateWasAutoSet = true;
-          notices.push(`📅 Date set from photo: ${exif.date}`);
+          photoDateNotice.textContent = `📅 Date set from photo: ${exif.date}`;
+          photoDateNotice.classList.add('show');
         }
         if (exif.lat !== null && exif.lon !== null) {
-          pendingLocation = { lat: exif.lat, lon: exif.lon };
-          notices.push('📍 Location added from photo');
-        }
-        if (notices.length) {
-          photoDateNotice.textContent = notices.join(' · ');
-          photoDateNotice.classList.add('show');
+          pendingLocation = { lat: exif.lat, lon: exif.lon }; // stored silently, not shown in the UI right now
         }
       }
       renderPhotoPreviews();
@@ -1446,45 +1424,6 @@
   editDateInput.max = todayISO;
   let editingLogId = null;
   let editPendingPhotos = [];
-  let editingLogLocation = null;
-
-  function renderEditLocationStatus() {
-    const statusEl = document.getElementById('editLocationStatus');
-    const removeBtn = document.getElementById('editRemoveLocationBtn');
-    if (editingLogLocation) {
-      statusEl.textContent = '📍 Location added';
-      statusEl.classList.add('has-location');
-      removeBtn.style.display = '';
-    } else {
-      statusEl.textContent = 'No location on this entry.';
-      statusEl.classList.remove('has-location');
-      removeBtn.style.display = 'none';
-    }
-  }
-  document.getElementById('editAddLocationBtn').onclick = () => document.getElementById('editLocationPhotoInput').click();
-  document.getElementById('editRemoveLocationBtn').onclick = () => {
-    editingLogLocation = null;
-    renderEditLocationStatus();
-  };
-  document.getElementById('editLocationPhotoInput').onchange = async () => {
-    const input = document.getElementById('editLocationPhotoInput');
-    const file = input.files && input.files[0];
-    input.value = '';
-    if (!file) return;
-    const statusEl = document.getElementById('editLocationStatus');
-    statusEl.textContent = 'Reading location…';
-    try {
-      const exif = await extractExifData(file);
-      if (exif.lat !== null && exif.lon !== null) {
-        editingLogLocation = { lat: exif.lat, lon: exif.lon };
-      } else {
-        alert("Couldn't find location data on that photo — it may have been stripped when it was shared or saved from somewhere else. Try the original photo straight from your camera roll.");
-      }
-    } catch (err) {
-      alert('Could not read that photo: ' + err.message);
-    }
-    renderEditLocationStatus();
-  };
 
   function renderEditPhotoPreviews() {
     editPhotoPreviewRow.innerHTML = '';
@@ -1528,10 +1467,8 @@
     editActivityInput.value = log.activity || '';
     editDateInput.value = log.date;
     editPendingPhotos = [...getPhotos(log)];
-    editingLogLocation = log.location || null;
     renderEditPhotoPreviews();
     updateEditPhotoLabel();
-    renderEditLocationStatus();
     editEntryBackdrop.classList.add('open');
   }
   document.getElementById('editCancel').onclick = () => editEntryBackdrop.classList.remove('open');
@@ -1545,7 +1482,7 @@
     try {
       await editLog(editingLogId, {
         activity, date, photos: editPendingPhotos,
-        backfilled: date !== todayISO, location: editingLogLocation
+        backfilled: date !== todayISO
       });
       editEntryBackdrop.classList.remove('open');
       if (!isConfigured) { renderMemoryList(filteredLogs()); renderGardenBed(latestLogs); }
@@ -2113,19 +2050,6 @@
     const noteHtml = log.note
       ? `<div class="memory-note">${log.note}</div>`
       : `<button class="memory-add-note" data-id="${log.id}">+ Add a note</button>`;
-    const mapHtml = log.location
-      ? (() => {
-          const { lat, lon } = log.location;
-          const d = 0.006;
-          const bbox = `${lon - d}%2C${lat - d * 0.7}%2C${lon + d}%2C${lat + d * 0.7}`;
-          const embedSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`;
-          const bigMapUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
-          return `<div class="memory-map">
-            <iframe src="${embedSrc}" loading="lazy" title="Map of where this was"></iframe>
-            <a href="${bigMapUrl}" target="_blank" rel="noopener">Open full map ↗</a>
-          </div>`;
-        })()
-      : '';
     card.innerHTML = `
       ${thumb}
       <div class="memory-body">
@@ -2133,7 +2057,6 @@
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
         <div class="memory-meta">+${log.points} pts</div>
         ${galleryHtml}
-        ${mapHtml}
         <div class="note-slot">${noteHtml}</div>
         <div class="memory-actions">
           <button class="memory-edit-btn" data-id="${log.id}">Edit</button>
@@ -2207,68 +2130,90 @@
     const ordered = [...logs].reverse();
     gardenBed.innerHTML = '';
 
-    for (let rowStart = 0; rowStart < ordered.length; rowStart += ROW_SIZE) {
-      const rowLogs = ordered.slice(rowStart, rowStart + ROW_SIZE);
-      const row = document.createElement('div');
+    let row = null;
+    let rowCount = 0;
+    let lastYear = null;
+    const startNewRow = () => {
+      row = document.createElement('div');
       row.className = 'meadow-row';
-      rowLogs.forEach((log, i) => {
-        const speciesIdx = rowStart + i;
-        const sp = SPECIES[speciesIdx % SPECIES.length];
-        const d = new Date(log.date + 'T00:00:00');
-        const shortDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
-        const photos = getPhotos(log);
-        const bloomInner = photos.length
-          ? `<img class="meadow-bloom-photo" src="${photos[0]}">`
-          : iconWithColor(sp);
-
-        const flower = document.createElement('div');
-        flower.className = 'meadow-flower';
-        flower.style.left = ROW_X[i];
-        flower.dataset.date = log.date;
-        const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
-        flower.innerHTML = `
-          <div class="meadow-bloom" style="background:${bloomBg}">
-            ${bloomInner}
-            ${log.type === 'challenge' ? '<div class="meadow-badge">✦</div>' : ''}
-            ${photos.length > 1 ? `<div class="photo-count-badge">+${photos.length - 1}</div>` : ''}
-          </div>
-          <div class="meadow-stem" style="height:${ROW_STEM_H[i]}px"></div>
-          <div class="meadow-date">${shortDate}</div>`;
-
-        // Long-press (hold ~350ms) previews the first photo full-size; a normal tap opens the memory.
-        let pressTimer = null;
-        let longPressFired = false;
-        const openDetail = () => {
-          gardenBed.style.display = 'none';
-          gardenDetail.classList.add('show');
-          gardenDetailContent.innerHTML = '';
-          gardenDetailContent.appendChild(buildMemoryCard(log));
-          document.querySelector('.garden-page-content').scrollTop = 0;
-        };
-        flower.addEventListener('pointerdown', () => {
-          longPressFired = false;
-          if (!photos.length) return;
-          pressTimer = setTimeout(() => {
-            longPressFired = true;
-            photoPeekImg.src = photos[0];
-            photoPeek.classList.add('show');
-          }, 350);
-        });
-        const endPress = () => {
-          clearTimeout(pressTimer);
-          photoPeek.classList.remove('show');
-        };
-        flower.addEventListener('pointerup', endPress);
-        flower.addEventListener('pointerleave', endPress);
-        flower.addEventListener('pointercancel', endPress);
-        flower.onclick = () => {
-          if (longPressFired) { longPressFired = false; return; } // long-press already showed the peek — don't also open detail
-          openDetail();
-        };
-        row.appendChild(flower);
-      });
       gardenBed.appendChild(row);
-    }
+      rowCount = 0;
+    };
+
+    ordered.forEach((log, idx) => {
+      const entryYear = log.date.slice(0, 4);
+      if (lastYear !== null && entryYear !== lastYear) {
+        const divider = document.createElement('div');
+        divider.className = 'year-divider';
+        const pickets = Array.from({ length: 14 }, () => '<div class="picket"></div>').join('');
+        divider.innerHTML = `
+          <div class="fence-rail fence-rail-top"></div>
+          <div class="fence-pickets">${pickets}</div>
+          <div class="fence-rail fence-rail-bottom"></div>
+          <div class="year-sign">🌱 ${entryYear}</div>`;
+        gardenBed.appendChild(divider);
+        row = null; // start a fresh row right after the fence
+      }
+      lastYear = entryYear;
+
+      if (!row || rowCount >= ROW_SIZE) startNewRow();
+      const i = rowCount;
+      const speciesIdx = idx;
+      const sp = SPECIES[speciesIdx % SPECIES.length];
+      const d = new Date(log.date + 'T00:00:00');
+      const shortDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
+      const photos = getPhotos(log);
+      const bloomInner = photos.length
+        ? `<img class="meadow-bloom-photo" src="${photos[0]}">`
+        : iconWithColor(sp);
+
+      const flower = document.createElement('div');
+      flower.className = 'meadow-flower';
+      flower.style.left = ROW_X[i];
+      flower.dataset.date = log.date;
+      const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
+      flower.innerHTML = `
+        <div class="meadow-bloom" style="background:${bloomBg}">
+          ${bloomInner}
+          ${log.type === 'challenge' ? '<div class="meadow-badge">✦</div>' : ''}
+          ${photos.length > 1 ? `<div class="photo-count-badge">+${photos.length - 1}</div>` : ''}
+        </div>
+        <div class="meadow-stem" style="height:${ROW_STEM_H[i]}px"></div>
+        <div class="meadow-date">${shortDate}</div>`;
+
+      // Long-press (hold ~350ms) previews the first photo full-size; a normal tap opens the memory.
+      let pressTimer = null;
+      let longPressFired = false;
+      const openDetail = () => {
+        gardenBed.style.display = 'none';
+        gardenDetail.classList.add('show');
+        gardenDetailContent.innerHTML = '';
+        gardenDetailContent.appendChild(buildMemoryCard(log));
+        document.querySelector('.garden-page-content').scrollTop = 0;
+      };
+      flower.addEventListener('pointerdown', () => {
+        longPressFired = false;
+        if (!photos.length) return;
+        pressTimer = setTimeout(() => {
+          longPressFired = true;
+          photoPeekImg.src = photos[0];
+          photoPeek.classList.add('show');
+        }, 350);
+      });
+      const endPress = () => {
+        clearTimeout(pressTimer);
+        photoPeek.classList.remove('show');
+      };
+      flower.addEventListener('pointerup', endPress);
+      flower.addEventListener('pointerleave', endPress);
+      flower.addEventListener('pointercancel', endPress);
+      flower.onclick = () => {
+        if (longPressFired) { longPressFired = false; return; } // long-press already showed the peek — don't also open detail
+        openDetail();
+      };
+      row.appendChild(flower);
+      rowCount++;
+    });
   }
 
   document.getElementById('gardenDetailBack').onclick = () => {
