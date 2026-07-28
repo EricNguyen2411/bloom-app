@@ -748,13 +748,6 @@
           <circle cx="10" cy="-13" r="6"/>
           <path d="M-3,3 Q0,6.5 3,3" stroke="#4A3B33" stroke-width="4" stroke-linecap="round" fill="none"/>
         </g>
-        <g class="bench-pose" id="poseArm" fill="#4A3B33" style="display:none;">
-          <ellipse cx="-10" cy="0" rx="8" ry="9"/>
-          <circle cx="-10" cy="-13" r="6"/>
-          <path d="M-4,-9 Q4,-14 9,-8" stroke="#4A3B33" stroke-width="5" stroke-linecap="round" fill="none"/>
-          <ellipse cx="10" cy="0" rx="8" ry="9"/>
-          <circle cx="10" cy="-13" r="6"/>
-        </g>
         <g class="bench-pose" id="poseTogether" fill="#4A3B33" style="display:none;">
           <ellipse cx="-9" cy="1" rx="8" ry="9" transform="rotate(-7 -9 1)"/>
           <circle cx="-5.5" cy="-11" r="6"/>
@@ -766,29 +759,30 @@
       <!-- days-together sign: a little chalkboard on a post, only shown if configured -->
       <g id="daysSign" transform="translate(128,180)" opacity="0">
         <rect x="-3" y="-9" width="6" height="20" rx="2" fill="#8A5A2E"/>
-        <rect x="-27" y="-35" width="54" height="29" rx="3" fill="#3A2E28" stroke="#8A5A2E" stroke-width="3"/>
-        <rect x="-24" y="-32" width="48" height="23" rx="1.5" fill="#40332C"/>
-        <text id="daysSignNum" x="0" y="-19" text-anchor="middle" font-family="'Bricolage Grotesque', sans-serif" font-weight="800" font-size="13" fill="#F4EFE0">0</text>
-        <text x="0" y="-9.5" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="5.5" letter-spacing="0.5" fill="#D8D0BC">MONTHS TOGETHER</text>
+        <rect x="-27" y="-40" width="54" height="34" rx="3" fill="#3A2E28" stroke="#8A5A2E" stroke-width="3"/>
+        <rect x="-24" y="-37" width="48" height="28" rx="1.5" fill="#40332C"/>
+        <text id="daysSignNum" x="0" y="-24" text-anchor="middle" font-family="'Bricolage Grotesque', sans-serif" font-weight="800" font-size="12" fill="#F4EFE0">0</text>
+        <text x="0" y="-15.5" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="5.5" letter-spacing="0.5" fill="#D8D0BC">MONTHS</text>
+        <text x="0" y="-9.5" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="5.5" letter-spacing="0.5" fill="#D8D0BC">TOGETHER</text>
       </g>
 
       <!-- wandering pets: hidden until adopted -->
-      <g class="pet" id="petBrown" transform="translate(266,180)">
+      <g class="pet" id="petBrown" transform="translate(248,184) scale(0.7)">
         <ellipse cx="0" cy="4" rx="9" ry="8" fill="#A9713F"/>
         <circle cx="-5" cy="1" r="5.5" fill="#A9713F"/>
         <circle cx="5" cy="1" r="5.5" fill="#A9713F"/>
         <circle cx="0" cy="-7" r="6.3" fill="#A9713F"/>
-        <path d="M-4,-11 L-6.5,-16.5 L-1,-12.5 Z" fill="#8A5A2E"/>
-        <path d="M4,-11 L6.5,-16.5 L1,-12.5 Z" fill="#8A5A2E"/>
+        <circle cx="-4.5" cy="-13" r="2.8" fill="#8A5A2E"/>
+        <circle cx="4.5" cy="-13" r="2.8" fill="#8A5A2E"/>
         <path d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#8A5A2E"/>
       </g>
-      <g class="pet" id="petWhite" transform="translate(336,180) scale(-1,1)">
+      <g class="pet" id="petWhite" transform="translate(354,184) scale(-0.7,0.7)">
         <ellipse cx="0" cy="4" rx="9" ry="8" fill="#F6F1E4"/>
         <circle cx="-5" cy="1" r="5.5" fill="#F6F1E4"/>
         <circle cx="5" cy="1" r="5.5" fill="#F6F1E4"/>
         <circle cx="0" cy="-7" r="6.3" fill="#F6F1E4"/>
-        <path d="M-4,-11 L-6.5,-16.5 L-1,-12.5 Z" fill="#DED5BC"/>
-        <path d="M4,-11 L6.5,-16.5 L1,-12.5 Z" fill="#DED5BC"/>
+        <circle cx="-4.5" cy="-13" r="2.8" fill="#DED5BC"/>
+        <circle cx="4.5" cy="-13" r="2.8" fill="#DED5BC"/>
         <path d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#DED5BC"/>
       </g>
     </svg>
@@ -1696,7 +1690,7 @@
 
   // The couple on the bench show a different little pose each time the garden
   // opens — or tap them for a new one on demand.
-  const BENCH_POSES = ['poseLean', 'poseHands', 'poseArm', 'poseTogether'];
+  const BENCH_POSES = ['poseLean', 'poseHands', 'poseTogether'];
   function randomizeBenchPose() {
     const pick = BENCH_POSES[Math.floor(Math.random() * BENCH_POSES.length)];
     BENCH_POSES.forEach((id) => {
