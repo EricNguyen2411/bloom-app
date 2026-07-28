@@ -378,7 +378,7 @@
   .garden-bed{ padding:6px 2px 4px; }
   .meadow-row{ position:relative; height:150px; margin-bottom:24px; }
 
-  .year-divider{ position:relative; height:56px; margin:6px 0 30px; }
+  .year-divider{ position:relative; height:56px; margin:6px 0 -22px; }
   .fence-rail{ position:absolute; left:0; right:0; height:5px; background:#8A5A2E; border-radius:3px; }
   .fence-rail-top{ top:16px; }
   .fence-rail-bottom{ top:38px; }
@@ -2142,7 +2142,7 @@
 
     ordered.forEach((log, idx) => {
       const entryYear = log.date.slice(0, 4);
-      if (lastYear !== null && entryYear !== lastYear) {
+      if (entryYear !== lastYear) {
         const divider = document.createElement('div');
         divider.className = 'year-divider';
         const pickets = Array.from({ length: 14 }, () => '<div class="picket"></div>').join('');
