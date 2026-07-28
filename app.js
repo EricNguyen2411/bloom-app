@@ -186,7 +186,20 @@ async function initFirebase() {
   const app = initializeApp(firebaseConfig);
   const auth = authMod.getAuth(app);
   await authMod.signInAnonymously(auth);
-  db = fsMod.getFirestore(app);
+
+  // Persistent local cache: Firestore keeps a copy of your data in the
+  // browser's IndexedDB, so on repeat opens the app can show what it already
+  // has instantly while it syncs any changes in the background — instead of
+  // showing an empty garden until a fresh network round-trip finishes.
+  try {
+    db = fsMod.initializeFirestore(app, {
+      localCache: fsMod.persistentLocalCache({ tabManager: fsMod.persistentMultipleTabManager() })
+    });
+  } catch (err) {
+    console.warn('Persistent Firestore cache unavailable, falling back to default:', err);
+    db = fsMod.getFirestore(app);
+  }
+
   ({ addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
      arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer } = fsMod);
   return true;
