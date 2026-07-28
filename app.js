@@ -10,7 +10,7 @@ export const STAGE_KEYS = ['seed', 'sprout', 'budding', 'blooming', 'flourishing
 // garden scene) so it actually appears in the scene once bought, not just in a list.
 export const DECOR_SHOP = [
   { id: 'lantern', icon: '🕯️', name: 'Garden lantern', cost: 15, scenePos: { left: '62%', top: '74%' } },
-  { id: 'bench', icon: '🪑', name: 'Little bench', cost: 25, scenePos: { left: '78%', top: '78%' } },
+  { id: 'bench', icon: '🪑', name: 'Little bench', cost: 25, special: 'bench' },
   { id: 'lights', icon: '✨', name: 'Fairy lights', cost: 30, scenePos: { left: '13%', top: '36%' } },
   { id: 'fountain', icon: '⛲', name: 'Fountain', cost: 40, scenePos: { left: '88%', top: '68%' } },
   { id: 'chime', icon: '🎐', name: 'Wind chime', cost: 45, scenePos: { left: '7%', top: '55%' } },
@@ -18,7 +18,9 @@ export const DECOR_SHOP = [
   { id: 'bridge', icon: '🌉', name: 'Little bridge', cost: 60, scenePos: { left: '40%', top: '82%' } },
   { id: 'pond', icon: '🪷', name: 'Lily pond', cost: 70, scenePos: { left: '22%', top: '86%' } },
   { id: 'statue', icon: '🗿', name: 'Garden statue', cost: 80, scenePos: { left: '93%', top: '82%' } },
-  { id: 'gazebo', icon: '⛩️', name: 'Gazebo', cost: 95, scenePos: { left: '52%', top: '66%' } }
+  { id: 'gazebo', icon: '⛩️', name: 'Gazebo', cost: 95, scenePos: { left: '52%', top: '66%' } },
+  { id: 'pet_pom_brown', icon: '🐶', name: 'Brown Pomeranian', cost: 90, special: 'pet' },
+  { id: 'pet_pom_white', icon: '🐩', name: 'White Pomeranian', cost: 90, special: 'pet' }
 ];
 export const ANNIVERSARY_ICON = '💍';
 
@@ -194,6 +196,23 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 function mmdd(dateStr) { return dateStr.slice(5); }
 function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
 
+// Guards against a common config mistake: writing 2025-12-12 without quotes
+// turns it into the number 2001 (2025 minus 12 minus 12) before this code
+// ever runs, which — if unchecked — reads as a date in 1970. This validates
+// the shape is actually a "YYYY-MM-DD" string before trusting it.
+function isValidDateStr(s) {
+  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s).getTime());
+}
+
+// Days together — used by both Fun Stats and the garden sign. Returns null
+// (meaning: don't show the stat) if RELATIONSHIP_START_DATE isn't set or isn't
+// a valid quoted date string.
+export function getDaysTogether() {
+  if (!isValidDateStr(RELATIONSHIP_START_DATE)) return null;
+  const days = daysBetween(RELATIONSHIP_START_DATE, todayStr());
+  return days >= 0 ? days : null; // ignore a future-dated typo too
+}
+
 // Which species the *next* planted flower will be — cycles by how many
 // flowers have been grown so far, so the plant always previews accurately.
 export function currentSpecies(totalFlowers) {
@@ -365,8 +384,7 @@ export async function countFlowers() {
 // (no distance/venue tracking, since that would mean typing more per entry,
 // which works against keeping logging fast).
 export async function computeFunStats() {
-  const today = todayStr();
-  const daysTogether = RELATIONSHIP_START_DATE ? daysBetween(RELATIONSHIP_START_DATE, today) : null;
+  const daysTogether = getDaysTogether();
 
   if (!isConfigured) {
     const photosCount = DEMO_LOGS.reduce((sum, l) => sum + getPhotos(l).length, 0);
@@ -528,14 +546,25 @@ export async function deleteLog(logId) {
 
 // Edits the activity description of an existing memory entry (points
 // are left alone to avoid re-triggering streak logic).
-export async function editLog(logId, activity) {
+// Edits an existing memory. `updates` can include any of: activity, date,
+// photos, backfilled — pass only what changed. Note: editing the date does
+// NOT retroactively recalculate the streak (that's only ever computed at the
+// moment something is logged) — it just updates the "backfilled" flag so the
+// entry displays consistently with entries logged that way normally.
+export async function editLog(logId, updates) {
+  if (updates.photos) {
+    const totalSize = updates.photos.reduce((sum, p) => sum + p.length, 0);
+    if (totalSize > 900000) {
+      throw new Error('Those photos are too large together even after compression — try removing one or two.');
+    }
+  }
   if (!isConfigured) {
     const entry = DEMO_LOGS.find((l) => l.id === logId);
-    if (entry) entry.activity = activity;
+    if (entry) Object.assign(entry, updates);
     return;
   }
   try {
-    await setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), { activity }, { merge: true });
+    await setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), updates, { merge: true });
   } catch (err) {
     console.error('editLog failed:', err);
     alert('Could not save that edit: ' + err.message);

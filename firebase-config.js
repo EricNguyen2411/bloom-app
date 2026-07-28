@@ -21,12 +21,12 @@ export const COUPLE_ID = "24112000";
 // as "MM-DD" — e.g. "08-09" for August 9th. On that date each year, a
 // special ring decoration unlocks automatically plus a points bonus.
 // Leave as null to skip this feature entirely.
-export const ANNIVERSARY_MD = 12-12; // e.g. "08-09"
+export const ANNIVERSARY_MD = "12-12"; // e.g. "08-09"
 
 // Optional: the actual date you two got together, full year included —
 // e.g. "2023-08-09". Powers the "days together" number in Fun Stats.
 // Leave as null to just hide that one stat.
-export const RELATIONSHIP_START_DATE = 2025-12-12; // e.g. "2023-08-09"
+export const RELATIONSHIP_START_DATE = "2025-12-12"; // e.g. "2023-08-09"
 
 
 
