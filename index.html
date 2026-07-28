@@ -767,7 +767,7 @@
       </g>
 
       <!-- wandering pets: hidden until adopted -->
-      <g class="pet" id="petBrown" transform="translate(248,184) scale(0.7)">
+      <g class="pet" id="petBrown" transform="translate(256,184) scale(0.7)">
         <ellipse cx="0" cy="4" rx="9" ry="8" fill="#A9713F"/>
         <circle cx="-5" cy="1" r="5.5" fill="#A9713F"/>
         <circle cx="5" cy="1" r="5.5" fill="#A9713F"/>
@@ -776,7 +776,7 @@
         <circle cx="4.5" cy="-13" r="2.8" fill="#8A5A2E"/>
         <path d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#8A5A2E"/>
       </g>
-      <g class="pet" id="petWhite" transform="translate(354,184) scale(-0.7,0.7)">
+      <g class="pet" id="petWhite" transform="translate(344,184) scale(-0.7,0.7)">
         <ellipse cx="0" cy="4" rx="9" ry="8" fill="#F6F1E4"/>
         <circle cx="-5" cy="1" r="5.5" fill="#F6F1E4"/>
         <circle cx="5" cy="1" r="5.5" fill="#F6F1E4"/>
@@ -801,18 +801,6 @@
     <div class="garden-detail" id="gardenDetail">
       <button class="garden-detail-back" id="gardenDetailBack">← Back to garden</button>
       <div id="gardenDetailContent"></div>
-    </div>
-
-    <div id="decorSection">
-      <label>Your decorations</label>
-      <p style="margin:0 0 8px;">Tap one to remove it — you'll get a full refund.</p>
-      <div class="owned-decor-row" id="ownedDecorRow"></div>
-    </div>
-
-    <div id="shopSection">
-      <label>🪙 Garden Shop</label>
-      <p style="margin:0 0 10px;">Spend points earned from logging time and challenges on things for the garden.</p>
-      <div class="shop-grid" id="shopGrid"></div>
     </div>
   </div>
 </div>
@@ -879,7 +867,17 @@
       <div class="txt">Anniversary bonus unlocked this year — happy anniversary!</div>
     </div>
 
-    <p style="margin:14px 0 0;">Want to spend your points on something for the garden? Head to the 🌷 Garden page — the Shop is down at the bottom.</p>
+    <div id="decorSection">
+      <label>Your decorations</label>
+      <p style="margin:0 0 8px;">Tap one to remove it — you'll get a full refund.</p>
+      <div class="owned-decor-row" id="ownedDecorRow"></div>
+    </div>
+
+    <div id="shopSection">
+      <label>🪙 Garden Shop</label>
+      <p style="margin:0 0 10px;">Spend points earned from logging time and challenges on things for the garden.</p>
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
 
     <button class="export-btn" id="funStatsBtn">🎉 See our fun stats</button>
 
@@ -894,7 +892,7 @@
     <div class="setting-row">
       <div>
         <div class="setting-name">Garden Shop & decorations</div>
-        <div class="setting-desc">Turn off if you're not using this yet — hides the Shop and decorations from the Garden page for both of you.</div>
+        <div class="setting-desc">Turn off if you're not using this yet — hides the Shop and decorations for both of you.</div>
       </div>
       <button class="toggle-switch" id="toggleShop" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
     </div>
