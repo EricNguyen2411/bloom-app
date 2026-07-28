@@ -175,7 +175,7 @@ const DEFAULT_CHALLENGES = [
 
 const isConfigured = firebaseConfig.apiKey !== "REPLACE_ME";
 let db, addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
-    arrayUnion, increment, query, orderBy, limit, writeBatch, getCountFromServer;
+    arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer;
 
 async function initFirebase() {
   if (!isConfigured) return false;
@@ -188,7 +188,7 @@ async function initFirebase() {
   await authMod.signInAnonymously(auth);
   db = fsMod.getFirestore(app);
   ({ addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
-     arrayUnion, increment, query, orderBy, limit, writeBatch, getCountFromServer } = fsMod);
+     arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer } = fsMod);
   return true;
 }
 
@@ -211,6 +211,18 @@ export function getDaysTogether() {
   if (!isValidDateStr(RELATIONSHIP_START_DATE)) return null;
   const days = daysBetween(RELATIONSHIP_START_DATE, todayStr());
   return days >= 0 ? days : null; // ignore a future-dated typo too
+}
+
+// Calendar-accurate month count (not just days/30) — e.g. Jan 31 to Mar 1 is
+// 1 month, not 1.03 months.
+export function getMonthsTogether() {
+  if (!isValidDateStr(RELATIONSHIP_START_DATE)) return null;
+  const start = new Date(RELATIONSHIP_START_DATE);
+  const end = new Date(todayStr());
+  if (end < start) return null;
+  let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  if (end.getDate() < start.getDate()) months -= 1;
+  return Math.max(0, months);
 }
 
 // Which species the *next* planted flower will be — cycles by how many
@@ -346,6 +358,30 @@ export async function purchaseDecoration(decorId, cost) {
   } catch (err) {
     console.error('purchaseDecoration failed:', err);
     alert('Could not buy that: ' + err.message);
+    throw err;
+  }
+}
+
+// Removes a decoration you own, refunding its full cost — so trying something
+// out and changing your mind never feels like a waste.
+export async function removeDecoration(decorId, cost) {
+  if (!isConfigured) {
+    const idx = DEMO_STATE.unlockedDecorations.indexOf(decorId);
+    if (idx === -1) return false;
+    DEMO_STATE.unlockedDecorations.splice(idx, 1);
+    DEMO_STATE.points += cost;
+    return true;
+  }
+  try {
+    const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
+    await setDoc(ref, {
+      points: increment(cost),
+      unlockedDecorations: arrayRemove(decorId)
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.error('removeDecoration failed:', err);
+    alert('Could not remove that: ' + err.message);
     throw err;
   }
 }
