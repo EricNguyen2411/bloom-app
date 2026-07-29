@@ -147,6 +147,7 @@
   .action-label{ font-size:9.5px; font-weight:600; white-space:nowrap; }
 
   .backdrop{ display:none; position:fixed; inset:0; background:rgba(30,42,32,0.4); z-index:40; align-items:flex-end; justify-content:center; }
+  body:has(.backdrop.open){ overflow:hidden; }
   .backdrop.open{ display:flex; }
   .sheet{ background:var(--card); width:100%; max-width:420px; border-radius:28px 28px 0 0; padding:26px 26px 34px; animation:up .3s cubic-bezier(.3,.9,.4,1); max-height:85vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   @keyframes up{ from{transform:translateY(40px); opacity:0;} to{transform:translateY(0); opacity:1;} }
@@ -352,6 +353,8 @@
   .garden-scene svg{ width:100%; height:100%; display:block; }
 
   #coupleBench{ transition:opacity .6s ease; }
+  .scene-landmark{ opacity:0; transition:opacity .6s ease; }
+  .scene-landmark.owned{ opacity:1; }
   #coupleBench.owned{ opacity:1; }
   #daysSign{ transition:opacity .6s ease; }
   #daysSign.show{ opacity:1; }
@@ -406,13 +409,18 @@
   .jump-date-wrap{ display:inline-flex; align-items:center; padding:8px 14px; border-radius:999px; border:none;
     background:var(--moss); box-shadow:0 4px 10px -4px rgba(79,122,74,0.5); cursor:pointer; }
   .jump-date-wrap span{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; color:#fff; letter-spacing:0.3px; }
-  .jump-date-list{ max-height:50vh; overflow-y:auto; margin-top:8px; }
-  .jump-date-item{ width:100%; text-align:left; background:none; border:none; border-bottom:1px solid #F0EDE2;
-    padding:12px 4px; font-family:'Inter'; font-size:14px; color:var(--ink); cursor:pointer; display:flex;
-    justify-content:space-between; align-items:center; }
-  .jump-date-item:last-child{ border-bottom:none; }
-  .jump-date-item span{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); }
-  .jump-date-empty{ font-size:13px; color:var(--ink-soft); padding:12px 4px; }
+  .calendar-nav{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .calendar-nav button{ width:34px; height:34px; border-radius:50%; border:none; background:#F1EEE3; color:var(--moss);
+    font-size:16px; font-weight:700; cursor:pointer; }
+  .calendar-nav button:disabled{ opacity:0.3; cursor:default; }
+  #calMonthLabel{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; color:var(--ink); }
+  .calendar-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); margin-top:14px; }
+  .calendar-weekdays span{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-soft); font-weight:700; }
+  .calendar-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-top:6px; }
+  .cal-day{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:12.5px;
+    color:#C7C2B4; border-radius:50%; }
+  .cal-day.has-entry{ background:var(--moss); color:#fff; font-weight:700; cursor:pointer; }
+  .cal-day.empty{ visibility:hidden; }
   @keyframes jumpPulse{ 0%,100%{ filter:none; } 50%{ filter:drop-shadow(0 0 10px rgba(227,185,79,0.9)); } }
   .meadow-flower.jump-highlight .meadow-bloom{ animation:jumpPulse 0.7s ease-in-out 3; }
 
@@ -531,7 +539,6 @@
     <div class="chips">
       <div class="chip streak">🔥 <b id="streakChip">—</b> day streak</div>
       <div class="chip">🌸 <b id="flowerCountChip">—</b> grown</div>
-      <div class="chip">🪙 <b id="pointsChip">—</b></div>
     </div>
   </div>
 
@@ -657,8 +664,13 @@
 <div class="backdrop" id="jumpDateBackdrop">
   <div class="sheet">
     <h3>Jump to a date</h3>
-    <p>Only days you've actually logged something show up here.</p>
-    <div class="jump-date-list" id="jumpDateList"></div>
+    <div class="calendar-nav">
+      <button id="calPrevMonth" type="button">‹</button>
+      <div id="calMonthLabel">—</div>
+      <button id="calNextMonth" type="button">›</button>
+    </div>
+    <div class="calendar-weekdays"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+    <div class="calendar-grid" id="calendarGrid"></div>
     <div class="sheet-actions">
       <button class="btn-confirm" id="jumpDateClose">Close</button>
     </div>
@@ -853,6 +865,24 @@
         <circle cx="-4.5" cy="-13" r="2.8" fill="#DED5BC"/>
         <circle cx="4.5" cy="-13" r="2.8" fill="#DED5BC"/>
         <path d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#DED5BC"/>
+      </g>
+
+      <!-- landmark decorations: hidden until bought -->
+      <g id="decorBridge" class="scene-landmark" transform="translate(195,100) scale(0.9)">
+        <path d="M-32,16 Q0,-18 32,16" stroke="#5C6B73" stroke-width="3.2" fill="none"/>
+        <rect x="-34" y="16" width="68" height="3.5" rx="1.5" fill="#7A8890"/>
+        <line x1="-22" y1="16" x2="-22" y2="2" stroke="#5C6B73" stroke-width="1.6"/>
+        <line x1="-11" y1="16" x2="-11" y2="-8" stroke="#5C6B73" stroke-width="1.6"/>
+        <line x1="0" y1="16" x2="0" y2="-14" stroke="#5C6B73" stroke-width="1.6"/>
+        <line x1="11" y1="16" x2="11" y2="-8" stroke="#5C6B73" stroke-width="1.6"/>
+        <line x1="22" y1="16" x2="22" y2="2" stroke="#5C6B73" stroke-width="1.6"/>
+      </g>
+      <g id="decorOpera" class="scene-landmark" transform="translate(268,122) scale(0.85)">
+        <rect x="-26" y="16" width="52" height="5" rx="1" fill="#D8D0BC"/>
+        <path d="M-20,16 Q-20,0 -8,3 Q-11,16 -20,16 Z" fill="#FBF8F0"/>
+        <path d="M-9,16 Q-7,-6 6,-1 Q0,16 -9,16 Z" fill="#FFFFFF"/>
+        <path d="M3,16 Q6,-2 17,3 Q11,16 3,16 Z" fill="#FBF8F0"/>
+        <path d="M15,16 Q18,4 26,8 Q21,16 15,16 Z" fill="#FFFFFF"/>
       </g>
     </svg>
     <div class="decor-layer" id="decorLayer"></div>
@@ -1207,7 +1237,6 @@
     latestState = state;
 
     document.getElementById('streakChip').textContent = state.streak || 0;
-    document.getElementById('pointsChip').textContent = state.points || 0;
 
     document.getElementById('btnChallenge').style.display = state.challengeEnabled === false ? 'none' : '';
 
@@ -1813,6 +1842,8 @@
     document.getElementById('coupleBench').classList.toggle('owned', owned.has('bench'));
     document.getElementById('petBrown').classList.toggle('owned', owned.has('pet_pom_brown'));
     document.getElementById('petWhite').classList.toggle('owned', owned.has('pet_pom_white'));
+    document.getElementById('decorBridge').classList.toggle('owned', owned.has('harbour_bridge'));
+    document.getElementById('decorOpera').classList.toggle('owned', owned.has('opera_house'));
   }
 
   // A different pose each time the garden opens (random) — but tapping the
@@ -1842,33 +1873,65 @@
     gardenPage.classList.add('open');
   };
 
-  // ---- Jump to a date in the garden bed — only dates that actually have entries ----
-  function scrollToMeadowDate(targetDate) {
-    const target = document.querySelector(`.meadow-flower[data-date="${targetDate}"]`);
-    if (!target) return;
-    gardenBed.style.display = '';
-    gardenDetail.classList.remove('show');
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    target.classList.add('jump-highlight');
-    setTimeout(() => target.classList.remove('jump-highlight'), 2200);
-  }
+  // ---- Jump to a date in the garden bed — a real calendar, only logged days are tappable ----
   const jumpDateBackdrop = document.getElementById('jumpDateBackdrop');
-  document.getElementById('gardenJumpBtn').onclick = () => {
-    const uniqueDates = [...new Set(latestLogs.map((l) => l.date))].sort().reverse();
-    const list = document.getElementById('jumpDateList');
-    list.innerHTML = uniqueDates.length
-      ? uniqueDates.map((dateStr) => {
-          const d = new Date(dateStr + 'T00:00:00');
-          const label = d.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
-          return `<button class="jump-date-item" data-date="${dateStr}">${label} <span>${dateStr}</span></button>`;
-        }).join('')
-      : '<div class="jump-date-empty">Nothing logged yet.</div>';
-    list.querySelectorAll('.jump-date-item').forEach((btn) => {
-      btn.onclick = () => {
+  let calYear, calMonth; // calMonth is 0-11
+
+  function jumpToDateAndOpen(dateStr) {
+    const log = latestLogs.find((l) => l.date === dateStr);
+    if (!log) return;
+    const target = document.querySelector(`.meadow-flower[data-date="${dateStr}"]`);
+    if (target) {
+      gardenBed.style.display = '';
+      gardenDetail.classList.remove('show');
+      target.scrollIntoView({ behavior: 'instant', block: 'center' });
+      savedMeadowScrollTop = document.querySelector('.garden-page-content').scrollTop;
+    }
+    openGardenToLog(log); // opens the entry directly; going "back" later lands right at this flower
+  }
+
+  function renderCalendar() {
+    const loggedDates = new Set(latestLogs.map((l) => l.date));
+    document.getElementById('calMonthLabel').textContent =
+      new Date(calYear, calMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const firstOfMonth = new Date(calYear, calMonth, 1);
+    const startOffset = (firstOfMonth.getDay() + 6) % 7; // convert Sunday=0-first to Monday=0-first
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < startOffset; i++) {
+      grid.insertAdjacentHTML('beforeend', '<div class="cal-day empty"></div>');
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const hasEntry = loggedDates.has(dateStr);
+      grid.insertAdjacentHTML('beforeend',
+        `<div class="cal-day${hasEntry ? ' has-entry' : ''}" data-date="${dateStr}">${day}</div>`);
+    }
+    grid.querySelectorAll('.cal-day.has-entry').forEach((el) => {
+      el.onclick = () => {
         jumpDateBackdrop.classList.remove('open');
-        scrollToMeadowDate(btn.dataset.date);
+        jumpToDateAndOpen(el.dataset.date);
       };
     });
+  }
+  document.getElementById('calPrevMonth').onclick = () => {
+    calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
+  };
+  document.getElementById('calNextMonth').onclick = () => {
+    calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  };
+  document.getElementById('gardenJumpBtn').onclick = () => {
+    // Open on the month of the most recent entry, or today if nothing's logged yet.
+    const mostRecent = [...latestLogs].sort((a, b) => b.date.localeCompare(a.date))[0];
+    const base = mostRecent ? new Date(mostRecent.date + 'T00:00:00') : new Date();
+    calYear = base.getFullYear();
+    calMonth = base.getMonth();
+    renderCalendar();
     jumpDateBackdrop.classList.add('open');
   };
   document.getElementById('jumpDateClose').onclick = () => jumpDateBackdrop.classList.remove('open');
@@ -2153,6 +2216,7 @@
   const ROW_X = ['16%', '32%', '50%', '68%', '84%'];       // horizontal spread within a row
   const ROW_STEM_H = [32, 44, 26, 50, 36];                  // varied stem heights for an organic look
 
+  let savedMeadowScrollTop = 0;
   function renderGardenBed(logs) {
     gardenDetail.classList.remove('show');
     gardenBed.style.display = '';
@@ -2219,6 +2283,7 @@
       let pressTimer = null;
       let longPressFired = false;
       const openDetail = () => {
+        savedMeadowScrollTop = document.querySelector('.garden-page-content').scrollTop;
         gardenBed.style.display = 'none';
         gardenDetail.classList.add('show');
         gardenDetailContent.innerHTML = '';
@@ -2253,6 +2318,7 @@
   document.getElementById('gardenDetailBack').onclick = () => {
     gardenDetail.classList.remove('show');
     gardenBed.style.display = '';
+    document.querySelector('.garden-page-content').scrollTop = savedMeadowScrollTop;
   };
 
   memorySearch.oninput = () => renderMemoryList(filteredLogs());
@@ -2326,6 +2392,14 @@
     localStorage.setItem('bloom_welcomed', 'true');
     welcomeOverlay.classList.add('hide');
   };
+
+  // Tapping the dimmed background behind ANY sheet closes it — one rule for
+  // the whole app, so new sheets get this for free without extra wiring.
+  document.addEventListener('click', (e) => {
+    if (e.target.classList && e.target.classList.contains('backdrop')) {
+      e.target.classList.remove('open');
+    }
+  });
 
   async function boot() {
     await initFirebase();

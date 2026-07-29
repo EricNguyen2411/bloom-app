@@ -9,18 +9,11 @@ export const STAGE_KEYS = ['seed', 'sprout', 'budding', 'blooming', 'flourishing
 // completing challenges. Each has a preset spot (as a % of the illustrated
 // garden scene) so it actually appears in the scene once bought, not just in a list.
 export const DECOR_SHOP = [
-  { id: 'lantern', icon: '🕯️', name: 'Garden lantern', cost: 15, scenePos: { left: '62%', top: '74%' } },
-  { id: 'bench', icon: '🪑', name: 'Little bench', cost: 25, special: 'bench' },
-  { id: 'lights', icon: '✨', name: 'Fairy lights', cost: 30, scenePos: { left: '13%', top: '36%' } },
-  { id: 'fountain', icon: '⛲', name: 'Fountain', cost: 40, scenePos: { left: '88%', top: '68%' } },
-  { id: 'chime', icon: '🎐', name: 'Wind chime', cost: 45, scenePos: { left: '7%', top: '55%' } },
-  { id: 'rainbow', icon: '🌈', name: 'Rainbow', cost: 50, scenePos: { left: '58%', top: '10%' } },
-  { id: 'bridge', icon: '🌉', name: 'Little bridge', cost: 60, scenePos: { left: '40%', top: '82%' } },
-  { id: 'pond', icon: '🪷', name: 'Lily pond', cost: 70, scenePos: { left: '22%', top: '86%' } },
-  { id: 'statue', icon: '🗿', name: 'Garden statue', cost: 80, scenePos: { left: '93%', top: '82%' } },
-  { id: 'gazebo', icon: '⛩️', name: 'Gazebo', cost: 95, scenePos: { left: '52%', top: '66%' } },
-  { id: 'pet_pom_brown', icon: '🐶', name: 'Brown Pomeranian', cost: 90, special: 'pet' },
-  { id: 'pet_pom_white', icon: '🐩', name: 'White Pomeranian', cost: 90, special: 'pet' }
+  { id: 'bench', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><rect x="2" y="16" width="22" height="3" rx="1.5" fill="#6B4A34"/><rect x="4" y="10" width="3" height="9" fill="#8A5A2E"/><rect x="19" y="10" width="3" height="9" fill="#8A5A2E"/><circle cx="9" cy="11" r="3.5" fill="#4A3B33"/><circle cx="17" cy="11" r="3.5" fill="#4A3B33"/></svg>', name: 'Little bench', cost: 25, special: 'bench' },
+  { id: 'pet_pom_brown', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="15" r="8" fill="#A9713F"/><circle cx="13" cy="7" r="6" fill="#A9713F"/><circle cx="9" cy="3" r="2.4" fill="#8A5A2E"/><circle cx="17" cy="3" r="2.4" fill="#8A5A2E"/><circle cx="10.5" cy="6.5" r="0.9" fill="#2A1B12"/><circle cx="15.5" cy="6.5" r="0.9" fill="#2A1B12"/></svg>', name: 'Brown Pomeranian', cost: 90, special: 'pet' },
+  { id: 'pet_pom_white', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="15" r="8" fill="#F6F1E4"/><circle cx="13" cy="7" r="6" fill="#F6F1E4"/><circle cx="9" cy="3" r="2.4" fill="#DED5BC"/><circle cx="17" cy="3" r="2.4" fill="#DED5BC"/><circle cx="10.5" cy="6.5" r="0.9" fill="#2A1B12"/><circle cx="15.5" cy="6.5" r="0.9" fill="#2A1B12"/></svg>', name: 'White Pomeranian', cost: 90, special: 'pet' },
+  { id: 'harbour_bridge', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><path d="M2,18 Q13,3 24,18" stroke="#5C6B73" stroke-width="2.2" fill="none"/><rect x="1" y="18" width="24" height="2.5" rx="1" fill="#7A8890"/><line x1="7" y1="18" x2="7" y2="10" stroke="#5C6B73" stroke-width="1.3"/><line x1="13" y1="18" x2="13" y2="6" stroke="#5C6B73" stroke-width="1.3"/><line x1="19" y1="18" x2="19" y2="10" stroke="#5C6B73" stroke-width="1.3"/></svg>', name: 'Harbour Bridge', cost: 85, special: 'harbour_bridge' },
+  { id: 'opera_house', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><rect x="2" y="18" width="22" height="3" rx="1" fill="#D8D0BC"/><path d="M5,18 Q5,8 11,10 Q9,18 5,18 Z" fill="#FBF8F0"/><path d="M10,18 Q12,5 18,9 Q14,18 10,18 Z" fill="#FFFFFF"/><path d="M16,18 Q18,8 23,11 Q20,18 16,18 Z" fill="#FBF8F0"/></svg>', name: 'Opera House', cost: 95, special: 'opera_house' }
 ];
 export const ANNIVERSARY_ICON = '💍';
 
