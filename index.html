@@ -441,6 +441,19 @@
   .photo-viewer-dot{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.3); transition:all .2s ease; }
   .photo-viewer-dot.active{ background:#fff; width:16px; border-radius:3px; }
 
+  .love-note-btn{ border:none; background:linear-gradient(135deg,#F6DCE4,#F0C6D4); color:#B24E70; width:30px; height:30px;
+    border-radius:50%; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(178,78,112,0.25); margin-top:8px; }
+  .love-note-overlay{ position:fixed; inset:0; z-index:97; display:none; align-items:center; justify-content:center;
+    background:rgba(40,15,25,0.55); padding:30px; }
+  .love-note-overlay.show{ display:flex; }
+  .love-note-card{ background:linear-gradient(160deg,#FFF6F8,#FCE9EF); border-radius:22px; padding:30px 26px; max-width:320px;
+    text-align:center; box-shadow:0 20px 50px -10px rgba(0,0,0,0.4); animation:annMsgIn .4s cubic-bezier(.34,1.4,.4,1); }
+  .love-note-heart{ font-size:30px; margin-bottom:10px; }
+  .love-note-card p{ font-size:15px; line-height:1.6; color:#5C2E3E; margin:0 0 20px; white-space:pre-wrap; }
+  .love-note-card button{ padding:10px 26px; border-radius:999px; border:none; background:#B24E70; color:#fff;
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:13px; cursor:pointer; }
+
   .anniversary-overlay{ position:fixed; inset:0; z-index:95; display:none; align-items:center; justify-content:center;
     background:radial-gradient(circle at 50% 40%, #3A2A4A, #1B1425 80%); overflow:hidden; }
   .anniversary-overlay.show{ display:flex; }
@@ -667,6 +680,10 @@
     </div>
     <div class="photo-preview-row" id="editPhotoPreviewRow"></div>
 
+    <label>💌 Private note</label>
+    <p style="margin:0 0 8px;">Tucked away and only revealed with a tap — for the sappier stuff you might not want showing plainly on the card.</p>
+    <textarea id="editLoveNote" rows="3" placeholder="I really loved this day…" style="width:100%; padding:11px 14px; border:1.5px solid #E4E1D6; border-radius:12px; font-family:'Inter'; font-size:14px; resize:vertical; box-sizing:border-box;"></textarea>
+
     <div class="sheet-actions">
       <button class="btn-cancel" id="editCancel">Cancel</button>
       <button class="btn-confirm" id="editSave">Save changes</button>
@@ -677,7 +694,7 @@
 <div class="garden-page" id="gardenPage">
   <div class="garden-page-header">
     <button id="gardenBack">← Back</button>
-    <div class="garden-page-title">Your Garden</div>
+    <div class="garden-page-title">Amy and Eric's Garden</div>
     <div style="width:44px;"></div>
   </div>
 
@@ -842,8 +859,7 @@
   </div>
 
   <div class="garden-page-content">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 8px;">
-      <label style="margin:0;">The garden bed</label>
+    <div style="display:flex; justify-content:flex-end; margin:0 0 8px;">
       <button class="jump-date-wrap" id="gardenJumpBtn"><span>📅 Jump to date</span></button>
     </div>
     <div class="garden-bed" id="gardenBed"></div>
@@ -1180,6 +1196,12 @@
   document.getElementById('anniversaryDismiss').onclick = () => {
     document.getElementById('anniversaryOverlay').classList.remove('show');
   };
+  document.getElementById('loveNoteClose').onclick = () => {
+    document.getElementById('loveNoteOverlay').classList.remove('show');
+  };
+  document.getElementById('loveNoteOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'loveNoteOverlay') document.getElementById('loveNoteOverlay').classList.remove('show');
+  });
 
   function render(state) {
     latestState = state;
@@ -1467,6 +1489,7 @@
     editActivityInput.value = log.activity || '';
     editDateInput.value = log.date;
     editPendingPhotos = [...getPhotos(log)];
+    document.getElementById('editLoveNote').value = log.loveNote || '';
     renderEditPhotoPreviews();
     updateEditPhotoLabel();
     editEntryBackdrop.classList.add('open');
@@ -1479,9 +1502,10 @@
     btn.disabled = true;
     const activity = editActivityInput.value.trim();
     const date = editDateInput.value || todayISO;
+    const loveNote = document.getElementById('editLoveNote').value.trim();
     try {
       await editLog(editingLogId, {
-        activity, date, photos: editPendingPhotos,
+        activity, date, photos: editPendingPhotos, loveNote,
         backfilled: date !== todayISO
       });
       editEntryBackdrop.classList.remove('open');
@@ -2050,6 +2074,9 @@
     const noteHtml = log.note
       ? `<div class="memory-note">${log.note}</div>`
       : `<button class="memory-add-note" data-id="${log.id}">+ Add a note</button>`;
+    const loveNoteHtml = log.loveNote
+      ? `<button class="love-note-btn" title="A private note">💌</button>`
+      : '';
     card.innerHTML = `
       ${thumb}
       <div class="memory-body">
@@ -2058,6 +2085,7 @@
         <div class="memory-meta">+${log.points} pts</div>
         ${galleryHtml}
         <div class="note-slot">${noteHtml}</div>
+        ${loveNoteHtml}
         <div class="memory-actions">
           <button class="memory-edit-btn" data-id="${log.id}">Edit</button>
           <button class="memory-delete-btn" data-id="${log.id}">Delete</button>
@@ -2069,6 +2097,12 @@
     card.querySelectorAll('.memory-gallery img').forEach((img, i) => {
       img.onclick = () => openPhotoViewer(photos, i);
     });
+
+    const loveNoteBtn = card.querySelector('.love-note-btn');
+    if (loveNoteBtn) loveNoteBtn.onclick = () => {
+      document.getElementById('loveNoteText').textContent = log.loveNote;
+      document.getElementById('loveNoteOverlay').classList.add('show');
+    };
 
     card.querySelector('.memory-edit-btn').onclick = () => openEditEntry(log);
 
@@ -2230,14 +2264,16 @@
     if (!result) { flashbackEl.classList.remove('show'); return; }
     const { log, daysAgo } = result;
     const label = daysAgo === 365 ? 'a year ago' : daysAgo === 30 ? 'a month ago' : 'a week ago';
-    document.getElementById('flashbackText').textContent = `${label}: ${log.activity || 'time together'}`;
+    let text = `${label}: ${log.activity || 'time together'}`;
+    if (log.note) text += ` — "${log.note.length > 60 ? log.note.slice(0, 60) + '…' : log.note}"`;
+    document.getElementById('flashbackText').textContent = text;
     const thumbWrap = document.getElementById('flashbackThumbWrap');
     const flashbackPhotos = getPhotos(log);
     thumbWrap.innerHTML = flashbackPhotos.length
       ? `<img src="${flashbackPhotos[0]}">`
       : `<div class="flashback-icon">✨</div>`;
     flashbackEl.classList.add('show');
-    flashbackEl.onclick = () => memoriesBackdrop.classList.add('open');
+    flashbackEl.onclick = () => openGardenToLog(log); // jump straight to that exact flower, not just the general list
   }
 
   document.getElementById('btnMemories').onclick = () => memoriesBackdrop.classList.add('open');
@@ -2314,6 +2350,14 @@
     <img id="photoViewerImg" src="">
   </div>
   <div class="photo-viewer-dots" id="photoViewerDots"></div>
+</div>
+
+<div class="love-note-overlay" id="loveNoteOverlay">
+  <div class="love-note-card">
+    <div class="love-note-heart">💌</div>
+    <p id="loveNoteText"></p>
+    <button id="loveNoteClose">Close</button>
+  </div>
 </div>
 
 <div class="anniversary-overlay" id="anniversaryOverlay">
