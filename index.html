@@ -361,6 +361,9 @@
 
   .pet{ opacity:0; transition:opacity .6s ease; }
   .pet.owned{ opacity:1; }
+  .pet-tail{ transform-origin:8px 1px; }
+  .pet.owned .pet-tail{ animation:tailWag 0.7s ease-in-out infinite alternate; }
+  @keyframes tailWag{ from{ transform:rotate(-7deg); } to{ transform:rotate(9deg); } }
 
   .garden-page-content{ flex:1; overflow-y:auto; padding:10px 20px calc(30px + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, #97C078 0%, #8CBB70 40%, #7FB264 100%);
@@ -534,7 +537,6 @@
 
   <div class="top">
     <button class="settings-btn" id="btnSettings">⚙️</button>
-    <div class="eyebrow">for her</div>
     <div class="title">bloom<em>.</em></div>
     <div class="chips">
       <div class="chip streak">🔥 <b id="streakChip">—</b> day streak</div>
@@ -855,7 +857,7 @@
         <circle cx="0" cy="-7" r="6.3" fill="#A9713F"/>
         <circle cx="-4.5" cy="-13" r="2.8" fill="#8A5A2E"/>
         <circle cx="4.5" cy="-13" r="2.8" fill="#8A5A2E"/>
-        <path d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#8A5A2E"/>
+        <path class="pet-tail" d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#8A5A2E"/>
       </g>
       <g class="pet" id="petWhite" transform="translate(344,184) scale(-0.7,0.7)">
         <ellipse cx="0" cy="4" rx="9" ry="8" fill="#F6F1E4"/>
@@ -864,7 +866,7 @@
         <circle cx="0" cy="-7" r="6.3" fill="#F6F1E4"/>
         <circle cx="-4.5" cy="-13" r="2.8" fill="#DED5BC"/>
         <circle cx="4.5" cy="-13" r="2.8" fill="#DED5BC"/>
-        <path d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#DED5BC"/>
+        <path class="pet-tail" d="M8,1 Q15,-3 12,-10 Q8,-13 5.5,-8 Q5.5,-3 8,1 Z" fill="#DED5BC"/>
       </g>
 
       <!-- landmark decorations: hidden until bought -->
