@@ -288,6 +288,14 @@
 
   .garden-scene{ flex:0 0 auto; height:200px; position:relative; overflow:hidden; }
 
+  .meadow-scrubber{ position:absolute; top:200px; bottom:0; right:0; width:34px; z-index:15; touch-action:none; }
+  .scrubber-track{ position:absolute; top:14px; bottom:14px; right:9px; width:3px; border-radius:2px;
+    background:rgba(255,255,255,0.35); }
+  .scrubber-label{ position:fixed; display:none; right:44px; z-index:97; background:var(--moss); color:#fff;
+    padding:9px 16px; border-radius:14px 14px 3px 14px; font-family:'Bricolage Grotesque',sans-serif; font-weight:700;
+    font-size:13.5px; white-space:nowrap; box-shadow:0 6px 16px -4px rgba(0,0,0,0.4); pointer-events:none; }
+  .scrubber-label.show{ display:block; }
+
   /* ---- Living garden: ambient life ---- */
   #treeSway{ animation:treeSway 4.5s ease-in-out infinite; transform-origin:46px 142px; }
   @keyframes treeSway{ 0%,100%{ transform:translate(46px,108px) rotate(0deg); } 50%{ transform:translate(46px,108px) rotate(-1.2deg); } }
@@ -901,6 +909,8 @@
       <div id="gardenDetailContent"></div>
     </div>
   </div>
+  <div class="meadow-scrubber" id="meadowScrubber"><div class="scrubber-track"></div></div>
+  <div class="scrubber-label" id="scrubberLabel"></div>
 </div>
 
 <div class="backdrop" id="memoriesBackdrop">
@@ -2354,6 +2364,37 @@
   const ROW_STEM_H = [32, 44, 26, 50, 36];                  // varied stem heights for an organic look
 
   let savedMeadowScrollTop = 0;
+  let currentMeadowOrder = [];
+
+  // ---- Meadow scrubber: hold the right edge and drag to jump around, like the
+  // scroll index in Photos/Contacts. Shows a floating month/year label while dragging.
+  const meadowScrubber = document.getElementById('meadowScrubber');
+  const scrubberLabel = document.getElementById('scrubberLabel');
+  function scrubberUpdate(clientY) {
+    const rect = meadowScrubber.getBoundingClientRect();
+    const proportion = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const content = document.querySelector('.garden-page-content');
+    content.scrollTop = proportion * (content.scrollHeight - content.clientHeight);
+
+    if (currentMeadowOrder.length) {
+      const idx = Math.min(currentMeadowOrder.length - 1, Math.floor(proportion * currentMeadowOrder.length));
+      const d = new Date(currentMeadowOrder[idx].date + 'T00:00:00');
+      scrubberLabel.textContent = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+    scrubberLabel.style.top = Math.max(20, Math.min(window.innerHeight - 50, clientY - 18)) + 'px';
+    scrubberLabel.classList.add('show');
+  }
+  function scrubberEnd() { scrubberLabel.classList.remove('show'); }
+  meadowScrubber.addEventListener('touchstart', (e) => { scrubberUpdate(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+  meadowScrubber.addEventListener('touchmove', (e) => { scrubberUpdate(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+  meadowScrubber.addEventListener('touchend', scrubberEnd);
+  meadowScrubber.addEventListener('touchcancel', scrubberEnd);
+  // Mouse support too, for anyone testing this on desktop.
+  let scrubberMouseDown = false;
+  meadowScrubber.addEventListener('mousedown', (e) => { scrubberMouseDown = true; scrubberUpdate(e.clientY); });
+  window.addEventListener('mousemove', (e) => { if (scrubberMouseDown) scrubberUpdate(e.clientY); });
+  window.addEventListener('mouseup', () => { if (scrubberMouseDown) { scrubberMouseDown = false; scrubberEnd(); } });
+
   function renderGardenBed(logs) {
     gardenDetail.classList.remove('show');
     gardenBed.style.display = '';
@@ -2363,6 +2404,7 @@
     }
     // Oldest first, so the garden reads like a row of flowers planted over time.
     const ordered = [...logs].reverse();
+    currentMeadowOrder = ordered;
     gardenBed.innerHTML = '';
 
     let row = null;
