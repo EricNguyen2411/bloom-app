@@ -231,6 +231,7 @@
   .anniversary-row .txt{ font-size:12px; color:var(--ink-soft); }
   .weekly-recap{ display:flex; gap:8px; margin-top:8px; }
   .fun-stats-list{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  #reviewFeatured img{ width:100%; max-height:180px; object-fit:cover; border-radius:14px; margin-top:12px; }
   .fun-stat-row{ display:flex; align-items:center; gap:12px; background:#F6F4EC; border-radius:14px; padding:12px 14px; }
   .fun-stat-num{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:22px; color:var(--moss); flex:0 0 auto; min-width:44px; }
   .fun-stat-label{ font-size:13px; color:var(--ink); }
@@ -977,6 +978,10 @@
     </div>
 
     <button class="export-btn" id="funStatsBtn">🎉 See our fun stats</button>
+    <div style="display:flex; gap:10px;">
+      <button class="export-btn" id="monthReviewBtn" style="flex:1;">📅 Month in Review</button>
+      <button class="export-btn" id="yearReviewBtn" style="flex:1;">🎊 Year in Review</button>
+    </div>
 
     <label>App settings</label>
     <div class="setting-row">
@@ -1021,11 +1026,28 @@
   </div>
 </div>
 
+<div class="backdrop" id="reviewBackdrop">
+  <div class="sheet">
+    <h3 id="reviewTitle">Month in Review</h3>
+    <div class="calendar-nav">
+      <button id="reviewPrev" type="button">‹</button>
+      <div id="reviewPeriodLabel">—</div>
+      <button id="reviewNext" type="button">›</button>
+    </div>
+    <div id="reviewFeatured"></div>
+    <div id="reviewStatsList" class="fun-stats-list"></div>
+    <div class="sheet-actions">
+      <button class="btn-confirm" id="reviewClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
            purchaseDecoration, removeDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
+           computeMonthReview, computeYearReview,
            getMonthsTogether,
            SPECIES, DECOR_SHOP, DATE_IDEAS }
     from './app.js';
@@ -1679,6 +1701,71 @@
   };
   document.getElementById('funStatsClose').onclick = () => funStatsBackdrop.classList.remove('open');
 
+  // ---- Month / Year in Review ----
+  const reviewBackdrop = document.getElementById('reviewBackdrop');
+  let reviewMode = 'month';
+  let reviewYear = new Date().getFullYear();
+  let reviewMonth = new Date().getMonth();
+
+  async function renderReview() {
+    const statsList = document.getElementById('reviewStatsList');
+    const featured = document.getElementById('reviewFeatured');
+    statsList.innerHTML = '<div class="fun-stat-row"><div class="fun-stat-label">Counting…</div></div>';
+    featured.innerHTML = '';
+
+    let stats, label;
+    if (reviewMode === 'month') {
+      label = new Date(reviewYear, reviewMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      stats = await computeMonthReview(reviewYear, reviewMonth);
+    } else {
+      label = String(reviewYear);
+      stats = await computeYearReview(reviewYear);
+    }
+    document.getElementById('reviewPeriodLabel').textContent = label;
+
+    if (!stats || stats.total === 0) {
+      statsList.innerHTML = `<div class="fun-stat-row"><div class="fun-stat-label">Nothing logged ${reviewMode === 'month' ? 'this month' : 'this year'} — try another one with the arrows above.</div></div>`;
+      return;
+    }
+    if (stats.featuredPhoto) featured.innerHTML = `<img src="${stats.featuredPhoto}">`;
+
+    const rows = [
+      [stats.entries, 'dates logged'],
+      [stats.photosCount, 'photos saved'],
+      [stats.challenges, 'challenges completed'],
+      [stats.longestStreak, 'day longest streak' + (reviewMode === 'month' ? ' this month' : ' this year')]
+    ];
+    if (reviewMode === 'year' && stats.favoriteMonth) {
+      rows.push([stats.favoriteMonthCount, `entries in ${stats.favoriteMonth} — your busiest month`]);
+    }
+    statsList.innerHTML = rows.map(([num, lbl]) =>
+      `<div class="fun-stat-row"><div class="fun-stat-num">${num}</div><div class="fun-stat-label">${lbl}</div></div>`
+    ).join('');
+  }
+
+  function openReview(mode) {
+    reviewMode = mode;
+    const now = new Date();
+    reviewYear = now.getFullYear();
+    reviewMonth = now.getMonth();
+    document.getElementById('reviewTitle').textContent = mode === 'month' ? 'Month in Review' : 'Year in Review';
+    renderReview();
+    reviewBackdrop.classList.add('open');
+  }
+  document.getElementById('monthReviewBtn').onclick = () => openReview('month');
+  document.getElementById('yearReviewBtn').onclick = () => openReview('year');
+  document.getElementById('reviewPrev').onclick = () => {
+    if (reviewMode === 'month') { reviewMonth--; if (reviewMonth < 0) { reviewMonth = 11; reviewYear--; } }
+    else reviewYear--;
+    renderReview();
+  };
+  document.getElementById('reviewNext').onclick = () => {
+    if (reviewMode === 'month') { reviewMonth++; if (reviewMonth > 11) { reviewMonth = 0; reviewYear++; } }
+    else reviewYear++;
+    renderReview();
+  };
+  document.getElementById('reviewClose').onclick = () => reviewBackdrop.classList.remove('open');
+
   // ---- Garden page (shop + meadow) ----
   const gardenPage = document.getElementById('gardenPage');
   function renderShop(state) {
@@ -2131,7 +2218,7 @@
       ? `<div class="photo-count-badge">+${photos.length - 1}</div>`
       : '';
     const thumb = photos.length
-      ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${photos[0]}" style="cursor:pointer;">${countBadge}</div>`
+      ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${photos[0]}" style="cursor:pointer;" loading="lazy">${countBadge}</div>`
       : `<div class="memory-thumb-empty">${log.type === 'challenge' ? '✦' : '🌿'}</div>`;
     const galleryHtml = photos.length > 1
       ? `<div class="memory-gallery">${photos.map((p) => `<img src="${p}">`).join('')}</div>`
@@ -2264,7 +2351,7 @@
       const shortDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
       const photos = getPhotos(log);
       const bloomInner = photos.length
-        ? `<img class="meadow-bloom-photo" src="${photos[0]}">`
+        ? `<img class="meadow-bloom-photo" src="${photos[0]}" loading="lazy">`
         : iconWithColor(sp);
 
       const flower = document.createElement('div');

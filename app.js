@@ -394,7 +394,7 @@ export async function removeDecoration(decorId, cost) {
 }
 
 // ---- Live log/memory feed (for the photo gallery + weekly recap + flashback) ----
-export function watchLogs(renderFn, max = 200) {
+export function watchLogs(renderFn, max = 1000) {
   if (!isConfigured) { renderFn(DEMO_LOGS); return; }
   const q = query(collection(db, `couples/${COUPLE_ID}/logs`), orderBy('date', 'desc'), limit(max));
   onSnapshot(
@@ -461,6 +461,71 @@ export async function computeFunStats() {
     console.error('computeFunStats failed:', err);
     return null;
   }
+}
+
+// Shared full, unlimited fetch — used by both review functions below so
+// they always see every entry, not just whatever the live 1000-cap feed has.
+async function fetchAllLogs() {
+  if (!isConfigured) return DEMO_LOGS;
+  const snap = await getDocs(collection(db, `couples/${COUPLE_ID}/logs`));
+  return snap.docs.map((d) => d.data());
+}
+
+// Longest run of consecutive calendar days within a given list of dates —
+// used to compute a streak scoped to just one month or year, separate from
+// the app's all-time longestStreak.
+function longestStreakInRange(dates) {
+  const sorted = [...new Set(dates)].sort();
+  let longest = 0, current = 0, prev = null;
+  for (const d of sorted) {
+    current = (prev && daysBetween(prev, d) === 1) ? current + 1 : 1;
+    longest = Math.max(longest, current);
+    prev = d;
+  }
+  return longest;
+}
+
+export async function computeMonthReview(year, month) {
+  const logs = await fetchAllLogs();
+  const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const inRange = logs.filter((l) => l.date && l.date.startsWith(prefix));
+  const photosCount = inRange.reduce((sum, l) => sum + getPhotos(l).length, 0);
+  const featuredPhoto = inRange.map((l) => getPhotos(l)[0]).find(Boolean) || null;
+  return {
+    entries: inRange.filter((l) => l.type !== 'challenge').length,
+    challenges: inRange.filter((l) => l.type === 'challenge').length,
+    photosCount,
+    longestStreak: longestStreakInRange(inRange.map((l) => l.date)),
+    featuredPhoto,
+    total: inRange.length
+  };
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+export async function computeYearReview(year) {
+  const logs = await fetchAllLogs();
+  const inRange = logs.filter((l) => l.date && l.date.startsWith(String(year)));
+  const photosCount = inRange.reduce((sum, l) => sum + getPhotos(l).length, 0);
+  const featuredPhoto = inRange.map((l) => getPhotos(l)[0]).find(Boolean) || null;
+
+  const monthCounts = {};
+  inRange.forEach((l) => { const m = l.date.slice(5, 7); monthCounts[m] = (monthCounts[m] || 0) + 1; });
+  let favoriteMonth = null, favoriteMonthCount = 0;
+  Object.entries(monthCounts).forEach(([m, c]) => {
+    if (c > favoriteMonthCount) { favoriteMonth = MONTH_NAMES[parseInt(m, 10) - 1]; favoriteMonthCount = c; }
+  });
+
+  return {
+    entries: inRange.filter((l) => l.type !== 'challenge').length,
+    challenges: inRange.filter((l) => l.type === 'challenge').length,
+    photosCount,
+    longestStreak: longestStreakInRange(inRange.map((l) => l.date)),
+    favoriteMonth, favoriteMonthCount,
+    featuredPhoto,
+    total: inRange.length
+  };
 }
 
 export function getPhotos(log) {
