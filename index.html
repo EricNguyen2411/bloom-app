@@ -289,8 +289,6 @@
   .garden-scene{ flex:0 0 auto; height:200px; position:relative; overflow:hidden; }
 
   .meadow-scrubber{ position:absolute; top:200px; bottom:0; right:0; width:34px; z-index:15; touch-action:none; }
-  .scrubber-track{ position:absolute; top:14px; bottom:14px; right:9px; width:3px; border-radius:2px;
-    background:rgba(255,255,255,0.35); }
   .scrubber-label{ position:fixed; display:none; right:44px; z-index:97; background:var(--moss); color:#fff;
     padding:9px 16px; border-radius:14px 14px 3px 14px; font-family:'Bricolage Grotesque',sans-serif; font-weight:700;
     font-size:13.5px; white-space:nowrap; box-shadow:0 6px 16px -4px rgba(0,0,0,0.4); pointer-events:none; }
@@ -909,7 +907,7 @@
       <div id="gardenDetailContent"></div>
     </div>
   </div>
-  <div class="meadow-scrubber" id="meadowScrubber"><div class="scrubber-track"></div></div>
+  <div class="meadow-scrubber" id="meadowScrubber"></div>
   <div class="scrubber-label" id="scrubberLabel"></div>
 </div>
 
@@ -1859,20 +1857,9 @@
     night: ['#1B2A4A', '#3A4B6B']
   };
 
-  // ---- Real sunrise/sunset, computed from location (no API key or paid
-  // service needed — a standard astronomical formula, accurate to within a
-  // few minutes). Falls back to Sydney if location access isn't available. ----
-  let userCoords = { lat: -33.8688, lon: 151.2093 }; // Sydney, used until/unless real location resolves
-  function fetchUserLocation() {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) return resolve();
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude }; resolve(); },
-        () => resolve(), // denied or unavailable — keep the fallback
-        { timeout: 5000, maximumAge: 3600000 }
-      );
-    });
-  }
+  // ---- Real sunrise/sunset for Sydney (no API key or paid service needed —
+  // a standard astronomical formula, accurate to within a few minutes). ----
+  const userCoords = { lat: -33.8688, lon: 151.2093 }; // Sydney
   function getSunTimes(lat, lon, date) {
     const rad = Math.PI / 180;
     const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
@@ -2587,7 +2574,6 @@
     watchLogs(renderMemories);
     watchBucketList(renderBucket);
     refreshFlowerCount();
-    fetchUserLocation(); // fire-and-forget — falls back to Sydney until/unless it resolves
   }
   boot();
 
