@@ -22,11 +22,11 @@
     --shadow: 0 20px 40px -20px rgba(30,42,32,0.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{ margin:0; height:100%; overflow:hidden; overscroll-behavior:none;
+  html,body{ margin:0; min-height:100vh; overscroll-behavior:none;
     font-family:'Inter',sans-serif; color:var(--ink);
     background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom)); }
 
-  .app{ max-width:420px; margin:0 auto; height:100%; display:flex; flex-direction:column; }
+  .app{ max-width:420px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
 
   .config-banner{ background:var(--moss); color:#fff; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
     text-align:center; padding:8px 16px; display:none; }
