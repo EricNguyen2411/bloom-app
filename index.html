@@ -411,6 +411,9 @@
   .meadow-bloom-photo{ width:88%; height:88%; object-fit:contain; border-radius:50%; }
   .meadow-badge{ position:absolute; top:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:var(--gold);
     display:flex; align-items:center; justify-content:center; font-size:9px; border:1.5px solid #fff; z-index:3; }
+  .special-day-badge{ position:absolute; top:-3px; left:-3px; width:18px; height:18px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:10.5px; border:1.5px solid #fff;
+    box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:3; }
   .meadow-stem{ width:3px; background:linear-gradient(180deg,var(--lime),var(--moss)); border-radius:2px; margin-top:-2px; }
   .meadow-date{ position:absolute; bottom:-18px; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#2A3B1F;
     background:rgba(255,255,255,0.78); padding:2px 6px; border-radius:6px; white-space:nowrap; left:50%; transform:translateX(-50%); }
@@ -1056,7 +1059,7 @@
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
            purchaseDecoration, removeDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
-           computeMonthReview, computeYearReview,
+           computeMonthReview, computeYearReview, getSpecialDayIcon,
            getMonthsTogether,
            SPECIES, DECOR_SHOP, DATE_IDEAS }
     from './app.js';
@@ -2431,6 +2434,7 @@
       const bloomInner = photos.length
         ? `<img class="meadow-bloom-photo" src="${photos[0]}" loading="lazy">`
         : iconWithColor(sp);
+      const specialDay = getSpecialDayIcon(log.date);
 
       const flower = document.createElement('div');
       flower.className = 'meadow-flower';
@@ -2442,6 +2446,7 @@
           ${bloomInner}
           ${log.type === 'challenge' ? '<div class="meadow-badge">✦</div>' : ''}
           ${photos.length > 1 ? `<div class="photo-count-badge">+${photos.length - 1}</div>` : ''}
+          ${specialDay ? `<div class="special-day-badge" title="${specialDay.label}">${specialDay.icon}</div>` : ''}
         </div>
         <div class="meadow-stem" style="height:${ROW_STEM_H[i]}px"></div>
         <div class="meadow-date">${shortDate}</div>`;

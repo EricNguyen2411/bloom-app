@@ -1,4 +1,4 @@
-import { firebaseConfig, COUPLE_ID, ANNIVERSARY_MD, RELATIONSHIP_START_DATE } from './firebase-config.js';
+import { firebaseConfig, COUPLE_ID, ANNIVERSARY_MD, RELATIONSHIP_START_DATE, BIRTHDAY_1_MD, BIRTHDAY_2_MD } from './firebase-config.js';
 
 // Stage keys used purely for the plant-bloom animation sequence when you log
 // an entry (seed → ... → flourishing over a couple seconds) — no longer tied
@@ -321,6 +321,19 @@ async function maybeUnlockAnniversary(data) {
 export function isAnniversaryToday() {
   if (!ANNIVERSARY_MD) return false;
   return mmdd(todayStr()) === ANNIVERSARY_MD;
+}
+
+// Marks a flower with a small icon if it was logged on a special occasion —
+// Valentine's Day is a fixed real date; anniversary and birthdays come from
+// your own config in firebase-config.js, so they're simply skipped if left
+// unset. Returns null (no marker) for an ordinary day.
+export function getSpecialDayIcon(dateStr) {
+  const md = mmdd(dateStr);
+  if (ANNIVERSARY_MD && md === ANNIVERSARY_MD) return { icon: '💍', label: 'Anniversary' };
+  if (BIRTHDAY_1_MD && md === BIRTHDAY_1_MD) return { icon: '🎂', label: 'Birthday' };
+  if (BIRTHDAY_2_MD && md === BIRTHDAY_2_MD) return { icon: '🎂', label: 'Birthday' };
+  if (md === '02-14') return { icon: '💕', label: "Valentine's Day" };
+  return null;
 }
 
 // Buys a decoration from the Garden Shop with points. Guards against buying
