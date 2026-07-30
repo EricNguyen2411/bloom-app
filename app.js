@@ -15,7 +15,7 @@ export const DECOR_SHOP = [
   { id: 'harbour_bridge', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><path d="M2,18 Q13,3 24,18" stroke="#5C6B73" stroke-width="2.2" fill="none"/><rect x="1" y="18" width="24" height="2.5" rx="1" fill="#7A8890"/><line x1="7" y1="18" x2="7" y2="10" stroke="#5C6B73" stroke-width="1.3"/><line x1="13" y1="18" x2="13" y2="6" stroke="#5C6B73" stroke-width="1.3"/><line x1="19" y1="18" x2="19" y2="10" stroke="#5C6B73" stroke-width="1.3"/></svg>', name: 'Harbour Bridge', cost: 85, special: 'harbour_bridge' },
   { id: 'opera_house', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><rect x="2" y="18" width="22" height="3" rx="1" fill="#D8D0BC"/><path d="M5,18 Q5,8 11,10 Q9,18 5,18 Z" fill="#FBF8F0"/><path d="M10,18 Q12,5 18,9 Q14,18 10,18 Z" fill="#FFFFFF"/><path d="M16,18 Q18,8 23,11 Q20,18 16,18 Z" fill="#FBF8F0"/></svg>', name: 'Opera House', cost: 95, special: 'opera_house' }
 ];
-export const ANNIVERSARY_ICON = '💍';
+export const ANNIVERSARY_ICON = '💘';
 
 // A handful of date-night ideas the app can suggest if you haven't logged
 // anything in a while — a gentle nudge, not a notification.
@@ -329,7 +329,7 @@ export function isAnniversaryToday() {
 // unset. Returns null (no marker) for an ordinary day.
 export function getSpecialDayIcon(dateStr) {
   const md = mmdd(dateStr);
-  if (ANNIVERSARY_MD && md === ANNIVERSARY_MD) return { icon: '💍', label: 'Anniversary' };
+  if (ANNIVERSARY_MD && md === ANNIVERSARY_MD) return { icon: '💘', label: 'Anniversary' };
   if (BIRTHDAY_1_MD && md === BIRTHDAY_1_MD) return { icon: '🎂', label: 'Birthday' };
   if (BIRTHDAY_2_MD && md === BIRTHDAY_2_MD) return { icon: '🎂', label: 'Birthday' };
   if (md === '02-14') return { icon: '💕', label: "Valentine's Day" };
