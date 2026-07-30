@@ -245,7 +245,7 @@ export function todaysChallenge() {
 // ago, then 1 month (30 days) ago, then 1 week ago.
 export function findFlashback(logs) {
   const today = todayStr();
-  const targets = [365, 30, 7];
+  const targets = [365, 30];
   for (const days of targets) {
     const match = logs.find((log) => daysBetween(log.date, today) === days);
     if (match) return { log: match, daysAgo: days };

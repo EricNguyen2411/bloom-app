@@ -407,6 +407,10 @@
   .meadow-bloom{ width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:20px; box-shadow:0 8px 16px -6px rgba(20,30,15,0.5); overflow:hidden; position:relative; z-index:2;
     border:2.5px solid rgba(255,255,255,0.85); }
+  .meadow-deck{ position:absolute; top:0; left:0; width:52px; height:52px; border-radius:50%; background:#FBF8F0;
+    border:2.5px solid rgba(255,255,255,0.7); box-shadow:0 5px 10px -5px rgba(20,30,15,0.35); }
+  .meadow-deck.deck1{ transform:translate(3px,4px); z-index:1; }
+  .meadow-deck.deck2{ transform:translate(6px,8px); z-index:0; opacity:0.85; }
   .meadow-bloom svg{ width:82%; height:82%; }
   .meadow-bloom-photo{ width:88%; height:88%; object-fit:contain; border-radius:50%; }
   .meadow-stem{ width:3px; background:linear-gradient(180deg,var(--lime),var(--moss)); border-radius:2px; margin-top:-2px; }
@@ -2435,7 +2439,11 @@
       flower.style.left = ROW_X[i];
       flower.dataset.date = log.date;
       const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
+      const deckHtml = photos.length > 1
+        ? '<div class="meadow-deck deck2"></div><div class="meadow-deck deck1"></div>'
+        : '';
       flower.innerHTML = `
+        ${deckHtml}
         <div class="meadow-bloom" style="background:${bloomBg}">
           ${bloomInner}
         </div>
@@ -2492,7 +2500,7 @@
     const result = findFlashback(logs);
     if (!result) { flashbackEl.classList.remove('show'); return; }
     const { log, daysAgo } = result;
-    const label = daysAgo === 365 ? 'a year ago' : daysAgo === 30 ? 'a month ago' : 'a week ago';
+    const label = daysAgo === 365 ? 'a year ago' : 'a month ago';
     let text = `${label}: ${log.activity || 'time together'}`;
     if (log.note) text += ` — "${log.note.length > 60 ? log.note.slice(0, 60) + '…' : log.note}"`;
     document.getElementById('flashbackText').textContent = text;
