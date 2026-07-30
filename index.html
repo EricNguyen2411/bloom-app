@@ -30,6 +30,23 @@
     opacity:0; transition:opacity .35s ease; }
   .app.ready{ opacity:1; }
 
+  .loading-screen{ position:fixed; inset:0; z-index:100; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:18px; background:linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    transition:opacity .35s ease; }
+  .loading-screen.hide{ opacity:0; pointer-events:none; }
+  .loading-char{ animation:loadingBounce 1.6s ease-in-out infinite; transform-origin:60px 150px; }
+  @keyframes loadingBounce{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+  .loading-can{ animation:loadingTilt 1.6s ease-in-out infinite; }
+  @keyframes loadingTilt{ 0%,20%{ transform:rotate(0deg); } 45%,65%{ transform:rotate(-22deg); } 90%,100%{ transform:rotate(0deg); } }
+  .loading-drops{ opacity:0; animation:loadingDrops 1.6s ease-in-out infinite; }
+  @keyframes loadingDrops{ 0%,40%{ opacity:0; } 50%,65%{ opacity:1; } 75%,100%{ opacity:0; } }
+  .loading-text{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); letter-spacing:0.5px; }
+  .loading-dots span{ opacity:0; animation:loadingDot 1.4s ease-in-out infinite; }
+  .loading-dots span:nth-child(1){ animation-delay:0s; }
+  .loading-dots span:nth-child(2){ animation-delay:.2s; }
+  .loading-dots span:nth-child(3){ animation-delay:.4s; }
+  @keyframes loadingDot{ 0%,100%{ opacity:0; } 40%{ opacity:1; } }
+
   .config-banner{ background:var(--moss); color:#fff; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
     text-align:center; padding:8px 16px; display:none; }
   .config-banner.show{ display:block; }
@@ -543,6 +560,36 @@
     <p>Everything syncs between both your phones. It's just for the two of you.</p>
     <button class="welcome-start" id="welcomeStart">Let's grow something 🌱</button>
   </div>
+</div>
+
+<div class="loading-screen" id="loadingScreen">
+  <svg viewBox="0 0 120 165" width="110" height="150">
+    <ellipse cx="60" cy="150" rx="34" ry="6" fill="rgba(60,80,50,0.12)"/>
+    <path d="M28,120 L92,120 L85,150 L35,150 Z" fill="#C9865A"/>
+    <ellipse cx="60" cy="120" rx="32" ry="7" fill="#8A5A2E"/>
+    <g class="loading-char">
+      <rect x="42" y="90" width="11" height="26" rx="5.5" fill="#93C773"/>
+      <rect x="57" y="90" width="11" height="26" rx="5.5" fill="#93C773"/>
+      <rect x="40" y="66" width="30" height="30" rx="15" fill="#A8D97A"/>
+      <path d="M32,72 Q22,80 26,92" stroke="#93C773" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <circle cx="55" cy="46" r="21" fill="#A8D97A"/>
+      <circle cx="49" cy="44" r="2.1" fill="#2A1B12"/>
+      <circle cx="61" cy="44" r="2.1" fill="#2A1B12"/>
+      <line x1="51" y1="54" x2="59" y2="54" stroke="#2A1B12" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M67,68 Q78,70 84,66" stroke="#93C773" stroke-width="7.5" stroke-linecap="round" fill="none"/>
+      <g class="loading-can" style="transform-origin:90px 68px;">
+        <rect x="82" y="61" width="17" height="13" rx="3.5" fill="#7A8B6C"/>
+        <path d="M99,63 L110,55" stroke="#7A8B6C" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M86,56 Q90,48 94,56" stroke="#7A8B6C" stroke-width="2.5" fill="none"/>
+      </g>
+      <g class="loading-drops">
+        <circle cx="106" cy="59" r="1.7" fill="#8FB3CC"/>
+        <circle cx="109" cy="64" r="1.5" fill="#8FB3CC"/>
+        <circle cx="104" cy="67" r="1.4" fill="#8FB3CC"/>
+      </g>
+    </g>
+  </svg>
+  <div class="loading-text">Growing your garden<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
 </div>
 
 <div class="app">
@@ -2595,18 +2642,24 @@
     await initFirebase();
     if (!isConfigured) document.getElementById('configBanner').classList.add('show');
 
-    // Fade the whole screen in only once real data has actually arrived —
-    // this is what stops the "loads, then looks like it refreshes" effect,
-    // since the empty-placeholder state never gets shown to begin with.
+    // The loading screen (gardener watering a seed) stays up until real data
+    // has actually arrived, then cross-fades into the real dashboard — this
+    // is what stops the "loads, then looks like it refreshes" effect, since
+    // the empty-placeholder state never gets shown to begin with.
     let stateReady = false, logsReady = false;
     const revealIfReady = () => {
-      if (stateReady && logsReady) document.querySelector('.app').classList.add('ready');
+      if (!stateReady || !logsReady) return;
+      document.querySelector('.app').classList.add('ready');
+      document.getElementById('loadingScreen').classList.add('hide');
     };
     watchState((state) => { render(state); stateReady = true; revealIfReady(); });
     watchLogs((logs) => { renderMemories(logs); logsReady = true; revealIfReady(); });
     // Safety net: reveal anyway after 2.5s even if something's still pending,
-    // so a slow connection never leaves the screen blank indefinitely.
-    setTimeout(() => document.querySelector('.app').classList.add('ready'), 2500);
+    // so a slow connection never leaves the screen stuck on the loading screen.
+    setTimeout(() => {
+      document.querySelector('.app').classList.add('ready');
+      document.getElementById('loadingScreen').classList.add('hide');
+    }, 2500);
 
     watchBucketList(renderBucket);
     refreshFlowerCount();
