@@ -26,7 +26,9 @@
     font-family:'Inter',sans-serif; color:var(--ink);
     background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom)); }
 
-  .app{ max-width:420px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+  .app{ max-width:420px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;
+    opacity:0; transition:opacity .35s ease; }
+  .app.ready{ opacity:1; }
 
   .config-banner{ background:var(--moss); color:#fff; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
     text-align:center; padding:8px 16px; display:none; }
@@ -177,10 +179,15 @@
 
   .photo-date-notice{ display:none; margin-top:8px; font-size:11.5px; color:var(--moss); font-weight:700; }
   .photo-date-notice.show{ display:block; }
-  .photo-preview-thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; }
-  .photo-preview-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .photo-preview-thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:visible;
+    border:2.5px solid transparent; box-sizing:content-box; }
+  .photo-preview-thumb img{ width:64px; height:64px; object-fit:cover; border-radius:8px; display:block; }
+  .photo-preview-thumb.is-cover{ border-color:var(--gold); }
   .photo-preview-remove{ position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(20,20,20,0.65);
-    color:#fff; border:none; font-size:11px; line-height:18px; padding:0; cursor:pointer; }
+    color:#fff; border:none; font-size:11px; line-height:18px; padding:0; cursor:pointer; z-index:2; }
+  .photo-preview-cover{ position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%;
+    background:rgba(20,20,20,0.5); color:var(--gold); border:none; font-size:13px; line-height:20px; padding:0;
+    cursor:pointer; z-index:2; }
 
   .photo-count-badge{ position:absolute; bottom:-1px; right:-1px; min-width:13px; height:13px; border-radius:50%;
     background:rgba(20,20,20,0.75); color:#fff; display:flex; align-items:center;
@@ -1423,8 +1430,10 @@
     photoPreviewRow.innerHTML = '';
     pendingPhotos.forEach((src, i) => {
       const thumb = document.createElement('div');
-      thumb.className = 'photo-preview-thumb';
-      thumb.innerHTML = `<img src="${src}"><button class="photo-preview-remove" data-i="${i}">✕</button>`;
+      thumb.className = 'photo-preview-thumb' + (i === 0 ? ' is-cover' : '');
+      thumb.innerHTML = `<img src="${src}">
+        ${pendingPhotos.length > 1 ? `<button class="photo-preview-cover" data-i="${i}" title="${i === 0 ? 'Cover photo' : 'Set as cover photo'}">${i === 0 ? '★' : '☆'}</button>` : ''}
+        <button class="photo-preview-remove" data-i="${i}">✕</button>`;
       photoPreviewRow.appendChild(thumb);
     });
     photoPreviewRow.querySelectorAll('.photo-preview-remove').forEach((btn) => {
@@ -1432,6 +1441,14 @@
         pendingPhotos.splice(parseInt(btn.dataset.i), 1);
         renderPhotoPreviews();
         updatePhotoLabel();
+      };
+    });
+    photoPreviewRow.querySelectorAll('.photo-preview-cover').forEach((btn) => {
+      btn.onclick = () => {
+        const i = parseInt(btn.dataset.i);
+        const [chosen] = pendingPhotos.splice(i, 1);
+        pendingPhotos.unshift(chosen); // move to the front — that's what shows on the flower
+        renderPhotoPreviews();
       };
     });
   }
@@ -1511,8 +1528,10 @@
     editPhotoPreviewRow.innerHTML = '';
     editPendingPhotos.forEach((src, i) => {
       const thumb = document.createElement('div');
-      thumb.className = 'photo-preview-thumb';
-      thumb.innerHTML = `<img src="${src}"><button class="photo-preview-remove" data-i="${i}">✕</button>`;
+      thumb.className = 'photo-preview-thumb' + (i === 0 ? ' is-cover' : '');
+      thumb.innerHTML = `<img src="${src}">
+        ${editPendingPhotos.length > 1 ? `<button class="photo-preview-cover" data-i="${i}" title="${i === 0 ? 'Cover photo' : 'Set as cover photo'}">${i === 0 ? '★' : '☆'}</button>` : ''}
+        <button class="photo-preview-remove" data-i="${i}">✕</button>`;
       editPhotoPreviewRow.appendChild(thumb);
     });
     editPhotoPreviewRow.querySelectorAll('.photo-preview-remove').forEach((btn) => {
@@ -1520,6 +1539,14 @@
         editPendingPhotos.splice(parseInt(btn.dataset.i), 1);
         renderEditPhotoPreviews();
         updateEditPhotoLabel();
+      };
+    });
+    editPhotoPreviewRow.querySelectorAll('.photo-preview-cover').forEach((btn) => {
+      btn.onclick = () => {
+        const i = parseInt(btn.dataset.i);
+        const [chosen] = editPendingPhotos.splice(i, 1);
+        editPendingPhotos.unshift(chosen);
+        renderEditPhotoPreviews();
       };
     });
   }
@@ -2567,8 +2594,20 @@
   async function boot() {
     await initFirebase();
     if (!isConfigured) document.getElementById('configBanner').classList.add('show');
-    watchState(render);
-    watchLogs(renderMemories);
+
+    // Fade the whole screen in only once real data has actually arrived —
+    // this is what stops the "loads, then looks like it refreshes" effect,
+    // since the empty-placeholder state never gets shown to begin with.
+    let stateReady = false, logsReady = false;
+    const revealIfReady = () => {
+      if (stateReady && logsReady) document.querySelector('.app').classList.add('ready');
+    };
+    watchState((state) => { render(state); stateReady = true; revealIfReady(); });
+    watchLogs((logs) => { renderMemories(logs); logsReady = true; revealIfReady(); });
+    // Safety net: reveal anyway after 2.5s even if something's still pending,
+    // so a slow connection never leaves the screen blank indefinitely.
+    setTimeout(() => document.querySelector('.app').classList.add('ready'), 2500);
+
     watchBucketList(renderBucket);
     refreshFlowerCount();
   }
