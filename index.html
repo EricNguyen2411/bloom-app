@@ -974,6 +974,9 @@
     <div style="width:44px;"></div>
   </div>
   <div class="path-page-content" id="pathPageContent">
+    <div style="display:flex; justify-content:flex-end; padding:10px 14px 0;">
+      <button class="jump-date-wrap" id="pathJumpBtn"><span>📅 Jump to date</span></button>
+    </div>
     <svg id="pathSvg" width="100%"></svg>
     <div id="pathFlowers"></div>
     <div class="path-detail" id="pathDetail">
@@ -981,6 +984,7 @@
       <div id="pathDetailContent"></div>
     </div>
   </div>
+  <div class="meadow-scrubber" id="pathScrubber"></div>
 </div>
 
 <div class="backdrop" id="memoriesBackdrop">
@@ -1044,18 +1048,6 @@
       <div class="txt">Anniversary bonus unlocked this year — happy anniversary!</div>
     </div>
 
-    <div id="decorSection">
-      <label>Your decorations</label>
-      <p style="margin:0 0 8px;">Tap one to remove it — you'll get a full refund.</p>
-      <div class="owned-decor-row" id="ownedDecorRow"></div>
-    </div>
-
-    <div id="shopSection">
-      <label>🪙 Garden Shop</label>
-      <p style="margin:0 0 10px;">Add or remove things for the garden — everything's freely available, just pick what you want to see.</p>
-      <div class="shop-grid" id="shopGrid"></div>
-    </div>
-
     <button class="export-btn" id="funStatsBtn">🎉 See our fun stats</button>
     <div style="display:flex; gap:10px;">
       <button class="export-btn" id="monthReviewBtn" style="flex:1;">📅 Month in Review</button>
@@ -1083,6 +1075,18 @@
         <div class="setting-desc">An alternative winding-path layout for browsing the garden, being tried out. Turn off to hide the Path button for both of you.</div>
       </div>
       <button class="toggle-switch" id="togglePath" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
+    </div>
+
+    <div id="decorSection">
+      <label>Your decorations</label>
+      <p style="margin:0 0 8px;">Tap one to remove it — you'll get a full refund.</p>
+      <div class="owned-decor-row" id="ownedDecorRow"></div>
+    </div>
+
+    <div id="shopSection">
+      <label>🪙 Garden Shop</label>
+      <p style="margin:0 0 10px;">Add or remove things for the garden — everything's freely available, just pick what you want to see.</p>
+      <div class="shop-grid" id="shopGrid"></div>
     </div>
 
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
@@ -2108,9 +2112,11 @@
     gardenPage.classList.add('open');
   };
 
-  // ---- Jump to a date in the garden bed — a real calendar, only logged days are tappable ----
+  // ---- Jump to a date — a real calendar, only logged days are tappable.
+  // Shared between the Garden and the Path, switching behavior by context. ----
   const jumpDateBackdrop = document.getElementById('jumpDateBackdrop');
   let calYear, calMonth; // calMonth is 0-11
+  let jumpContext = 'garden';
 
   function jumpToDateAndOpen(dateStr) {
     const log = latestLogs.find((l) => l.date === dateStr);
@@ -2123,6 +2129,14 @@
       savedMeadowScrollTop = document.querySelector('.garden-page-content').scrollTop;
     }
     openGardenToLog(log); // opens the entry directly; going "back" later lands right at this flower
+  }
+
+  function jumpToPathDateAndOpen(dateStr) {
+    const log = latestLogs.find((l) => l.date === dateStr);
+    if (!log) return;
+    const target = document.querySelector(`.path-flower[data-date="${dateStr}"]`);
+    if (target) target.scrollIntoView({ behavior: 'instant', block: 'center' });
+    target.click(); // reuses the flower's own tap-to-open logic
   }
 
   function renderCalendar() {
@@ -2148,7 +2162,8 @@
     grid.querySelectorAll('.cal-day.has-entry').forEach((el) => {
       el.onclick = () => {
         jumpDateBackdrop.classList.remove('open');
-        jumpToDateAndOpen(el.dataset.date);
+        if (jumpContext === 'path') jumpToPathDateAndOpen(el.dataset.date);
+        else jumpToDateAndOpen(el.dataset.date);
       };
     });
   }
@@ -2160,15 +2175,17 @@
     calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
     renderCalendar();
   };
-  document.getElementById('gardenJumpBtn').onclick = () => {
-    // Open on the month of the most recent entry, or today if nothing's logged yet.
+  function openJumpCalendar(context) {
+    jumpContext = context;
     const mostRecent = [...latestLogs].sort((a, b) => b.date.localeCompare(a.date))[0];
     const base = mostRecent ? new Date(mostRecent.date + 'T00:00:00') : new Date();
     calYear = base.getFullYear();
     calMonth = base.getMonth();
     renderCalendar();
     jumpDateBackdrop.classList.add('open');
-  };
+  }
+  document.getElementById('gardenJumpBtn').onclick = () => openJumpCalendar('garden');
+  document.getElementById('pathJumpBtn').onclick = () => openJumpCalendar('path');
   document.getElementById('jumpDateClose').onclick = () => jumpDateBackdrop.classList.remove('open');
   document.getElementById('gardenBack').onclick = () => gardenPage.classList.remove('open');
 
@@ -2453,37 +2470,43 @@
   let savedMeadowScrollTop = 0;
   let currentMeadowOrder = [];
 
-  // ---- Meadow scrubber: hold the right edge and drag to jump around, like the
-  // scroll index in Photos/Contacts. Shows a floating month/year label while dragging.
-  const meadowScrubber = document.getElementById('meadowScrubber');
+  // ---- Scrubber: hold the right edge and drag to jump around, like the
+  // scroll index in Photos/Contacts. Shows a floating month/year label while
+  // dragging. Shared factory so both the Garden and the Path get one. ----
   const scrubberLabel = document.getElementById('scrubberLabel');
-  function scrubberUpdate(clientY) {
-    const rect = meadowScrubber.getBoundingClientRect();
-    const proportion = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
-    const content = document.querySelector('.garden-page-content');
-    content.scrollTop = proportion * (content.scrollHeight - content.clientHeight);
+  function wireScrubber(scrubberEl, contentSelector, getOrder) {
+    function update(clientY) {
+      const rect = scrubberEl.getBoundingClientRect();
+      const proportion = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+      const content = document.querySelector(contentSelector);
+      content.scrollTop = proportion * (content.scrollHeight - content.clientHeight);
 
-    if (currentMeadowOrder.length) {
-      const idx = Math.min(currentMeadowOrder.length - 1, Math.floor(proportion * currentMeadowOrder.length));
-      const d = new Date(currentMeadowOrder[idx].date + 'T00:00:00');
-      scrubberLabel.textContent = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const order = getOrder();
+      if (order.length) {
+        const idx = Math.min(order.length - 1, Math.floor(proportion * order.length));
+        const d = new Date(order[idx].date + 'T00:00:00');
+        scrubberLabel.textContent = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }
+      scrubberLabel.style.top = Math.max(20, Math.min(window.innerHeight - 50, clientY - 18)) + 'px';
+      scrubberLabel.classList.add('show');
     }
-    scrubberLabel.style.top = Math.max(20, Math.min(window.innerHeight - 50, clientY - 18)) + 'px';
-    scrubberLabel.classList.add('show');
+    function end() { scrubberLabel.classList.remove('show'); }
+    scrubberEl.addEventListener('touchstart', (e) => { update(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+    scrubberEl.addEventListener('touchmove', (e) => { update(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+    scrubberEl.addEventListener('touchend', end);
+    scrubberEl.addEventListener('touchcancel', end);
+    // Mouse support too, for anyone testing this on desktop.
+    let mouseDown = false;
+    scrubberEl.addEventListener('mousedown', (e) => { mouseDown = true; update(e.clientY); });
+    window.addEventListener('mousemove', (e) => { if (mouseDown) update(e.clientY); });
+    window.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false; end(); } });
   }
-  function scrubberEnd() { scrubberLabel.classList.remove('show'); }
-  meadowScrubber.addEventListener('touchstart', (e) => { scrubberUpdate(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
-  meadowScrubber.addEventListener('touchmove', (e) => { scrubberUpdate(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
-  meadowScrubber.addEventListener('touchend', scrubberEnd);
-  meadowScrubber.addEventListener('touchcancel', scrubberEnd);
-  // Mouse support too, for anyone testing this on desktop.
-  let scrubberMouseDown = false;
-  meadowScrubber.addEventListener('mousedown', (e) => { scrubberMouseDown = true; scrubberUpdate(e.clientY); });
-  window.addEventListener('mousemove', (e) => { if (scrubberMouseDown) scrubberUpdate(e.clientY); });
-  window.addEventListener('mouseup', () => { if (scrubberMouseDown) { scrubberMouseDown = false; scrubberEnd(); } });
+  wireScrubber(document.getElementById('meadowScrubber'), '.garden-page-content', () => currentMeadowOrder);
+  wireScrubber(document.getElementById('pathScrubber'), '.path-page-content', () => currentPathOrder);
 
   // ---- The Path: an experimental winding-path layout, kept entirely
   // separate from the grid meadow above so the two can be compared. ----
+  let currentPathOrder = [];
   function renderPathGarden(logs) {
     const container = document.getElementById('pathFlowers');
     const svg = document.getElementById('pathSvg');
@@ -2496,17 +2519,20 @@
       container.innerHTML = '<div class="garden-empty">Nothing logged yet.</div>';
       container.style.height = '';
       svg.setAttribute('height', 0);
+      currentPathOrder = [];
       return;
     }
 
     const ordered = [...logs].reverse(); // oldest first, same order as the meadow
+    currentPathOrder = ordered;
     const spacingY = 140;
     const amplitude = 82;
     const centerX = 160;
     const viewW = 320;
     const benchAreaHeight = 120; // room for the bench at the very start of the path
     const topPad = 50;
-    const totalHeight = benchAreaHeight + topPad + ordered.length * spacingY + 60;
+    const endMarkerHeight = 90; // room for the "more to come" marker at the end
+    const totalHeight = benchAreaHeight + topPad + ordered.length * spacingY + endMarkerHeight;
 
     container.style.height = totalHeight + 'px';
     container.innerHTML = '';
@@ -2532,13 +2558,40 @@
       const midY = (points[i].y + points[i + 1].y) / 2;
       d += ` Q ${points[i].x} ${points[i].y}, ${midX} ${midY}`;
     }
-    if (points.length > 1) {
-      const last = points[points.length - 1];
-      d += ` L ${last.x} ${last.y}`;
-    }
+    const last = points[points.length - 1];
+    if (points.length > 1) d += ` L ${last.x} ${last.y}`;
+    // A short continuation past the last flower, into the ending marker.
+    const endX = centerX + (last.x > centerX ? -18 : 18);
+    const endY = last.y + endMarkerHeight - 30;
+    d += ` Q ${last.x} ${last.y + 30}, ${endX} ${endY}`;
+
+    // A tree or bush every third flower, on whichever side is free, purely
+    // for visual variety along a long scroll — not tied to any data.
+    let sceneryHtml = '';
+    points.forEach((p, i) => {
+      if (i % 3 !== 1) return;
+      const side = p.x > centerX ? -1 : 1; // opposite side from the flower
+      const sx = centerX + side * (amplitude + 46);
+      const sy = p.y - 30;
+      const isTree = i % 6 === 1;
+      sceneryHtml += isTree
+        ? `<g transform="translate(${sx},${sy}) scale(0.55)">
+             <rect x="-2" y="8" width="4" height="16" fill="#8A5A2E"/>
+             <circle cx="0" cy="-2" r="15" fill="#7CB860"/>
+             <circle cx="-9" cy="3" r="11" fill="#6FA84A"/>
+             <circle cx="9" cy="3" r="11" fill="#6FA84A"/>
+           </g>`
+        : `<g transform="translate(${sx},${sy}) scale(0.5)">
+             <ellipse cx="0" cy="6" rx="16" ry="10" fill="#6FA84A"/>
+             <ellipse cx="-8" cy="0" rx="11" ry="9" fill="#7CB860"/>
+             <ellipse cx="8" cy="0" rx="11" ry="9" fill="#7CB860"/>
+           </g>`;
+    });
+
     svg.innerHTML = `
       <path d="${d}" fill="none" stroke="#C9A876" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="${d}" fill="none" stroke="#DCC49B" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 11" opacity="0.8"/>
+      ${sceneryHtml}
       <g transform="translate(${centerX},${benchAreaHeight - 55})">
         <rect x="-32" y="8" width="4" height="20" fill="#6B4A34"/>
         <rect x="28" y="8" width="4" height="20" fill="#6B4A34"/>
@@ -2552,6 +2605,8 @@
           <circle cx="5" cy="-9" r="6"/>
         </g>
       </g>
+      <text x="${endX}" y="${endY + 26}" text-anchor="middle" font-family="'IBM Plex Mono', monospace"
+        font-size="11" fill="rgba(45,60,35,0.55)">🌱 …and more to come</text>
     `;
 
     points.forEach(({ x, y, log }, idx) => {
@@ -2570,6 +2625,7 @@
       el.style.left = (x / viewW * 100) + '%';
       el.style.top = y + 'px';
       el.style.transform = 'translateX(-50%)';
+      el.dataset.date = log.date;
       el.innerHTML = `
         <div class="meadow-bloom" style="background:${bloomBg}">${bloomInner}</div>
         <div class="path-flower-label">
