@@ -273,13 +273,12 @@
 
   .shop-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-top:8px; }
   .shop-item{ background:rgba(255,255,255,0.85); border-radius:14px; padding:12px; text-align:center; }
-  .shop-item.owned{ opacity:0.7; }
+  .shop-item.owned{ opacity:0.85; }
   .shop-icon{ font-size:26px; }
   .shop-name{ font-size:11.5px; font-weight:700; color:var(--ink); margin:4px 0 8px; }
-  .shop-owned{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--moss); font-weight:700; }
-  .shop-buy{ width:100%; padding:8px; border-radius:10px; border:none; background:var(--moss); color:#fff;
+  .shop-toggle-btn{ width:100%; padding:8px; border-radius:10px; border:none; background:var(--moss); color:#fff;
     font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:11.5px; cursor:pointer; }
-  .shop-buy:disabled{ background:#C7C2B4; cursor:not-allowed; }
+  .shop-item.owned .shop-toggle-btn{ background:#E4E1D6; color:var(--ink-soft); }
 
   .setting-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:8px; }
   .setting-name{ font-size:13.5px; font-weight:700; color:var(--ink); }
@@ -1031,13 +1030,12 @@
   <div class="sheet">
     <h3>Settings</h3>
     <div class="stat-row"><span>Flowers grown</span><b id="menuFlowers">0</b></div>
-    <div class="stat-row"><span>Points (spendable)</span><b id="menuPoints">0</b></div>
     <div class="stat-row"><span>Streak</span><b id="menuStreak">0 days</b></div>
 
     <label>This week</label>
     <div class="weekly-recap">
       <div class="box"><b id="weekNights">0</b><span>Logged</span></div>
-      <div class="box"><b id="weekPoints">0</b><span>Points</span></div>
+      <div class="box"><b id="weekPhotos">0</b><span>Photos</span></div>
       <div class="box"><b id="weekChallenges">0</b><span>Challenges</span></div>
     </div>
 
@@ -1054,7 +1052,7 @@
 
     <div id="shopSection">
       <label>🪙 Garden Shop</label>
-      <p style="margin:0 0 10px;">Spend points earned from logging time and challenges on things for the garden.</p>
+      <p style="margin:0 0 10px;">Add or remove things for the garden — everything's freely available, just pick what you want to see.</p>
       <div class="shop-grid" id="shopGrid"></div>
     </div>
 
@@ -1090,7 +1088,7 @@
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
     <label>Data backup</label>
-    <p style="margin:0 0 8px;">A full backup of everything — points, streak, every memory, notes, photos, bucket list. Keep this somewhere safe; it's the real way to make sure nothing's ever lost, separate from the pretty PDF above.</p>
+    <p style="margin:0 0 8px;">A full backup of everything — streak, every memory, notes, photos, bucket list. Keep this somewhere safe; it's the real way to make sure nothing's ever lost, separate from the pretty PDF above.</p>
     <div style="display:flex; gap:10px;">
       <button class="export-btn" id="backupExportBtn" style="margin-top:0;">⬇️ Backup (JSON)</button>
       <button class="export-btn" id="backupImportBtn" style="margin-top:0;">⬆️ Restore</button>
@@ -1134,7 +1132,7 @@
   import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
-           purchaseDecoration, removeDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
+           toggleDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
            computeMonthReview, computeYearReview,
            getMonthsTogether,
            SPECIES, DECOR_SHOP, DATE_IDEAS }
@@ -1145,7 +1143,7 @@
     return sp.icon.replace('<svg ', `<svg style="color:${sp.dark}" `);
   }
 
-  let latestState = { points: 0, streak: 0, unlockedDecorations: [] };
+  let latestState = { streak: 0, unlockedDecorations: [] };
   let liveFlowerCount = 0;
   // pendingPhotos array is declared near the photo picker setup below
 
@@ -1729,7 +1727,6 @@
   const togglePathBtn = document.getElementById('togglePath');
   document.getElementById('btnSettings').onclick = () => {
     document.getElementById('menuFlowers').textContent = liveFlowerCount;
-    document.getElementById('menuPoints').textContent = latestState.points || 0;
     document.getElementById('menuStreak').textContent = (latestState.streak || 0) + ' days';
 
     const currentYear = new Date().toISOString().slice(0, 4);
@@ -1740,7 +1737,7 @@
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
     const thisWeek = latestLogs.filter((l) => l.date >= weekAgo && l.date <= today);
     document.getElementById('weekNights').textContent = thisWeek.filter((l) => l.type !== 'challenge').length;
-    document.getElementById('weekPoints').textContent = thisWeek.reduce((sum, l) => sum + (l.points || 0), 0);
+    document.getElementById('weekPhotos').textContent = thisWeek.reduce((sum, l) => sum + getPhotos(l).length, 0);
     document.getElementById('weekChallenges').textContent = thisWeek.filter((l) => l.type === 'challenge').length;
 
     toggleChallengeBtn.setAttribute('aria-checked', latestState.challengeEnabled !== false ? 'true' : 'false');
@@ -1901,27 +1898,22 @@
     shopGrid.innerHTML = '';
     DECOR_SHOP.forEach((item) => {
       const isOwned = owned.has(item.id);
-      const canAfford = (state.points || 0) >= item.cost;
       const el = document.createElement('div');
       el.className = 'shop-item' + (isOwned ? ' owned' : '');
       el.innerHTML = `
         <div class="shop-icon">${item.icon}</div>
         <div class="shop-name">${item.name}</div>
-        ${isOwned
-          ? `<div class="shop-owned">Owned</div>`
-          : `<button class="shop-buy" ${canAfford ? '' : 'disabled'} data-id="${item.id}" data-cost="${item.cost}">🪙 ${item.cost}</button>`}
+        <button class="shop-toggle-btn" data-id="${item.id}">${isOwned ? 'Remove' : 'Add'}</button>
       `;
       shopGrid.appendChild(el);
     });
-    shopGrid.querySelectorAll('.shop-buy').forEach((btn) => {
+    shopGrid.querySelectorAll('.shop-toggle-btn').forEach((btn) => {
       btn.onclick = async () => {
         btn.disabled = true;
         try {
-          const bought = await purchaseDecoration(btn.dataset.id, parseInt(btn.dataset.cost));
-          if (bought) {
-            playChime(false);
-            if (!isConfigured) render(latestState);
-          }
+          await toggleDecoration(btn.dataset.id);
+          playChime(false);
+          if (!isConfigured) render(latestState);
         } catch (err) { /* error already alerted */ }
         finally { btn.disabled = false; }
       };
@@ -1931,15 +1923,13 @@
     if (ownedRow) {
       const ownedItems = DECOR_SHOP.filter((d) => owned.has(d.id));
       ownedRow.innerHTML = ownedItems.length
-        ? ownedItems.map((d) => `<button class="owned-decor" data-id="${d.id}" data-cost="${d.cost}" title="Tap to remove (refunds ${d.cost} points)">${d.icon}</button>`).join('')
-        : '<span class="owned-decor-empty">Nothing bought yet — check the Shop below.</span>';
+        ? ownedItems.map((d) => `<button class="owned-decor" data-id="${d.id}" title="Tap to remove">${d.icon}</button>`).join('')
+        : '<span class="owned-decor-empty">Nothing added yet — check below.</span>';
       ownedRow.querySelectorAll('.owned-decor').forEach((btn) => {
         btn.onclick = async () => {
-          const item = DECOR_SHOP.find((d) => d.id === btn.dataset.id);
-          if (!confirm(`Remove ${item ? item.name : 'this'}? You'll get ${btn.dataset.cost} points back.`)) return;
           btn.disabled = true;
           try {
-            await removeDecoration(btn.dataset.id, parseInt(btn.dataset.cost));
+            await toggleDecoration(btn.dataset.id);
             if (!isConfigured) render(latestState);
           } catch (err) { /* error already alerted */ }
         };
@@ -2390,7 +2380,6 @@
       <div class="memory-body">
         <div class="memory-date">${dateStr}</div>
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
-        <div class="memory-meta">+${log.points} pts</div>
         ${galleryHtml}
         <div class="note-slot">${noteHtml}</div>
         ${loveNoteHtml}

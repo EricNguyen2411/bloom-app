@@ -5,9 +5,9 @@ import { firebaseConfig, COUPLE_ID, ANNIVERSARY_MD, RELATIONSHIP_START_DATE, BIR
 // to accumulated points. The resting/idle state between entries is "budding".
 export const STAGE_KEYS = ['seed', 'sprout', 'budding', 'blooming', 'flourishing'];
 
-// Garden Shop — decorations you buy with points earned from logging time and
-// completing challenges. Each has a preset spot (as a % of the illustrated
-// garden scene) so it actually appears in the scene once bought, not just in a list.
+// Garden Shop — decorations, freely toggled on or off, no cost involved.
+// Each has a preset spot (as a % of the illustrated garden scene) so it
+// actually appears in the scene once turned on, not just in a list.
 export const DECOR_SHOP = [
   { id: 'bench', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><rect x="2" y="16" width="22" height="3" rx="1.5" fill="#6B4A34"/><rect x="4" y="10" width="3" height="9" fill="#8A5A2E"/><rect x="19" y="10" width="3" height="9" fill="#8A5A2E"/><circle cx="9" cy="11" r="3.5" fill="#4A3B33"/><circle cx="17" cy="11" r="3.5" fill="#4A3B33"/></svg>', name: 'Little bench', cost: 25, special: 'bench' },
   { id: 'pet_pom_brown', icon: '<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="15" r="8" fill="#A9713F"/><circle cx="13" cy="7" r="6" fill="#A9713F"/><circle cx="9" cy="3" r="2.4" fill="#8A5A2E"/><circle cx="17" cy="3" r="2.4" fill="#8A5A2E"/><circle cx="10.5" cy="6.5" r="0.9" fill="#2A1B12"/><circle cx="15.5" cy="6.5" r="0.9" fill="#2A1B12"/></svg>', name: 'Brown Pomeranian', cost: 90, special: 'pet' },
@@ -254,12 +254,12 @@ export function findFlashback(logs) {
 }
 
 const DEMO_STATE = {
-  points: 0, streak: 1, lastActiveDate: null,
+  streak: 1, lastActiveDate: null,
   unlockedDecorations: [], todayChallengeCompletedDate: null,
   anniversaryUnlockedYear: null, totalFlowers: 0, challengeEnabled: true, shopEnabled: true
 };
 const DEMO_LOGS = [
-  { id: 'demo-1', activity: 'Coffee and a walk (demo entry)', points: 8, date: todayStr(), photo: null, note: '' }
+  { id: 'demo-1', activity: 'Coffee and a walk (demo entry)', date: todayStr(), photo: null, note: '' }
 ];
 const DEMO_BUCKET = [
   { id: 'demo-b1', text: 'Try that ramen place downtown (demo idea)', done: false }
@@ -304,13 +304,12 @@ async function maybeUnlockAnniversary(data) {
   if (data.anniversaryUnlockedYear === year) return;
 
   if (!isConfigured) {
-    DEMO_STATE.points += 50;
     DEMO_STATE.anniversaryUnlockedYear = year;
     return;
   }
   try {
     const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
-    await setDoc(ref, { points: increment(50), anniversaryUnlockedYear: year }, { merge: true });
+    await setDoc(ref, { anniversaryUnlockedYear: year }, { merge: true });
   } catch (err) {
     console.error('anniversary unlock failed:', err);
   }
@@ -355,12 +354,13 @@ export async function setSetting(key, value) {
   }
 }
 
-export async function purchaseDecoration(decorId, cost) {
+// Adds or removes a Garden Shop decoration — everything is freely available
+// now, no cost involved. This just flips whether it's on or off.
+export async function toggleDecoration(decorId) {
   if (!isConfigured) {
-    if (DEMO_STATE.unlockedDecorations.includes(decorId)) return false;
-    if (DEMO_STATE.points < cost) return false;
-    DEMO_STATE.points -= cost;
-    DEMO_STATE.unlockedDecorations.push(decorId);
+    const idx = DEMO_STATE.unlockedDecorations.indexOf(decorId);
+    if (idx === -1) DEMO_STATE.unlockedDecorations.push(decorId);
+    else DEMO_STATE.unlockedDecorations.splice(idx, 1);
     return true;
   }
   try {
@@ -368,40 +368,14 @@ export async function purchaseDecoration(decorId, cost) {
     const snap = await getDoc(ref);
     const data = snap.exists() ? snap.data() : DEMO_STATE;
     const owned = data.unlockedDecorations || [];
-    if (owned.includes(decorId)) return false;
-    if ((data.points || 0) < cost) return false;
+    const isOwned = owned.includes(decorId);
     await setDoc(ref, {
-      points: increment(-cost),
-      unlockedDecorations: arrayUnion(decorId)
+      unlockedDecorations: isOwned ? arrayRemove(decorId) : arrayUnion(decorId)
     }, { merge: true });
     return true;
   } catch (err) {
-    console.error('purchaseDecoration failed:', err);
-    alert('Could not buy that: ' + err.message);
-    throw err;
-  }
-}
-
-// Removes a decoration you own, refunding its full cost — so trying something
-// out and changing your mind never feels like a waste.
-export async function removeDecoration(decorId, cost) {
-  if (!isConfigured) {
-    const idx = DEMO_STATE.unlockedDecorations.indexOf(decorId);
-    if (idx === -1) return false;
-    DEMO_STATE.unlockedDecorations.splice(idx, 1);
-    DEMO_STATE.points += cost;
-    return true;
-  }
-  try {
-    const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
-    await setDoc(ref, {
-      points: increment(cost),
-      unlockedDecorations: arrayRemove(decorId)
-    }, { merge: true });
-    return true;
-  } catch (err) {
-    console.error('removeDecoration failed:', err);
-    alert('Could not remove that: ' + err.message);
+    console.error('toggleDecoration failed:', err);
+    alert('Could not update that: ' + err.message);
     throw err;
   }
 }
@@ -549,7 +523,6 @@ export function getPhotos(log) {
 
 export async function logTime(activity = '', dateStr = null, photos = [], location = null) {
   const entryDate = dateStr || todayStr();
-  const gained = 8; // flat reward per logged memory — duration no longer factors in
 
   const totalSize = photos.reduce((sum, p) => sum + p.length, 0);
   if (totalSize > 900000) {
@@ -557,10 +530,9 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
   }
 
   if (!isConfigured) {
-    DEMO_STATE.points += gained;
     DEMO_STATE.totalFlowers += 1;
     if (entryDate === todayStr()) DEMO_STATE.lastActiveDate = entryDate;
-    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, points: gained, date: entryDate, photos, note: '', location });
+    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, date: entryDate, photos, note: '', location });
     return DEMO_STATE;
   }
 
@@ -570,7 +542,7 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
     const data = snap.exists() ? snap.data() : DEMO_STATE;
     const today = todayStr();
 
-    const update = { points: increment(gained), totalFlowers: increment(1) };
+    const update = { totalFlowers: increment(1) };
     if (entryDate === today) {
       let streak = data.streak || 1;
       if (data.lastActiveDate) {
@@ -586,7 +558,7 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
     await setDoc(ref, update, { merge: true });
 
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
-      type: 'log', activity, points: gained,
+      type: 'log', activity,
       date: entryDate, backfilled: entryDate !== today, location,
       photos, note: '',
       createdAt: serverTimestamp()
@@ -601,10 +573,9 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
 export async function completeChallenge(challengeText = '') {
   if (!isConfigured) {
     if (DEMO_STATE.todayChallengeCompletedDate !== todayStr()) {
-      DEMO_STATE.points += 15;
       DEMO_STATE.totalFlowers += 1;
       DEMO_STATE.todayChallengeCompletedDate = todayStr();
-      DEMO_LOGS.unshift({ id: 'demo-c-' + Date.now(), type: 'challenge', activity: 'Challenge: ' + challengeText, points: 15, date: todayStr(), photo: null, note: '' });
+      DEMO_LOGS.unshift({ id: 'demo-c-' + Date.now(), type: 'challenge', activity: 'Challenge: ' + challengeText, date: todayStr(), photo: null, note: '' });
     }
     return DEMO_STATE;
   }
@@ -615,13 +586,12 @@ export async function completeChallenge(challengeText = '') {
     const today = todayStr();
     if (data.todayChallengeCompletedDate === today) return;
     await setDoc(ref, {
-      points: increment(15),
       totalFlowers: increment(1),
       todayChallengeCompletedDate: today
     }, { merge: true });
 
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
-      type: 'challenge', activity: 'Challenge: ' + challengeText, points: 15,
+      type: 'challenge', activity: 'Challenge: ' + challengeText,
       date: today, backfilled: false, photo: null, note: '',
       createdAt: serverTimestamp()
     });
@@ -647,8 +617,8 @@ export async function addNoteToLog(logId, note) {
   }
 }
 
-// Deletes a memory entry. Note: this does NOT reverse the growth points it
-// already earned — the plant keeps what it grew, this just removes the
+// Deletes a memory entry. Note: this does NOT reduce the flower count —
+// the plant keeps what it already grew, this just removes the
 // record from the gallery (e.g. for a duplicate or a mistaken entry).
 export async function deleteLog(logId) {
   if (!isConfigured) {

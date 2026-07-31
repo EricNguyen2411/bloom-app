@@ -19,10 +19,9 @@ export const COUPLE_ID = "24112000";
 
 // Optional: your anniversary (or any date you want celebrated every year),
 // as "MM-DD" — e.g. "08-09" for August 9th. On that date each year, a
-// special ring decoration unlocks automatically plus a points bonus.
+// full-screen fireworks celebration shows once on the dashboard.
 // Leave as null to skip this feature entirely.
 export const ANNIVERSARY_MD = "12-12"; // e.g. "08-09"
-
 
 // Optional: the actual date you two got together, full year included —
 // e.g. "2023-08-09". Powers the "days together" number in Fun Stats and the
@@ -36,5 +35,5 @@ export const RELATIONSHIP_START_DATE = "2025-12-12"; // e.g. "2023-08-09"
 // keep the quotes). Any flower logged on one of these dates, or on Valentine's
 // Day, or on your anniversary, gets a small icon marking the occasion in the
 // garden. Leave either as null to skip it.
-export const BIRTHDAY_1_MD = null; // e.g. "12-27"
-export const BIRTHDAY_2_MD = null; // e.g. "11-24"
+export const BIRTHDAY_1_MD = null; // e.g. "11-24"
+export const BIRTHDAY_2_MD = null; // e.g. "12-27"
