@@ -775,7 +775,8 @@
     <div style="width:44px;"></div>
   </div>
 
-  <div class="garden-scene">
+  <div id="gardenScenePlaceholder" style="display:none;"></div>
+  <div class="garden-scene" id="sharedGardenScene">
     <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
@@ -973,6 +974,7 @@
     <div class="garden-page-title">The Path (trying this out)</div>
     <div style="width:44px;"></div>
   </div>
+  <div id="pathSceneSlot"></div>
   <div class="path-page-content" id="pathPageContent">
     <div style="display:flex; justify-content:flex-end; padding:10px 14px 0;">
       <button class="jump-date-wrap" id="pathJumpBtn"><span>📅 Jump to date</span></button>
@@ -2010,7 +2012,7 @@
     const period = getTimeOfDay();
     const isNight = period === 'night';
     const sceneEl = document.querySelector('.garden-scene');
-    const contentEl = document.querySelector('.garden-page-content');
+    const contentEls = [document.querySelector('.garden-page-content'), document.querySelector('.path-page-content')].filter(Boolean);
 
     document.getElementById('sceneDay').style.display = isNight ? 'none' : '';
     document.getElementById('sceneNight').style.display = isNight ? '' : 'none';
@@ -2027,8 +2029,6 @@
 
     sceneEl.classList.remove('night', 'morning', 'afternoon', 'sunset');
     sceneEl.classList.add(period);
-    contentEl.classList.remove('morning', 'sunset');
-    if (period === 'morning' || period === 'sunset') contentEl.classList.add(period);
 
     // A gentle chance of rain each visit, purely atmospheric.
     sceneEl.classList.toggle('raining', Math.random() < 0.18);
@@ -2046,7 +2046,11 @@
       `linear-gradient(180deg, ${a} 0%, ${b} 40%, ${c} 100%)`;
     if (period === 'sunset') bg = `linear-gradient(180deg, rgba(242,137,74,0.16), transparent 45%), ` + bg;
     if (isNight) bg = `linear-gradient(180deg, rgba(27,42,74,0.28), transparent 45%), ` + bg;
-    contentEl.style.background = bg;
+    contentEls.forEach((el) => {
+      el.classList.remove('morning', 'sunset');
+      if (period === 'morning' || period === 'sunset') el.classList.add(period);
+      el.style.background = bg;
+    });
 
     renderSceneDecor(latestState);
     randomizeBenchPose();
@@ -2106,6 +2110,7 @@
   document.getElementById('coupleBench').addEventListener('click', cycleBenchPose);
 
   document.getElementById('btnGarden').onclick = () => {
+    document.getElementById('gardenScenePlaceholder').after(document.getElementById('sharedGardenScene'));
     applySceneTheme();
     gardenDetail.classList.remove('show');
     gardenBed.style.display = '';
@@ -2529,10 +2534,9 @@
     const amplitude = 82;
     const centerX = 160;
     const viewW = 320;
-    const benchAreaHeight = 120; // room for the bench at the very start of the path
-    const topPad = 50;
+    const topPad = 60; // extra breathing room below the shared scene above
     const endMarkerHeight = 90; // room for the "more to come" marker at the end
-    const totalHeight = benchAreaHeight + topPad + ordered.length * spacingY + endMarkerHeight;
+    const totalHeight = topPad + ordered.length * spacingY + endMarkerHeight;
 
     container.style.height = totalHeight + 'px';
     container.innerHTML = '';
@@ -2543,15 +2547,15 @@
     // Strict left/right alternation, rather than a smooth wave.
     const points = ordered.map((log, i) => ({
       x: centerX + (i % 2 === 0 ? -amplitude : amplitude),
-      y: benchAreaHeight + topPad + i * spacingY,
+      y: topPad + i * spacingY,
       log
     }));
 
-    // The path starts right at the bench, then winds through every flower —
-    // each point becomes a quadratic control point, curving toward the
-    // midpoint of the next pair, which reads as a natural path rather than
-    // a harsh zigzag even though the flowers themselves alternate cleanly.
-    let d = `M ${centerX} ${benchAreaHeight - 6}`;
+    // The path winds through every flower — each point becomes a quadratic
+    // control point, curving toward the midpoint of the next pair, which
+    // reads as a natural path rather than a harsh zigzag even though the
+    // flowers themselves alternate cleanly.
+    let d = `M ${centerX} ${topPad - 30}`;
     d += ` Q ${points[0].x} ${points[0].y - spacingY / 2}, ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length - 1; i++) {
       const midX = (points[i].x + points[i + 1].x) / 2;
@@ -2592,19 +2596,6 @@
       <path d="${d}" fill="none" stroke="#C9A876" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="${d}" fill="none" stroke="#DCC49B" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 11" opacity="0.8"/>
       ${sceneryHtml}
-      <g transform="translate(${centerX},${benchAreaHeight - 55})">
-        <rect x="-32" y="8" width="4" height="20" fill="#6B4A34"/>
-        <rect x="28" y="8" width="4" height="20" fill="#6B4A34"/>
-        <rect x="-34" y="16" width="72" height="4" rx="2" fill="#6B4A34"/>
-        <rect x="-34" y="4" width="72" height="4" rx="2" fill="#8A5A2E"/>
-        <g fill="#4A3B33">
-          <ellipse cx="-10" cy="2" rx="8" ry="9"/>
-          <circle cx="-10" cy="-11" r="6"/>
-          <path d="M-4,-4 Q4,-7 9,-2" stroke="#4A3B33" stroke-width="5" stroke-linecap="round" fill="none"/>
-          <ellipse cx="10" cy="3" rx="8" ry="9" transform="rotate(8 10 3)"/>
-          <circle cx="5" cy="-9" r="6"/>
-        </g>
-      </g>
       <text x="${endX}" y="${endY + 26}" text-anchor="middle" font-family="'IBM Plex Mono', monospace"
         font-size="11" fill="rgba(45,60,35,0.55)">🌱 …and more to come</text>
     `;
@@ -2644,6 +2635,8 @@
     });
   }
   document.getElementById('btnPath').onclick = () => {
+    document.getElementById('pathSceneSlot').appendChild(document.getElementById('sharedGardenScene'));
+    applySceneTheme();
     renderPathGarden(latestLogs);
     document.getElementById('pathPage').classList.add('open');
   };
