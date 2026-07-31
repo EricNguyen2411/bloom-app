@@ -462,6 +462,10 @@
   #pathSvg{ position:absolute; top:0; left:0; z-index:1; display:block; }
   #pathFlowers{ position:relative; z-index:2; }
   .path-flower{ position:absolute; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+  .path-flower-label{ max-width:96px; margin-top:6px; text-align:center; }
+  .path-flower-activity{ font-family:'Inter',sans-serif; font-size:11px; font-weight:600; color:#2A3B1F;
+    background:rgba(255,255,255,0.85); padding:3px 8px; border-radius:8px; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; max-width:96px; }
   .path-detail{ display:none; padding:16px 20px; }
   .path-detail.show{ display:block; }
   .garden-detail.show{ display:block; background:var(--card); border-radius:18px; padding:16px; box-shadow:0 12px 26px -10px rgba(20,30,15,0.4); }
@@ -1075,6 +1079,13 @@
       </div>
       <button class="toggle-switch" id="toggleShop" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
     </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-name">The Path (experimental)</div>
+        <div class="setting-desc">An alternative winding-path layout for browsing the garden, being tried out. Turn off to hide the Path button for both of you.</div>
+      </div>
+      <button class="toggle-switch" id="togglePath" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
+    </div>
 
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
@@ -1337,6 +1348,7 @@
     document.getElementById('streakChip').textContent = state.streak || 0;
 
     document.getElementById('btnChallenge').style.display = state.challengeEnabled === false ? 'none' : '';
+    document.getElementById('btnPath').style.display = state.pathEnabled === false ? 'none' : '';
 
     // Gentle nudge if it's been a while — never a notification, just a quiet banner.
     const ideaBanner = document.getElementById('ideaBanner');
@@ -1714,6 +1726,7 @@
   const menuBackdrop = document.getElementById('menuBackdrop');
   const toggleChallengeBtn = document.getElementById('toggleChallenge');
   const toggleShopBtn = document.getElementById('toggleShop');
+  const togglePathBtn = document.getElementById('togglePath');
   document.getElementById('btnSettings').onclick = () => {
     document.getElementById('menuFlowers').textContent = liveFlowerCount;
     document.getElementById('menuPoints').textContent = latestState.points || 0;
@@ -1732,6 +1745,7 @@
 
     toggleChallengeBtn.setAttribute('aria-checked', latestState.challengeEnabled !== false ? 'true' : 'false');
     toggleShopBtn.setAttribute('aria-checked', latestState.shopEnabled !== false ? 'true' : 'false');
+    togglePathBtn.setAttribute('aria-checked', latestState.pathEnabled !== false ? 'true' : 'false');
 
     menuBackdrop.classList.add('open');
   };
@@ -1756,6 +1770,17 @@
       renderShop(latestState);
     } catch (err) {
       toggleShopBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
+    }
+  };
+
+  togglePathBtn.onclick = async () => {
+    const newValue = togglePathBtn.getAttribute('aria-checked') !== 'true';
+    togglePathBtn.setAttribute('aria-checked', newValue ? 'true' : 'false');
+    try {
+      await setSetting('pathEnabled', newValue);
+      if (!isConfigured) render(latestState);
+    } catch (err) {
+      togglePathBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
     }
   };
 
@@ -2486,12 +2511,13 @@
     }
 
     const ordered = [...logs].reverse(); // oldest first, same order as the meadow
-    const spacingY = 130;
-    const amplitude = 78;
+    const spacingY = 140;
+    const amplitude = 82;
     const centerX = 160;
     const viewW = 320;
-    const topPad = 40;
-    const totalHeight = topPad + ordered.length * spacingY + 60;
+    const benchAreaHeight = 120; // room for the bench at the very start of the path
+    const topPad = 50;
+    const totalHeight = benchAreaHeight + topPad + ordered.length * spacingY + 60;
 
     container.style.height = totalHeight + 'px';
     container.innerHTML = '';
@@ -2499,16 +2525,19 @@
     svg.setAttribute('viewBox', `0 0 ${viewW} ${totalHeight}`);
     svg.setAttribute('preserveAspectRatio', 'none');
 
+    // Strict left/right alternation, rather than a smooth wave.
     const points = ordered.map((log, i) => ({
-      x: centerX + amplitude * Math.sin(i * 0.7),
-      y: topPad + i * spacingY,
+      x: centerX + (i % 2 === 0 ? -amplitude : amplitude),
+      y: benchAreaHeight + topPad + i * spacingY,
       log
     }));
 
-    // A smooth winding curve through every flower's position — each point
-    // becomes a quadratic control point, curving toward the midpoint of the
-    // next pair, which reads as a natural path rather than a zigzag.
-    let d = `M ${points[0].x} ${points[0].y}`;
+    // The path starts right at the bench, then winds through every flower —
+    // each point becomes a quadratic control point, curving toward the
+    // midpoint of the next pair, which reads as a natural path rather than
+    // a harsh zigzag even though the flowers themselves alternate cleanly.
+    let d = `M ${centerX} ${benchAreaHeight - 6}`;
+    d += ` Q ${points[0].x} ${points[0].y - spacingY / 2}, ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length - 1; i++) {
       const midX = (points[i].x + points[i + 1].x) / 2;
       const midY = (points[i].y + points[i + 1].y) / 2;
@@ -2521,6 +2550,19 @@
     svg.innerHTML = `
       <path d="${d}" fill="none" stroke="#C9A876" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="${d}" fill="none" stroke="#DCC49B" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 11" opacity="0.8"/>
+      <g transform="translate(${centerX},${benchAreaHeight - 55})">
+        <rect x="-32" y="8" width="4" height="20" fill="#6B4A34"/>
+        <rect x="28" y="8" width="4" height="20" fill="#6B4A34"/>
+        <rect x="-34" y="16" width="72" height="4" rx="2" fill="#6B4A34"/>
+        <rect x="-34" y="4" width="72" height="4" rx="2" fill="#8A5A2E"/>
+        <g fill="#4A3B33">
+          <ellipse cx="-10" cy="2" rx="8" ry="9"/>
+          <circle cx="-10" cy="-11" r="6"/>
+          <path d="M-4,-4 Q4,-7 9,-2" stroke="#4A3B33" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <ellipse cx="10" cy="3" rx="8" ry="9" transform="rotate(8 10 3)"/>
+          <circle cx="5" cy="-9" r="6"/>
+        </g>
+      </g>
     `;
 
     points.forEach(({ x, y, log }, idx) => {
@@ -2532,6 +2574,7 @@
       const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
       const d2 = new Date(log.date + 'T00:00:00');
       const shortDate = d2.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
+      const activityText = log.activity || (log.type === 'challenge' ? 'Challenge' : 'Time together');
 
       const el = document.createElement('div');
       el.className = 'path-flower';
@@ -2540,7 +2583,10 @@
       el.style.transform = 'translateX(-50%)';
       el.innerHTML = `
         <div class="meadow-bloom" style="background:${bloomBg}">${bloomInner}</div>
-        <div class="meadow-date" style="position:static; margin-top:6px; transform:none;">${shortDate}</div>`;
+        <div class="path-flower-label">
+          <div class="path-flower-activity">${activityText}</div>
+          <div class="meadow-date" style="position:static; margin-top:3px; transform:none;">${shortDate}</div>
+        </div>`;
       el.onclick = () => {
         container.style.display = 'none';
         svg.style.display = 'none';
