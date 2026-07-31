@@ -163,7 +163,33 @@ const DEFAULT_CHALLENGES = [
   "Try a restaurant neither of you has been to.",
   "Share 3 favorite memories out loud, no repeats.",
   "No screens for one full evening.",
-  "Write each other 3 things you're grateful for, swap notes."
+  "Write each other 3 things you're grateful for, swap notes.",
+  "Slow dance in the kitchen to one song, no occasion needed.",
+  "Give a genuine compliment about something the other did today.",
+  "Try to make each other laugh without using any words.",
+  "Ask each other one question you've never asked before.",
+  "Do a chore the other usually handles, without being asked.",
+  "Plan next week's date night together, right now.",
+  "Share a childhood memory you've never told the other.",
+  "Give each other a 5-minute massage, no talking required.",
+  "Cook or order the other's ultimate comfort food.",
+  "Watch a movie one of you loves and the other's never seen.",
+  "Leave a small surprise note somewhere the other will find it.",
+  "Take a photo together doing something silly.",
+  "Try a food neither of you has ever eaten before.",
+  "Spend 10 minutes just holding each other, phones away.",
+  "Share the actual highlight of your day before bed tonight.",
+  "Say one thing you appreciate about how the other handled something hard recently.",
+  "Play a board game or card game — loser makes tomorrow's coffee.",
+  "Go somewhere new within 15 minutes of home.",
+  "Write each other a haiku, however bad it turns out.",
+  "Take turns picking a song that reminds you of the other.",
+  "Take a walk with no destination in mind, just to see where you end up.",
+  "Ask each other: what's one thing I could do more of for you?",
+  "Recreate an old photo of the two of you.",
+  "Tell each other your favorite memory from this past month.",
+  "Write down 3 things you're both looking forward to.",
+  "Guess the other's answer to a question before they say it out loud."
 ];
 
 const isConfigured = firebaseConfig.apiKey !== "REPLACE_ME";
@@ -238,7 +264,10 @@ export function currentSpecies(totalFlowers) {
   return SPECIES[(totalFlowers || 0) % SPECIES.length];
 }
 export function todaysChallenge() {
-  return DEFAULT_CHALLENGES[new Date().getDate() % DEFAULT_CHALLENGES.length];
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - startOfYear) / 86400000);
+  return DEFAULT_CHALLENGES[dayOfYear % DEFAULT_CHALLENGES.length];
 }
 
 // Finds the best "on this day" memory to resurface: prefers exactly 1 year
@@ -264,6 +293,16 @@ const DEMO_LOGS = [
 const DEMO_BUCKET = [
   { id: 'demo-b1', text: 'Try that ramen place downtown (demo idea)', done: false }
 ];
+
+// ---- Habit streaks — for recurring things you do together (cooking, the
+// gym) that aren't really a "date" or worth their own flower, just something
+// worth quietly keeping track of. Add more here any time; each just needs a
+// stable id, a name, and an icon. ----
+export const HABITS_LIST = [
+  { id: 'cook', name: 'Cooked together', icon: '🍳' },
+  { id: 'gym', name: 'Gym together', icon: '💪' }
+];
+const DEMO_HABITS = { cook: [], gym: [] };
 
 // ---- Live state (real-time — both phones see updates as they happen) ----
 export function watchState(renderFn) {
@@ -712,6 +751,90 @@ export async function deleteBucketItem(id) {
   } catch (err) {
     console.error('deleteBucketItem failed:', err);
   }
+}
+
+// Live habit data — a doc per habit, each holding just an array of the dates
+// it was logged on. Small and simple; no separate collection of individual
+// entries needed since these aren't memories, just a quiet running tally.
+// Each habit's entries live in their own subcollection — one small document
+// per day logged (the date itself is the document ID, so logging today twice
+// just updates that same entry instead of creating a duplicate). This is the
+// same shape the main memories collection already uses, and for the same
+// reason: a single array field holding photos would eventually hit
+// Firestore's ~1MB per-document limit; separate small documents don't.
+export function watchHabits(renderFn) {
+  if (!isConfigured) {
+    Object.keys(DEMO_HABITS).forEach((id) => renderFn(id, DEMO_HABITS[id]));
+    return;
+  }
+  const unsubs = HABITS_LIST.map((h) =>
+    onSnapshot(
+      query(collection(db, `couples/${COUPLE_ID}/habits/${h.id}/entries`), orderBy('date', 'asc')),
+      (snap) => renderFn(h.id, snap.docs.map((d) => d.data())),
+      (err) => console.error(`watchHabits(${h.id}) listener error:`, err)
+    )
+  );
+  return () => unsubs.forEach((u) => u());
+}
+
+export async function logHabitToday(habitId, photo = null) {
+  const today = todayStr();
+  if (!isConfigured) {
+    if (!DEMO_HABITS[habitId]) DEMO_HABITS[habitId] = [];
+    const existing = DEMO_HABITS[habitId].find((e) => e.date === today);
+    if (existing) { if (photo) existing.photo = photo; }
+    else DEMO_HABITS[habitId].push({ date: today, photo });
+    return;
+  }
+  try {
+    await setDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${today}`),
+      { date: today, photo, createdAt: serverTimestamp() }, { merge: true });
+  } catch (err) {
+    console.error('logHabitToday failed:', err);
+    alert('Could not log that: ' + err.message);
+    throw err;
+  }
+}
+
+export async function unlogHabitToday(habitId) {
+  const today = todayStr();
+  if (!isConfigured) {
+    if (DEMO_HABITS[habitId]) DEMO_HABITS[habitId] = DEMO_HABITS[habitId].filter((e) => e.date !== today);
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${today}`));
+  } catch (err) {
+    console.error('unlogHabitToday failed:', err);
+  }
+}
+
+// Total count, current streak, and longest streak, all derived client-side
+// from the entries themselves — no separate stored counters that could ever
+// drift out of sync with the actual log.
+export function computeHabitStats(entries) {
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  const total = sorted.length;
+  if (!total) return { total: 0, currentStreak: 0, longestStreak: 0, lastDate: null };
+
+  let longestStreak = 1, run = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    run = daysBetween(sorted[i - 1].date, sorted[i].date) === 1 ? run + 1 : 1;
+    longestStreak = Math.max(longestStreak, run);
+  }
+
+  const lastDate = sorted[sorted.length - 1].date;
+  const gapFromToday = daysBetween(lastDate, todayStr());
+  let currentStreak = 0;
+  if (gapFromToday <= 1) { // still "current" if done today or yesterday
+    currentStreak = 1;
+    for (let i = sorted.length - 1; i > 0; i--) {
+      if (daysBetween(sorted[i - 1].date, sorted[i].date) === 1) currentStreak++;
+      else break;
+    }
+  }
+
+  return { total, currentStreak, longestStreak, lastDate };
 }
 
 // ---- Full data backup (export/import) ----
