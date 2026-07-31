@@ -456,6 +456,14 @@
   .meadow-flower.jump-highlight .meadow-bloom{ animation:jumpPulse 0.7s ease-in-out 3; }
 
   .garden-detail{ display:none; }
+
+  .path-page-content{ position:relative; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    background: linear-gradient(180deg, #97C078 0%, #8CBB70 40%, #7FB264 100%); padding:20px 0 60px; }
+  #pathSvg{ position:absolute; top:0; left:0; z-index:1; display:block; }
+  #pathFlowers{ position:relative; z-index:2; }
+  .path-flower{ position:absolute; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+  .path-detail{ display:none; padding:16px 20px; }
+  .path-detail.show{ display:block; }
   .garden-detail.show{ display:block; background:var(--card); border-radius:18px; padding:16px; box-shadow:0 12px 26px -10px rgba(20,30,15,0.4); }
   .garden-detail-back{ background:#F6F4EC; border:1.5px solid #E4E1D6; color:var(--moss); font-weight:700; font-size:12.5px;
     cursor:pointer; padding:9px 16px; border-radius:999px; margin-bottom:12px; }
@@ -686,6 +694,7 @@
     <button class="action" id="btnLog"><div class="action-icon">＋</div><div class="action-label">Log time</div></button>
     <button class="action" id="btnChallenge"><div class="action-icon">✦</div><div class="action-label">Challenge</div></button>
     <button class="action" id="btnGarden"><div class="action-icon">🌷</div><div class="action-label">Garden</div></button>
+    <button class="action" id="btnPath"><div class="action-icon">🛤️</div><div class="action-label">Path</div></button>
     <button class="action" id="btnMemories"><div class="action-icon">📷</div><div class="action-label">Memories</div></button>
     <button class="action" id="btnBucket"><div class="action-icon">💡</div><div class="action-label">Ideas</div></button>
   </div>
@@ -953,6 +962,22 @@
   </div>
   <div class="meadow-scrubber" id="meadowScrubber"></div>
   <div class="scrubber-label" id="scrubberLabel"></div>
+</div>
+
+<div class="garden-page" id="pathPage">
+  <div class="garden-page-header">
+    <button id="pathBack">← Back</button>
+    <div class="garden-page-title">The Path (trying this out)</div>
+    <div style="width:44px;"></div>
+  </div>
+  <div class="path-page-content" id="pathPageContent">
+    <svg id="pathSvg" width="100%"></svg>
+    <div id="pathFlowers"></div>
+    <div class="path-detail" id="pathDetail">
+      <button class="garden-detail-back" id="pathDetailBack">← Back to path</button>
+      <div id="pathDetailContent"></div>
+    </div>
+  </div>
 </div>
 
 <div class="backdrop" id="memoriesBackdrop">
@@ -2442,6 +2467,101 @@
   meadowScrubber.addEventListener('mousedown', (e) => { scrubberMouseDown = true; scrubberUpdate(e.clientY); });
   window.addEventListener('mousemove', (e) => { if (scrubberMouseDown) scrubberUpdate(e.clientY); });
   window.addEventListener('mouseup', () => { if (scrubberMouseDown) { scrubberMouseDown = false; scrubberEnd(); } });
+
+  // ---- The Path: an experimental winding-path layout, kept entirely
+  // separate from the grid meadow above so the two can be compared. ----
+  function renderPathGarden(logs) {
+    const container = document.getElementById('pathFlowers');
+    const svg = document.getElementById('pathSvg');
+    const detailEl = document.getElementById('pathDetail');
+    detailEl.classList.remove('show');
+    container.style.display = '';
+    svg.style.display = '';
+
+    if (!logs.length) {
+      container.innerHTML = '<div class="garden-empty">Nothing logged yet.</div>';
+      container.style.height = '';
+      svg.setAttribute('height', 0);
+      return;
+    }
+
+    const ordered = [...logs].reverse(); // oldest first, same order as the meadow
+    const spacingY = 130;
+    const amplitude = 78;
+    const centerX = 160;
+    const viewW = 320;
+    const topPad = 40;
+    const totalHeight = topPad + ordered.length * spacingY + 60;
+
+    container.style.height = totalHeight + 'px';
+    container.innerHTML = '';
+    svg.setAttribute('height', totalHeight);
+    svg.setAttribute('viewBox', `0 0 ${viewW} ${totalHeight}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    const points = ordered.map((log, i) => ({
+      x: centerX + amplitude * Math.sin(i * 0.7),
+      y: topPad + i * spacingY,
+      log
+    }));
+
+    // A smooth winding curve through every flower's position — each point
+    // becomes a quadratic control point, curving toward the midpoint of the
+    // next pair, which reads as a natural path rather than a zigzag.
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length - 1; i++) {
+      const midX = (points[i].x + points[i + 1].x) / 2;
+      const midY = (points[i].y + points[i + 1].y) / 2;
+      d += ` Q ${points[i].x} ${points[i].y}, ${midX} ${midY}`;
+    }
+    if (points.length > 1) {
+      const last = points[points.length - 1];
+      d += ` L ${last.x} ${last.y}`;
+    }
+    svg.innerHTML = `
+      <path d="${d}" fill="none" stroke="#C9A876" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${d}" fill="none" stroke="#DCC49B" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 11" opacity="0.8"/>
+    `;
+
+    points.forEach(({ x, y, log }, idx) => {
+      const sp = SPECIES[idx % SPECIES.length];
+      const photos = getPhotos(log);
+      const bloomInner = photos.length
+        ? `<img class="meadow-bloom-photo" src="${photos[0]}" loading="lazy">`
+        : iconWithColor(sp);
+      const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
+      const d2 = new Date(log.date + 'T00:00:00');
+      const shortDate = d2.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
+
+      const el = document.createElement('div');
+      el.className = 'path-flower';
+      el.style.left = (x / viewW * 100) + '%';
+      el.style.top = y + 'px';
+      el.style.transform = 'translateX(-50%)';
+      el.innerHTML = `
+        <div class="meadow-bloom" style="background:${bloomBg}">${bloomInner}</div>
+        <div class="meadow-date" style="position:static; margin-top:6px; transform:none;">${shortDate}</div>`;
+      el.onclick = () => {
+        container.style.display = 'none';
+        svg.style.display = 'none';
+        detailEl.classList.add('show');
+        document.getElementById('pathDetailContent').innerHTML = '';
+        document.getElementById('pathDetailContent').appendChild(buildMemoryCard(log));
+        document.getElementById('pathPageContent').scrollTop = 0;
+      };
+      container.appendChild(el);
+    });
+  }
+  document.getElementById('btnPath').onclick = () => {
+    renderPathGarden(latestLogs);
+    document.getElementById('pathPage').classList.add('open');
+  };
+  document.getElementById('pathBack').onclick = () => document.getElementById('pathPage').classList.remove('open');
+  document.getElementById('pathDetailBack').onclick = () => {
+    document.getElementById('pathDetail').classList.remove('show');
+    document.getElementById('pathFlowers').style.display = '';
+    document.getElementById('pathSvg').style.display = '';
+  };
 
   function renderGardenBed(logs) {
     gardenDetail.classList.remove('show');
