@@ -382,7 +382,6 @@
   .garden-scene svg{ width:100%; height:100%; display:block; }
 
   #coupleBench{ transition:opacity .6s ease; }
-  .habit-plant{ cursor:pointer; }
   .scene-landmark{ opacity:0; transition:opacity .6s ease; }
   .scene-landmark.owned{ opacity:1; }
   #coupleBench.owned{ opacity:1; }
@@ -952,19 +951,6 @@
         <text x="0" y="-9.5" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="5.5" letter-spacing="0.5" fill="#D8D0BC">TOGETHER</text>
       </g>
 
-      <!-- Habit-streak pots: grow with how many times each has been logged,
-           tap to view the photos attached to that habit. -->
-      <g id="cookPlant" class="habit-plant" transform="translate(172,182)">
-        <path d="M-9,0 L9,0 L7,15 L-7,15 Z" fill="#C9865A"/>
-        <ellipse cx="0" cy="0" rx="9" ry="2.2" fill="#8A5A2E"/>
-        <g id="cookPlantGrowth"></g>
-      </g>
-      <g id="gymPlant" class="habit-plant" transform="translate(210,182)">
-        <path d="M-9,0 L9,0 L7,15 L-7,15 Z" fill="#8B95A6"/>
-        <ellipse cx="0" cy="0" rx="9" ry="2.2" fill="#5C6B73"/>
-        <g id="gymPlantGrowth"></g>
-      </g>
-
       <!-- wandering pets: hidden until adopted -->
       <g class="pet" id="petBrown" transform="translate(256,184) scale(0.7)">
         <ellipse cx="0" cy="4" rx="9" ry="8" fill="#A9713F"/>
@@ -1129,6 +1115,13 @@
         <div class="setting-desc">An alternative winding-path layout for browsing the garden, being tried out. Turn off to hide the Path button for both of you.</div>
       </div>
       <button class="toggle-switch" id="togglePath" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-name">Habit streaks (trying this out)</div>
+        <div class="setting-desc">Quick tracking for recurring things like cooking or the gym, separate from logging a memory. Turn off to hide the Habit tab in Log Time for both of you.</div>
+      </div>
+      <button class="toggle-switch" id="toggleHabits" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
     </div>
 
     <div id="decorSection">
@@ -1406,6 +1399,7 @@
 
     document.getElementById('btnChallenge').style.display = state.challengeEnabled === false ? 'none' : '';
     document.getElementById('btnPath').style.display = state.pathEnabled === false ? 'none' : '';
+    document.getElementById('logModeHabitBtn').style.display = state.habitsEnabled === false ? 'none' : '';
 
     // Gentle nudge if it's been a while — never a notification, just a quiet banner.
     const ideaBanner = document.getElementById('ideaBanner');
@@ -1785,6 +1779,7 @@
   const toggleChallengeBtn = document.getElementById('toggleChallenge');
   const toggleShopBtn = document.getElementById('toggleShop');
   const togglePathBtn = document.getElementById('togglePath');
+  const toggleHabitsBtn = document.getElementById('toggleHabits');
   document.getElementById('btnSettings').onclick = () => {
     document.getElementById('menuFlowers').textContent = liveFlowerCount;
     document.getElementById('menuStreak').textContent = (latestState.streak || 0) + ' days';
@@ -1803,6 +1798,7 @@
     toggleChallengeBtn.setAttribute('aria-checked', latestState.challengeEnabled !== false ? 'true' : 'false');
     toggleShopBtn.setAttribute('aria-checked', latestState.shopEnabled !== false ? 'true' : 'false');
     togglePathBtn.setAttribute('aria-checked', latestState.pathEnabled !== false ? 'true' : 'false');
+    toggleHabitsBtn.setAttribute('aria-checked', latestState.habitsEnabled !== false ? 'true' : 'false');
 
     menuBackdrop.classList.add('open');
   };
@@ -1838,6 +1834,17 @@
       if (!isConfigured) render(latestState);
     } catch (err) {
       togglePathBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
+    }
+  };
+
+  toggleHabitsBtn.onclick = async () => {
+    const newValue = toggleHabitsBtn.getAttribute('aria-checked') !== 'true';
+    toggleHabitsBtn.setAttribute('aria-checked', newValue ? 'true' : 'false');
+    try {
+      await setSetting('habitsEnabled', newValue);
+      if (!isConfigured) render(latestState);
+    } catch (err) {
+      toggleHabitsBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
     }
   };
 
@@ -2107,7 +2114,6 @@
     });
 
     renderSceneDecor(latestState);
-    renderHabitPlants();
     randomizeBenchPose();
 
     // Months-together sign — only shown if a valid RELATIONSHIP_START_DATE is configured.
@@ -2892,73 +2898,6 @@
   // ---- Habit streaks ----
   let latestHabits = {};
 
-  // Habit pots in the scene — 4 growth tiers by total times logged, purely
-  // decorative but genuinely reflects real progress, not a fixed image.
-  function habitPlantTier(total) {
-    if (total <= 0) return 0;
-    if (total < 5) return 1;
-    if (total < 15) return 2;
-    if (total < 30) return 3;
-    return 4;
-  }
-  const HERB_TIERS = [
-    '',
-    '<path d="M0,0 Q-2,-6 0,-9" stroke="#7CB860" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
-    `<ellipse cx="-3" cy="-7" rx="3" ry="1.6" fill="#7CB860" transform="rotate(-30 -3 -7)"/>
-     <ellipse cx="3" cy="-8" rx="3" ry="1.6" fill="#6FA84A" transform="rotate(25 3 -8)"/>
-     <ellipse cx="0" cy="-11" rx="3" ry="1.6" fill="#7CB860"/>`,
-    `<ellipse cx="-4" cy="-8" rx="3.4" ry="1.8" fill="#7CB860" transform="rotate(-35 -4 -8)"/>
-     <ellipse cx="4" cy="-9" rx="3.4" ry="1.8" fill="#6FA84A" transform="rotate(30 4 -9)"/>
-     <ellipse cx="0" cy="-13" rx="3.4" ry="1.8" fill="#7CB860"/>
-     <ellipse cx="-2" cy="-14" rx="3" ry="1.6" fill="#6FA84A" transform="rotate(-15 -2 -14)"/>
-     <ellipse cx="3" cy="-15" rx="3" ry="1.6" fill="#7CB860" transform="rotate(20 3 -15)"/>`,
-    `<ellipse cx="-5" cy="-9" rx="3.6" ry="1.9" fill="#7CB860" transform="rotate(-40 -5 -9)"/>
-     <ellipse cx="5" cy="-10" rx="3.6" ry="1.9" fill="#6FA84A" transform="rotate(35 5 -10)"/>
-     <ellipse cx="0" cy="-15" rx="3.6" ry="1.9" fill="#7CB860"/>
-     <ellipse cx="-3" cy="-16" rx="3.2" ry="1.7" fill="#6FA84A" transform="rotate(-20 -3 -16)"/>
-     <ellipse cx="4" cy="-17" rx="3.2" ry="1.7" fill="#7CB860" transform="rotate(25 4 -17)"/>
-     <circle cx="-1" cy="-19" r="1.1" fill="#FBF6E8"/>
-     <circle cx="2" cy="-20" r="1" fill="#FBF6E8"/>`
-  ];
-  const GYM_TIERS = [
-    '',
-    '<path d="M0,0 L-1.5,-8 L1.5,-8 Z" fill="#8FA88A"/>',
-    `<path d="M0,0 L-1.6,-8 L1.6,-8 Z" fill="#8FA88A"/>
-     <path d="M-2,0 L-4,-6 L0,-5 Z" fill="#7C9A78"/>
-     <path d="M2,0 L4,-6 L0,-5 Z" fill="#8FA88A"/>`,
-    `<path d="M0,0 L-1.8,-10 L1.8,-10 Z" fill="#8FA88A"/>
-     <path d="M-2,0 L-5,-7 L0,-6 Z" fill="#7C9A78"/>
-     <path d="M2,0 L5,-7 L0,-6 Z" fill="#8FA88A"/>
-     <path d="M-3,0 L-4,-5 L-0.5,-4.5 Z" fill="#7C9A78"/>
-     <path d="M3,0 L4,-5 L0.5,-4.5 Z" fill="#8FA88A"/>`,
-    `<path d="M0,0 L-2,-11 L2,-11 Z" fill="#8FA88A"/>
-     <path d="M-2.5,0 L-6,-8 L0,-7 Z" fill="#7C9A78"/>
-     <path d="M2.5,0 L6,-8 L0,-7 Z" fill="#8FA88A"/>
-     <path d="M-3.5,0 L-5,-5 L-1,-4.5 Z" fill="#7C9A78"/>
-     <path d="M3.5,0 L5,-5 L1,-4.5 Z" fill="#8FA88A"/>
-     <g transform="translate(0,-15)">
-       <rect x="-4" y="-1.2" width="8" height="1.6" fill="#5C6B73"/>
-       <circle cx="-4" cy="-0.4" r="2" fill="#3A4750"/>
-       <circle cx="4" cy="-0.4" r="2" fill="#3A4750"/>
-     </g>`
-  ];
-  function renderHabitPlants() {
-    const cookTotal = (latestHabits.cook || []).length;
-    const gymTotal = (latestHabits.gym || []).length;
-    document.getElementById('cookPlantGrowth').innerHTML = HERB_TIERS[habitPlantTier(cookTotal)];
-    document.getElementById('gymPlantGrowth').innerHTML = GYM_TIERS[habitPlantTier(gymTotal)];
-  }
-  function openHabitGallery(habitId) {
-    const entries = (latestHabits[habitId] || []).filter((e) => e.photo).reverse(); // newest first
-    if (!entries.length) { // nothing to show yet — open Log Time in Habit mode instead
-      setLogMode('habit');
-      logBackdrop.classList.add('open');
-      return;
-    }
-    openPhotoViewer(entries.map((e) => e.photo), 0);
-  }
-  document.getElementById('cookPlant').onclick = () => openHabitGallery('cook');
-  document.getElementById('gymPlant').onclick = () => openHabitGallery('gym');
   function renderHabits() {
     const list = document.getElementById('habitsList');
     list.innerHTML = HABITS_LIST.map((h) => {
@@ -3108,7 +3047,6 @@
       latestHabits[habitId] = entries;
       const habitModeVisible = logBackdrop.classList.contains('open') && document.getElementById('logHabitMode').style.display !== 'none';
       if (habitModeVisible) renderHabits();
-      if (document.getElementById('cookPlantGrowth')) renderHabitPlants();
     });
     refreshFlowerCount();
   }
