@@ -103,8 +103,6 @@
 
   .helper{ position:absolute; left:16px; bottom:20px; width:56px; height:90px; z-index:6; pointer-events:none;
     animation:idleSway 2.6s ease-in-out infinite; }
-  .helper-can{ position:absolute; left:-10px; bottom:14px; width:30px; height:22px; opacity:1; transition:opacity .4s ease; z-index:5; pointer-events:none; }
-  .helper-can.hide{ opacity:0; }
   #armLeft{ transform:rotate(-28deg); }
   #armRight{ transform:rotate(28deg); }
   .helper.watering #armLeft{ transform:rotate(8deg); }
@@ -659,13 +657,6 @@
           </g>
         </svg>
       </div>
-      <div class="helper-can show" id="helperCan">
-        <svg viewBox="0 0 40 30">
-          <rect x="3" y="9" width="21" height="14" rx="4" fill="#7A8B6C"/>
-          <path d="M24,11 L37,3" stroke="#7A8B6C" stroke-width="3.2" stroke-linecap="round"/>
-          <path d="M7,6 Q11,-2 15,6" stroke="#7A8B6C" stroke-width="2.3" fill="none"/>
-        </svg>
-      </div>
     </div>
     <div id="photoDots"></div>
   </div>
@@ -1171,12 +1162,10 @@
     const sceneEl = document.getElementById('scene');
     const auraEl = document.getElementById('aura');
     const helperEl = document.getElementById('helperChar');
-    const canEl = document.getElementById('helperCan');
     const sequence = ['sprout', 'budding', 'blooming', 'flourishing'];
     let i = 0;
 
     helperEl.classList.add('watering');
-    canEl.classList.add('hide');
     setTimeout(() => helperEl.classList.add('pouring'), 500);
 
     const step = () => {
@@ -1193,7 +1182,6 @@
           sceneEl.setAttribute('data-stage', 'seed');
           auraEl.className = 'aura stage-seed';
           helperEl.classList.remove('watering');
-          canEl.classList.remove('hide');
           blooming = false;
         }, 3600);
         return;
