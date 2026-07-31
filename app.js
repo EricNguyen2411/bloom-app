@@ -777,35 +777,35 @@ export function watchHabits(renderFn) {
   return () => unsubs.forEach((u) => u());
 }
 
-export async function logHabitToday(habitId, photo = null) {
-  const today = todayStr();
+export async function logHabit(habitId, dateStr = null, photo = null) {
+  const date = dateStr || todayStr();
   if (!isConfigured) {
     if (!DEMO_HABITS[habitId]) DEMO_HABITS[habitId] = [];
-    const existing = DEMO_HABITS[habitId].find((e) => e.date === today);
+    const existing = DEMO_HABITS[habitId].find((e) => e.date === date);
     if (existing) { if (photo) existing.photo = photo; }
-    else DEMO_HABITS[habitId].push({ date: today, photo });
+    else DEMO_HABITS[habitId].push({ date, photo });
     return;
   }
   try {
-    await setDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${today}`),
-      { date: today, photo, createdAt: serverTimestamp() }, { merge: true });
+    await setDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${date}`),
+      { date, photo, createdAt: serverTimestamp() }, { merge: true });
   } catch (err) {
-    console.error('logHabitToday failed:', err);
+    console.error('logHabit failed:', err);
     alert('Could not log that: ' + err.message);
     throw err;
   }
 }
 
-export async function unlogHabitToday(habitId) {
-  const today = todayStr();
+export async function unlogHabit(habitId, dateStr = null) {
+  const date = dateStr || todayStr();
   if (!isConfigured) {
-    if (DEMO_HABITS[habitId]) DEMO_HABITS[habitId] = DEMO_HABITS[habitId].filter((e) => e.date !== today);
+    if (DEMO_HABITS[habitId]) DEMO_HABITS[habitId] = DEMO_HABITS[habitId].filter((e) => e.date !== date);
     return;
   }
   try {
-    await deleteDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${today}`));
+    await deleteDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${date}`));
   } catch (err) {
-    console.error('unlogHabitToday failed:', err);
+    console.error('unlogHabit failed:', err);
   }
 }
 

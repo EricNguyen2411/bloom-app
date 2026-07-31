@@ -524,8 +524,18 @@
     font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:14px; cursor:pointer; }
 
   .bucket-list{ max-height:50vh; overflow-y:auto; margin-top:6px; }
+  .log-mode-toggle{ display:flex; background:#F1EEE3; border-radius:12px; padding:3px; margin:4px 0 14px; }
+  .log-mode-btn{ flex:1; border:none; background:none; padding:9px; border-radius:9px; cursor:pointer;
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:13px; color:var(--ink-soft); }
+  .log-mode-btn.active{ background:#fff; color:var(--ink); box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+  .habit-backdate-toggle{ display:block; background:none; border:none; padding:0; margin-top:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-soft); cursor:pointer; text-decoration:underline; }
+  .habit-backdate-row{ display:flex; gap:8px; margin-top:8px; }
+  .habit-backdate-row input[type=date]{ flex:1; padding:8px 10px; border-radius:10px; border:1.5px solid #E4E1D6; font-size:12.5px; }
+  .habit-backdate-row button{ padding:8px 14px; border-radius:10px; border:none; background:var(--moss); color:#fff;
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:12px; cursor:pointer; }
   .habit-card{ background:#F6F4EC; border-radius:16px; padding:16px; margin-top:12px; display:flex;
-    align-items:center; gap:14px; position:relative; }
+    align-items:center; gap:14px; flex-wrap:wrap; position:relative; }
   .habit-card-icon{ font-size:28px; flex:0 0 auto; }
   .habit-card-body{ flex:1; min-width:0; }
   .habit-card-name{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; color:var(--ink); }
@@ -714,29 +724,43 @@
     <button class="action" id="btnPath"><div class="action-icon">🛤️</div><div class="action-label">Path</div></button>
     <button class="action" id="btnMemories"><div class="action-icon">📷</div><div class="action-label">Memories</div></button>
     <button class="action" id="btnBucket"><div class="action-icon">💡</div><div class="action-label">Ideas</div></button>
-    <button class="action" id="btnHabits"><div class="action-icon">🔁</div><div class="action-label">Habits</div></button>
   </div>
 </div>
 
 <div class="backdrop" id="logBackdrop">
   <div class="sheet">
-    <h3>Log time together</h3>
-    <p>What'd you two do? Real time together is what grows this.</p>
-    <label>What you did</label>
-    <input type="text" id="logActivity" placeholder="e.g. cooked dinner, watched a movie">
-    <label>Date</label>
-    <input type="date" id="logDateInput">
-    <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
-    <label>Photos (optional, up to 5)</label>
-    <div class="photo-picker" id="photoPicker">
-      <input type="file" id="logPhotoInput" accept="image/*" multiple>
-      <span class="photo-picker-label" id="photoPickerLabel">Tap to add photos from this date</span>
+    <h3 id="logSheetTitle">Log time together</h3>
+    <div class="log-mode-toggle">
+      <button class="log-mode-btn active" id="logModeDateBtn" type="button">📅 Date</button>
+      <button class="log-mode-btn" id="logModeHabitBtn" type="button">🔁 Habit</button>
     </div>
-    <div class="photo-preview-row" id="photoPreviewRow"></div>
-    <div class="photo-date-notice" id="photoDateNotice"></div>
-    <div class="sheet-actions">
-      <button class="btn-cancel" id="logCancel">Cancel</button>
-      <button class="btn-confirm" id="logSave">Water it</button>
+
+    <div id="logDateMode">
+      <p>What'd you two do? Real time together is what grows this.</p>
+      <label>What you did</label>
+      <input type="text" id="logActivity" placeholder="e.g. cooked dinner, watched a movie">
+      <label>Date</label>
+      <input type="date" id="logDateInput">
+      <p style="margin:6px 0 0; font-size:11.5px;">Forgot to log a day? Pick an earlier date — it'll still grow the plant, it just won't count toward your streak.</p>
+      <label>Photos (optional, up to 5)</label>
+      <div class="photo-picker" id="photoPicker">
+        <input type="file" id="logPhotoInput" accept="image/*" multiple>
+        <span class="photo-picker-label" id="photoPickerLabel">Tap to add photos from this date</span>
+      </div>
+      <div class="photo-preview-row" id="photoPreviewRow"></div>
+      <div class="photo-date-notice" id="photoDateNotice"></div>
+      <div class="sheet-actions">
+        <button class="btn-cancel" id="logCancel">Cancel</button>
+        <button class="btn-confirm" id="logSave">Water it</button>
+      </div>
+    </div>
+
+    <div id="logHabitMode" style="display:none;">
+      <p>The recurring things — not really a "date," just worth quietly keeping track of.</p>
+      <div id="habitsList"></div>
+      <div class="sheet-actions">
+        <button class="btn-confirm" id="habitModeClose">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1060,17 +1084,6 @@
   </div>
 </div>
 
-<div class="backdrop" id="habitsBackdrop">
-  <div class="sheet">
-    <h3>Habit streaks</h3>
-    <p>The little recurring things — not really a "date," just worth quietly keeping track of.</p>
-    <div id="habitsList"></div>
-    <div class="sheet-actions">
-      <button class="btn-confirm" id="habitsClose">Close</button>
-    </div>
-  </div>
-</div>
-
 <div class="backdrop" id="menuBackdrop">
   <div class="sheet">
     <h3>Settings</h3>
@@ -1179,7 +1192,7 @@
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
            toggleDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
            computeMonthReview, computeYearReview,
-           HABITS_LIST, watchHabits, logHabitToday, unlogHabitToday, computeHabitStats,
+           HABITS_LIST, watchHabits, logHabit, unlogHabit, computeHabitStats,
            getMonthsTogether,
            SPECIES, DECOR_SHOP, DATE_IDEAS }
     from './app.js';
@@ -1722,6 +1735,7 @@
 
   document.getElementById('btnLog').onclick = () => {
     logDateInput.value = todayISO; // reset to today each time it's opened
+    setLogMode('date');
     logBackdrop.classList.add('open');
   };
   document.getElementById('logCancel').onclick = () => { logBackdrop.classList.remove('open'); resetLogSheet(); };
@@ -2936,7 +2950,11 @@
   }
   function openHabitGallery(habitId) {
     const entries = (latestHabits[habitId] || []).filter((e) => e.photo).reverse(); // newest first
-    if (!entries.length) { document.getElementById('btnHabits').click(); return; } // nothing to show yet — open the sheet instead
+    if (!entries.length) { // nothing to show yet — open Log Time in Habit mode instead
+      setLogMode('habit');
+      logBackdrop.classList.add('open');
+      return;
+    }
     openPhotoViewer(entries.map((e) => e.photo), 0);
   }
   document.getElementById('cookPlant').onclick = () => openHabitGallery('cook');
@@ -2967,6 +2985,11 @@
             ${doneToday ? `<button class="habit-photo-btn" data-id="${h.id}" title="${todayEntry.photo ? 'Change today’s photo' : 'Add a photo to today'}">${todayEntry.photo ? '🖼️' : '📷'}</button>` : ''}
           </div>
           <input type="file" class="habit-photo-input" data-id="${h.id}" accept="image/*" style="display:none;">
+          <button class="habit-backdate-toggle" data-id="${h.id}" style="flex-basis:100%;">Forgot a day? Log it for an earlier date →</button>
+          <div class="habit-backdate-row" data-id="${h.id}" style="display:none; flex-basis:100%;">
+            <input type="date" class="habit-backdate-input" data-id="${h.id}" max="${todayISO}">
+            <button class="habit-backdate-confirm" data-id="${h.id}">Log it</button>
+          </div>
         </div>`;
     }).join('');
 
@@ -2975,8 +2998,8 @@
         btn.disabled = true;
         const isDone = btn.dataset.done === 'true';
         try {
-          if (isDone) await unlogHabitToday(btn.dataset.id);
-          else { await logHabitToday(btn.dataset.id); playChime(false); }
+          if (isDone) await unlogHabit(btn.dataset.id);
+          else { await logHabit(btn.dataset.id); playChime(false); }
           if (!isConfigured) renderHabits();
         } catch (err) { /* error already alerted */ }
         finally { btn.disabled = false; }
@@ -2992,7 +3015,7 @@
         if (!file) return;
         try {
           const compressed = await compressImage(file);
-          await logHabitToday(input.dataset.id, compressed);
+          await logHabit(input.dataset.id, null, compressed);
           if (!isConfigured) renderHabits();
         } catch (err) {
           alert('Could not add that photo: ' + err.message);
@@ -3005,12 +3028,39 @@
         openPhotoViewer(entries.map((e) => e.photo), 0);
       };
     });
+    list.querySelectorAll('.habit-backdate-toggle').forEach((btn) => {
+      btn.onclick = () => {
+        const row = list.querySelector(`.habit-backdate-row[data-id="${btn.dataset.id}"]`);
+        row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+      };
+    });
+    list.querySelectorAll('.habit-backdate-confirm').forEach((btn) => {
+      btn.onclick = async () => {
+        const input = list.querySelector(`.habit-backdate-input[data-id="${btn.dataset.id}"]`);
+        if (!input.value) return;
+        btn.disabled = true;
+        try {
+          await logHabit(btn.dataset.id, input.value);
+          if (!isConfigured) renderHabits();
+        } catch (err) { /* error already alerted */ }
+        finally { btn.disabled = false; }
+      };
+    });
   }
-  document.getElementById('btnHabits').onclick = () => {
-    renderHabits();
-    document.getElementById('habitsBackdrop').classList.add('open');
-  };
-  document.getElementById('habitsClose').onclick = () => document.getElementById('habitsBackdrop').classList.remove('open');
+
+  // ---- Date/Habit mode toggle within the Log Time sheet ----
+  function setLogMode(mode) {
+    const isHabit = mode === 'habit';
+    document.getElementById('logModeDateBtn').classList.toggle('active', !isHabit);
+    document.getElementById('logModeHabitBtn').classList.toggle('active', isHabit);
+    document.getElementById('logDateMode').style.display = isHabit ? 'none' : '';
+    document.getElementById('logHabitMode').style.display = isHabit ? '' : 'none';
+    document.getElementById('logSheetTitle').textContent = isHabit ? 'Log a habit' : 'Log time together';
+    if (isHabit) renderHabits();
+  }
+  document.getElementById('logModeDateBtn').onclick = () => setLogMode('date');
+  document.getElementById('logModeHabitBtn').onclick = () => setLogMode('habit');
+  document.getElementById('habitModeClose').onclick = () => logBackdrop.classList.remove('open');
 
   // ---- First-open welcome screen (per-device, via localStorage) ----
   const welcomeOverlay = document.getElementById('welcomeOverlay');
@@ -3056,7 +3106,8 @@
     watchBucketList(renderBucket);
     watchHabits((habitId, entries) => {
       latestHabits[habitId] = entries;
-      if (document.getElementById('habitsBackdrop').classList.contains('open')) renderHabits();
+      const habitModeVisible = logBackdrop.classList.contains('open') && document.getElementById('logHabitMode').style.display !== 'none';
+      if (habitModeVisible) renderHabits();
       if (document.getElementById('cookPlantGrowth')) renderHabitPlants();
     });
     refreshFlowerCount();
