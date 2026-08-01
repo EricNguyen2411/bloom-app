@@ -143,6 +143,96 @@ const lilyIcon = svg(`
   }).join('')}
 `);
 
+const sunflowerIcon = svg(`
+  ${petalRing(16, 0, 32, 9, '#F2C230', 50, 50, 0.5)}
+  ${petalRing(16, 11.25, 25, 7, '#E8A93E', 50, 50, 0.5)}
+  <circle cx="50" cy="50" r="14" fill="#6B4A28"/>
+  ${Array.from({ length: 22 }, (_, i) => {
+    const a = i * (360 / 22) * Math.PI / 180;
+    const r = 3 + (i % 3) * 3;
+    return `<circle cx="${(50 + r * Math.cos(a)).toFixed(1)}" cy="${(50 + r * Math.sin(a)).toFixed(1)}" r="1" fill="#4A3218" opacity="0.6"/>`;
+  }).join('')}
+`);
+
+const daisyIcon = svg(`
+  ${petalRing(16, 0, 34, 7, '#FFFFFF', 50, 50, 0.62)}
+  <circle cx="50" cy="50" r="10" fill="#E8B84B"/>
+  ${Array.from({ length: 16 }, (_, i) => {
+    const a = i * 22.5 * Math.PI / 180;
+    const r = 2 + (i % 2) * 3.5;
+    return `<circle cx="${(50 + r * Math.cos(a)).toFixed(1)}" cy="${(50 + r * Math.sin(a)).toFixed(1)}" r="0.9" fill="#C98A2E" opacity="0.6"/>`;
+  }).join('')}
+`);
+
+// Tulips have a closed, overlapping cup shape rather than a flat radial
+// ring, so this uses its own petal shape sharing one base point near the
+// bottom instead of the shared center at (50,50).
+function tulipPetal(angleDeg, length, width, fill) {
+  const w = width / 2;
+  const d = `M0,0 C ${-w},${-length * 0.3} ${-w},${-length * 0.85} 0,${-length} C ${w},${-length * 0.85} ${w},${-length * 0.3} 0,0 Z`;
+  return `<path d="${d}" fill="${fill}" ${STROKE} transform="translate(50,68) rotate(${angleDeg})"/>`;
+}
+const tulipIcon = svg(`
+  ${[-22, 0, 22].map((a) => tulipPetal(a, 46, 24, '#C1432E')).join('')}
+  ${[-40, 40].map((a) => tulipPetal(a, 40, 20, '#DD5A42')).join('')}
+  <rect x="47" y="68" width="6" height="18" rx="2" fill="#7DB857"/>
+`);
+
+const orchidIcon = svg(`
+  ${petalRing(5, 90, 25, 14, '#B57EC9', 50, 48, 0.7)}
+  <path d="M50,60 C 38,60 33,70 50,80 C 67,70 62,60 50,60 Z" fill="#F2D488" ${STROKE}/>
+  <circle cx="50" cy="62" r="2.3" fill="#8C5A1E"/>
+`);
+
+// Cherry blossom petals have a small notch at the outer tip — the double
+// curve at the end of the path is what creates that.
+function notchedPetal(angleDeg, fill) {
+  const d = 'M0,0 C -13,-8 -15,-22 -3,-28 C -1,-30 1,-30 3,-28 C 15,-22 13,-8 0,0 Z';
+  return `<path d="${d}" fill="${fill}" ${STROKE} transform="translate(50,50) rotate(${angleDeg})"/>`;
+}
+const cherryBlossomIcon = svg(`
+  ${[0, 72, 144, 216, 288].map((a) => notchedPetal(a, '#F6C6D0')).join('')}
+  <circle cx="50" cy="50" r="4" fill="#F2A6BC"/>
+  ${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => {
+    const r = a * Math.PI / 180;
+    return `<line x1="50" y1="50" x2="${(50 + 7 * Math.cos(r)).toFixed(1)}" y2="${(50 + 7 * Math.sin(r)).toFixed(1)}" stroke="#C1436B" stroke-width="0.8"/>`;
+  }).join('')}
+  <circle cx="50" cy="50" r="2" fill="#E85D8A"/>
+`);
+
+const dahliaIcon = svg(`
+  ${petalRing(12, 0, 35, 10, '#C1432E', 50, 50, 0.5)}
+  ${petalRing(11, 16, 28, 8, '#E37B5D', 50, 50, 0.5)}
+  ${petalRing(10, 30, 21, 6.5, '#F0A574', 50, 50, 0.5)}
+  ${petalRing(8, 10, 13, 5, '#F6C9B0', 50, 50, 0.5)}
+  <circle cx="50" cy="50" r="3" fill="#8C4A28"/>
+`);
+
+const marigoldIcon = svg(`
+  ${petalRing(14, 0, 30, 8, '#E8A93E', 50, 50, 0.45)}
+  ${petalRing(13, 13.8, 23, 6.5, '#F2C230', 50, 50, 0.45)}
+  ${petalRing(11, 8, 16, 5, '#F6D466', 50, 50, 0.45)}
+  ${petalRing(8, 20, 9, 3.5, '#FBE79E', 50, 50, 0.45)}
+  <circle cx="50" cy="50" r="2.5" fill="#B8791E"/>
+`);
+
+// Irises alternate 3 upright "standard" petals with 3 drooping "fall"
+// petals — a genuinely different structure from the flat radial flowers
+// above, so this uses its own two petal shapes instead of petalRing.
+function irisUpright(angleDeg) {
+  const d = 'M0,0 C -6,-14 -6,-30 0,-38 C 6,-30 6,-14 0,0 Z';
+  return `<path d="${d}" fill="#6E5AA8" ${STROKE} transform="translate(50,50) rotate(${angleDeg})"/>`;
+}
+function irisFall(angleDeg) {
+  const d = 'M0,0 C -10,6 -16,20 -8,30 C -3,33 3,33 8,30 C 16,20 10,6 0,0 Z';
+  return `<path d="${d}" fill="#8A6FC2" ${STROKE} transform="translate(50,50) rotate(${angleDeg})"/>`;
+}
+const irisIcon = svg(`
+  ${[30, 150, 270].map((a) => irisFall(a)).join('')}
+  ${[90, 210, 330].map((a) => irisUpright(a)).join('')}
+  <ellipse cx="50" cy="50" rx="3" ry="5" fill="#F2D488"/>
+`);
+
 // Flower species — cycles by how many flowers have been planted total, so
 // each new entry's flower looks different from the last.
 export const SPECIES = [
@@ -153,7 +243,15 @@ export const SPECIES = [
   { name: 'Poppy', light: '#E37B5D', dark: '#C1432E', icon: poppyIcon },
   { name: 'Snapdragon', light: '#F2D488', dark: '#E3A93E', icon: snapdragonIcon },
   { name: "Baby's Breath", light: '#FBF6E8', dark: '#B7AD8E', icon: babysBreathIcon },
-  { name: 'Lily', light: '#FBF3D9', dark: '#D4A537', icon: lilyIcon }
+  { name: 'Lily', light: '#FBF3D9', dark: '#D4A537', icon: lilyIcon },
+  { name: 'Sunflower', light: '#F2C230', dark: '#6B4A28', icon: sunflowerIcon },
+  { name: 'Daisy', light: '#FFFFFF', dark: '#E8B84B', icon: daisyIcon },
+  { name: 'Tulip', light: '#DD5A42', dark: '#C1432E', icon: tulipIcon },
+  { name: 'Orchid', light: '#C99AD8', dark: '#B57EC9', icon: orchidIcon },
+  { name: 'Cherry Blossom', light: '#F6C6D0', dark: '#E85D8A', icon: cherryBlossomIcon },
+  { name: 'Dahlia', light: '#F0A574', dark: '#C1432E', icon: dahliaIcon },
+  { name: 'Marigold', light: '#F6D466', dark: '#E8A93E', icon: marigoldIcon },
+  { name: 'Iris', light: '#8A6FC2', dark: '#6E5AA8', icon: irisIcon }
 ];
 
 const DEFAULT_CHALLENGES = [
