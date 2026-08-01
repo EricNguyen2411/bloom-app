@@ -429,8 +429,7 @@
     font-size:20px; box-shadow:0 8px 16px -6px rgba(20,30,15,0.5); overflow:hidden; position:relative; z-index:2;
     border:2.5px solid rgba(255,255,255,0.85); }
   .meadow-bloom svg{ width:82%; height:82%; }
-  .meadow-photo-thumb{ position:absolute; top:-3px; right:-3px; width:20px; height:20px; border-radius:50%;
-    object-fit:cover; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.25); z-index:3; }
+  .meadow-bloom-photo{ width:88%; height:88%; object-fit:contain; border-radius:50%; }
   .meadow-stem{ width:3px; background:linear-gradient(180deg,var(--lime),var(--moss)); border-radius:2px; margin-top:-2px; }
   .meadow-date{ position:absolute; bottom:-18px; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#2A3B1F;
     background:rgba(255,255,255,0.78); padding:2px 6px; border-radius:6px; white-space:nowrap; left:50%; transform:translateX(-50%); }
@@ -2692,9 +2691,10 @@
     points.forEach(({ x, y, log }, idx) => {
       const sp = SPECIES[idx % SPECIES.length];
       const photos = getPhotos(log);
-      const photoThumb = photos.length
-        ? `<img class="meadow-photo-thumb" src="${photos[0]}" loading="lazy">`
-        : '';
+      const bloomInner = photos.length
+        ? `<img class="meadow-bloom-photo" src="${photos[0]}" loading="lazy">`
+        : iconWithColor(sp);
+      const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
       const d2 = new Date(log.date + 'T00:00:00');
       const shortDate = d2.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
       const activityText = log.activity || (log.type === 'challenge' ? 'Challenge' : 'Time together');
@@ -2706,8 +2706,7 @@
       el.style.transform = 'translateX(-50%)';
       el.dataset.date = log.date;
       el.innerHTML = `
-        <div class="meadow-bloom" style="background:#FBF8F0">${iconWithColor(sp)}</div>
-        ${photoThumb}
+        <div class="meadow-bloom" style="background:${bloomBg}">${bloomInner}</div>
         <div class="path-flower-label">
           <div class="path-flower-activity">${activityText}</div>
           <div class="meadow-date" style="position:static; margin-top:3px; transform:none;">${shortDate}</div>
@@ -2781,19 +2780,19 @@
       const d = new Date(log.date + 'T00:00:00');
       const shortDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
       const photos = getPhotos(log);
-      const photoThumb = photos.length
-        ? `<img class="meadow-photo-thumb" src="${photos[0]}" loading="lazy">`
-        : '';
+      const bloomInner = photos.length
+        ? `<img class="meadow-bloom-photo" src="${photos[0]}" loading="lazy">`
+        : iconWithColor(sp);
 
       const flower = document.createElement('div');
       flower.className = 'meadow-flower';
       flower.style.left = ROW_X[i];
       flower.dataset.date = log.date;
+      const bloomBg = photos.length ? `linear-gradient(160deg,${sp.light},${sp.dark})` : '#FBF8F0';
       flower.innerHTML = `
-        <div class="meadow-bloom" style="background:#FBF8F0">
-          ${iconWithColor(sp)}
+        <div class="meadow-bloom" style="background:${bloomBg}">
+          ${bloomInner}
         </div>
-        ${photoThumb}
         <div class="meadow-stem" style="height:${ROW_STEM_H[i]}px"></div>
         <div class="meadow-date">${shortDate}</div>`;
 
