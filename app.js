@@ -292,7 +292,8 @@ const DEFAULT_CHALLENGES = [
 
 const isConfigured = firebaseConfig.apiKey !== "REPLACE_ME";
 let db, addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
-    arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer;
+    arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer,
+    enableNetwork, disableNetwork;
 
 async function initFirebase() {
   if (!isConfigured) return false;
@@ -319,7 +320,8 @@ async function initFirebase() {
   }
 
   ({ addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs,
-     arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer } = fsMod);
+     arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer,
+     enableNetwork, disableNetwork } = fsMod);
   return true;
 }
 
@@ -403,6 +405,17 @@ export const HABITS_LIST = [
 const DEMO_HABITS = { cook: [], gym: [] };
 
 // ---- Live state (real-time — both phones see updates as they happen) ----
+// Manually forces a fresh sync attempt — briefly disconnects and reconnects
+// Firestore, which makes it retry right away instead of waiting on its own
+// internal backoff timer. Useful after being offline, after a spotty
+// connection, or the day after hitting a usage quota, without needing to
+// fully close and reopen the app.
+export async function forceSyncNow() {
+  if (!isConfigured || !db) return;
+  await disableNetwork(db);
+  await enableNetwork(db);
+}
+
 export function watchState(renderFn) {
   if (isConfigured) {
     const ref = doc(db, `couples/${COUPLE_ID}/state/current`);

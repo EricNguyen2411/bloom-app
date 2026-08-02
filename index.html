@@ -1076,6 +1076,8 @@
 <div class="backdrop" id="menuBackdrop">
   <div class="sheet">
     <h3>Settings</h3>
+    <button class="export-btn" id="syncNowBtn" style="margin-top:0;">🔄 Sync now</button>
+    <div id="syncStatus" style="text-align:center; font-size:11px; color:var(--ink-soft); margin:6px 0 16px;">Data syncs automatically — this just gives it a nudge if something seems stuck.</div>
     <div class="stat-row"><span>Flowers grown</span><b id="menuFlowers">0</b></div>
     <div class="stat-row"><span>Streak</span><b id="menuStreak">0 days</b></div>
 
@@ -1188,7 +1190,7 @@
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
            toggleDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
            computeMonthReview, computeYearReview,
-           HABITS_LIST, watchHabits, logHabit, unlogHabit, computeHabitStats,
+           HABITS_LIST, watchHabits, logHabit, unlogHabit, computeHabitStats, forceSyncNow,
            getMonthsTogether,
            SPECIES, DECOR_SHOP, DATE_IDEAS }
     from './app.js';
@@ -1804,6 +1806,23 @@
     menuBackdrop.classList.add('open');
   };
   document.getElementById('menuClose').onclick = () => menuBackdrop.classList.remove('open');
+
+  document.getElementById('syncNowBtn').onclick = async () => {
+    const btn = document.getElementById('syncNowBtn');
+    const status = document.getElementById('syncStatus');
+    if (!isConfigured) { status.textContent = "You're in demo mode — nothing to sync yet."; return; }
+    btn.disabled = true;
+    btn.textContent = 'Syncing…';
+    try {
+      await forceSyncNow();
+      status.textContent = 'Synced just now ✓';
+    } catch (err) {
+      status.textContent = "Couldn't reconnect — check your connection and try again.";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔄 Sync now';
+    }
+  };
 
   toggleChallengeBtn.onclick = async () => {
     const newValue = toggleChallengeBtn.getAttribute('aria-checked') !== 'true';
