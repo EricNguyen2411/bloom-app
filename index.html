@@ -469,8 +469,13 @@
   .path-detail{ display:none; padding:16px 20px; }
   .path-detail.show{ display:block; }
   .garden-detail.show{ display:block; background:var(--card); border-radius:18px; padding:16px; box-shadow:0 12px 26px -10px rgba(20,30,15,0.4); }
+  .garden-detail-nav{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
   .garden-detail-back{ background:#F6F4EC; border:1.5px solid #E4E1D6; color:var(--moss); font-weight:700; font-size:12.5px;
-    cursor:pointer; padding:9px 16px; border-radius:999px; margin-bottom:12px; }
+    cursor:pointer; padding:9px 16px; border-radius:999px; }
+  .garden-detail-arrows{ display:flex; gap:8px; flex:0 0 auto; }
+  .garden-detail-arrow{ background:#F6F4EC; border:1.5px solid #E4E1D6; color:var(--moss); font-weight:800; font-size:17px;
+    cursor:pointer; width:38px; height:38px; border-radius:50%; line-height:1; }
+  .garden-detail-arrow:disabled{ opacity:0.35; cursor:default; }
 
   .photo-peek{ position:fixed; inset:0; z-index:90; display:none; align-items:center; justify-content:center;
     background:rgba(20,30,15,0.55); padding:40px; pointer-events:none; }
@@ -1001,7 +1006,13 @@
     </div>
     <div class="garden-bed" id="gardenBed"></div>
     <div class="garden-detail" id="gardenDetail">
-      <button class="garden-detail-back" id="gardenDetailBack">← Back to garden</button>
+      <div class="garden-detail-nav">
+        <button class="garden-detail-back" id="gardenDetailBack">← Back to garden</button>
+        <div class="garden-detail-arrows">
+          <button class="garden-detail-arrow" id="gardenDetailPrev" title="Previous entry">‹</button>
+          <button class="garden-detail-arrow" id="gardenDetailNext" title="Next entry">›</button>
+        </div>
+      </div>
       <div id="gardenDetailContent"></div>
     </div>
   </div>
@@ -1337,13 +1348,37 @@
 
   // Jumps straight from a floating dashboard photo to that specific day's
   // entry inside the Garden page, skipping the meadow browse step.
-  function openGardenToLog(log) {
+  // Finds the entry right before or after a given one, in the same
+  // chronological (oldest-first) order the meadow itself uses — so "next"
+  // and "previous" always match what you'd expect from browsing the garden.
+  function getAdjacentLog(log, direction) {
+    const ordered = [...latestLogs].reverse();
+    const idx = ordered.findIndex((l) => l.id === log.id);
+    if (idx === -1) return null;
+    const targetIdx = idx + direction;
+    return (targetIdx >= 0 && targetIdx < ordered.length) ? ordered[targetIdx] : null;
+  }
+
+  function showGardenDetail(log) {
     gardenPage.classList.add('open');
     gardenBed.style.display = 'none';
     gardenDetail.classList.add('show');
     gardenDetailContent.innerHTML = '';
     gardenDetailContent.appendChild(buildMemoryCard(log));
     document.querySelector('.garden-page-content').scrollTop = 0;
+
+    const prevLog = getAdjacentLog(log, -1);
+    const nextLog = getAdjacentLog(log, 1);
+    const prevBtn = document.getElementById('gardenDetailPrev');
+    const nextBtn = document.getElementById('gardenDetailNext');
+    prevBtn.disabled = !prevLog;
+    nextBtn.disabled = !nextLog;
+    prevBtn.onclick = () => { if (prevLog) showGardenDetail(prevLog); };
+    nextBtn.onclick = () => { if (nextLog) showGardenDetail(nextLog); };
+  }
+
+  function openGardenToLog(log) {
+    showGardenDetail(log);
   }
 
   // ---- Anniversary celebration (once per year, only on the actual day) ----
@@ -2895,11 +2930,7 @@
       let longPressFired = false;
       const openDetail = () => {
         savedMeadowScrollTop = document.querySelector('.garden-page-content').scrollTop;
-        gardenBed.style.display = 'none';
-        gardenDetail.classList.add('show');
-        gardenDetailContent.innerHTML = '';
-        gardenDetailContent.appendChild(buildMemoryCard(log));
-        document.querySelector('.garden-page-content').scrollTop = 0;
+        showGardenDetail(log);
       };
       flower.addEventListener('pointerdown', () => {
         longPressFired = false;
