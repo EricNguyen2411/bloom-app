@@ -1078,6 +1078,8 @@
     <h3>Settings</h3>
     <button class="export-btn" id="syncNowBtn" style="margin-top:0;">🔄 Sync now</button>
     <div id="syncStatus" style="text-align:center; font-size:11px; color:var(--ink-soft); margin:6px 0 16px;">Data syncs automatically — this just gives it a nudge if something seems stuck.</div>
+    <button class="export-btn" id="backfillThumbsBtn" style="margin-top:0;">🖼️ Speed up older entries</button>
+    <div id="backfillStatus" style="text-align:center; font-size:11px; color:var(--ink-soft); margin:6px 0 16px;">A one-time fix for entries logged before photo thumbnails existed — makes the garden lighter to load. Safe to run more than once.</div>
     <div class="stat-row"><span>Flowers grown</span><b id="menuFlowers">0</b></div>
     <div class="stat-row"><span>Streak</span><b id="menuStreak">0 days</b></div>
 
@@ -1187,7 +1189,8 @@
 <script type="module">
   import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
-           watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, exportBackup, importBackup,
+           watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, getThumb, exportBackup, importBackup,
+           getAllLogsRaw,
            toggleDecoration, setSetting, countFlowers, computeFunStats, isAnniversaryToday,
            computeMonthReview, computeYearReview,
            HABITS_LIST, watchHabits, logHabit, unlogHabit, computeHabitStats, forceSyncNow,
@@ -1422,6 +1425,27 @@
   const logBackdrop = document.getElementById('logBackdrop');
   const logDateInput = document.getElementById('logDateInput');
   const todayISO = new Date().toISOString().slice(0, 10);
+
+  // Shrinks an already-compressed photo (a data URL) down to a tiny thumbnail
+  // — used right before saving, so it always reflects whichever photo is
+  // actually first at that moment, including after the cover-photo star was
+  // used to reorder things.
+  function thumbnailFromDataUrl(dataUrl, maxDim = 72, quality = 0.55) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; }
+        else if (height >= width && height > maxDim) { width *= maxDim / height; height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(null); // never blocks a save over a thumbnail failing
+      img.src = dataUrl;
+    });
+  }
   logDateInput.max = todayISO; // no future-dating entries
 
   // ---- EXIF date + GPS extraction ----
@@ -1717,8 +1741,9 @@
     const date = editDateInput.value || todayISO;
     const loveNote = document.getElementById('editLoveNote').value.trim();
     try {
+      const thumb = editPendingPhotos.length ? await thumbnailFromDataUrl(editPendingPhotos[0]) : null;
       await editLog(editingLogId, {
-        activity, date, photos: editPendingPhotos, loveNote,
+        activity, date, photos: editPendingPhotos, thumb, loveNote,
         backfilled: date !== todayISO
       });
       editEntryBackdrop.classList.remove('open');
@@ -1744,7 +1769,8 @@
     const date = logDateInput.value || todayISO;
     try {
       const speciesForThis = currentSpecies(liveFlowerCount);
-      await logTime(activity, date, pendingPhotos, pendingLocation);
+      const thumb = pendingPhotos.length ? await thumbnailFromDataUrl(pendingPhotos[0]) : null;
+      await logTime(activity, date, pendingPhotos, pendingLocation, thumb);
       logBackdrop.classList.remove('open');
       resetLogSheet();
       plantBloomAnimation(speciesForThis.name);
@@ -1823,6 +1849,44 @@
       btn.textContent = '🔄 Sync now';
     }
   };
+
+  document.getElementById('backfillThumbsBtn').onclick = async () => {
+    const btn = document.getElementById('backfillThumbsBtn');
+    const status = document.getElementById('backfillStatus');
+    if (!isConfigured) { status.textContent = "You're in demo mode — nothing to optimize yet."; return; }
+    btn.disabled = true;
+    try {
+      status.textContent = 'Checking your entries…';
+      const allLogs = await getAllLogsRaw();
+      const needsThumb = allLogs.filter((l) => !l.thumb && getPhotos(l).length);
+      if (!needsThumb.length) {
+        status.textContent = 'Already up to date — nothing to do ✓';
+        return;
+      }
+      let done = 0;
+      for (const log of needsThumb) {
+        status.textContent = `Optimizing ${done + 1} of ${needsThumb.length}…`;
+        try {
+          const thumb = await thumbnailFromDataUrl(getPhotos(log)[0]);
+          if (thumb) await editLog(log.id, { thumb });
+        } catch (err) {
+          console.error('Backfill failed for entry', log.id, err);
+        }
+        done++;
+      }
+      status.textContent = `Done — optimized ${done} ${done === 1 ? 'entry' : 'entries'} ✓`;
+      await syncNow_refreshLogsOnly();
+    } catch (err) {
+      status.textContent = "Something went wrong — try again in a bit.";
+    } finally {
+      btn.disabled = false;
+    }
+  };
+  // A lightweight refresh of just the logs after backfilling, so the meadow
+  // reflects the new thumbnails right away without needing a full reopen.
+  async function syncNow_refreshLogsOnly() {
+    try { await forceSyncNow(); } catch (err) { /* the sheet will still show the right status either way */ }
+  }
 
   toggleChallengeBtn.onclick = async () => {
     const newValue = toggleChallengeBtn.getAttribute('aria-checked') !== 'true';
@@ -2457,17 +2521,29 @@
   }
 
   // Builds a single memory card (used by both the list view and the garden's tap-to-reveal detail).
+  // Species isn't stored on the entry itself — it's always computed from the
+  // entry's position in the full chronological list (same as the meadow
+  // does), so this looks that position up for any given entry regardless of
+  // which context (meadow, path, filtered search) is asking.
+  function getSpeciesForLog(log) {
+    const ordered = [...latestLogs].reverse(); // oldest first
+    const idx = ordered.findIndex((l) => l.id === log.id);
+    return SPECIES[(idx === -1 ? 0 : idx) % SPECIES.length];
+  }
+
   function buildMemoryCard(log) {
     const card = document.createElement('div');
     card.className = 'memory-card';
     const d = new Date(log.date + 'T00:00:00');
     const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    const species = getSpeciesForLog(log);
     const photos = getPhotos(log);
+    const thumbSrc = getThumb(log);
     const countBadge = photos.length > 1
       ? `<div class="photo-count-badge">+${photos.length - 1}</div>`
       : '';
-    const thumb = photos.length
-      ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${photos[0]}" style="cursor:pointer;" loading="lazy">${countBadge}</div>`
+    const thumb = thumbSrc
+      ? `<div style="position:relative; flex:0 0 56px;"><img class="memory-thumb" src="${thumbSrc}" style="cursor:pointer;" loading="lazy">${countBadge}</div>`
       : `<div class="memory-thumb-empty">${log.type === 'challenge' ? '✦' : '🌿'}</div>`;
     const galleryHtml = photos.length > 1
       ? `<div class="memory-gallery">${photos.map((p) => `<img src="${p}">`).join('')}</div>`
@@ -2481,7 +2557,7 @@
     card.innerHTML = `
       ${thumb}
       <div class="memory-body">
-        <div class="memory-date">${dateStr}</div>
+        <div class="memory-date">${dateStr} · ${species.name}</div>
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
         ${galleryHtml}
         <div class="note-slot">${noteHtml}</div>
@@ -2705,9 +2781,9 @@
 
     points.forEach(({ x, y, log }, idx) => {
       const sp = SPECIES[idx % SPECIES.length];
-      const photos = getPhotos(log);
-      const photoThumb = photos.length
-        ? `<img class="meadow-photo-thumb" src="${photos[0]}" loading="lazy">`
+      const thumb = getThumb(log);
+      const photoThumb = thumb
+        ? `<img class="meadow-photo-thumb" src="${thumb}" loading="lazy">`
         : '';
       const d2 = new Date(log.date + 'T00:00:00');
       const shortDate = d2.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
@@ -2795,8 +2871,9 @@
       const d = new Date(log.date + 'T00:00:00');
       const shortDate = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
       const photos = getPhotos(log);
-      const photoThumb = photos.length
-        ? `<img class="meadow-photo-thumb" src="${photos[0]}" loading="lazy">`
+      const thumb = getThumb(log);
+      const photoThumb = thumb
+        ? `<img class="meadow-photo-thumb" src="${thumb}" loading="lazy">`
         : '';
 
       const flower = document.createElement('div');

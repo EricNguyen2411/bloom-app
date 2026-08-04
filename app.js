@@ -53,20 +53,38 @@ function petalRing(count, startAngle, length, width, fill, cx = 50, cy = 50, cur
   for (let i = 0; i < count; i++) s += petal(startAngle + (360 / count) * i, length, width, fill, cx, cy, curve);
   return s;
 }
+// A petal with a soft, rounded tip instead of coming to a sharp point — for
+// flowers that are actually round and ruffled (rose, peony, ranunculus,
+// marigold), rather than genuinely pointed ones (lily, daisy, sunflower),
+// which still use the plain pointed petal() above.
+function roundPetal(angleDeg, length, width, fill, cx = 50, cy = 50) {
+  const w = width / 2;
+  const tipW = width * 0.3;
+  const d = `M0,0
+    C ${-w},${-length * 0.25} ${-w},${-length * 0.72} ${-tipW},${-length}
+    Q 0,${-length - tipW * 0.9} ${tipW},${-length}
+    C ${w},${-length * 0.72} ${w},${-length * 0.25} 0,0 Z`;
+  return `<path d="${d}" fill="${fill}" ${STROKE} transform="translate(${cx},${cy}) rotate(${angleDeg})"/>`;
+}
+function roundPetalRing(count, startAngle, length, width, fill, cx = 50, cy = 50) {
+  let s = '';
+  for (let i = 0; i < count; i++) s += roundPetal(startAngle + (360 / count) * i, length, width, fill, cx, cy);
+  return s;
+}
 function svg(inner) { return `<svg viewBox="0 0 100 100">${inner}</svg>`; }
 
 const roseIcon = svg(`
-  ${petalRing(5, 8, 34, 25, '#C63D52')}
-  ${petalRing(5, 44, 25, 19, '#E2758A')}
-  ${petalRing(4, 20, 15, 12, '#F0A8AE')}
+  ${roundPetalRing(5, 8, 34, 26, '#C63D52')}
+  ${roundPetalRing(5, 44, 25, 20, '#E2758A')}
+  ${roundPetalRing(4, 20, 15, 13, '#F0A8AE')}
   <circle cx="50" cy="50" r="4.5" fill="#F6C6CC" ${STROKE}/>
 `);
 
 const peonyIcon = svg(`
-  ${petalRing(8, 0, 33, 22, '#D77FA1')}
-  ${petalRing(8, 22.5, 25, 17, '#E9A3BF')}
-  ${petalRing(6, 10, 16, 12, '#F3C6D9')}
-  ${petalRing(5, 40, 8, 6, '#FBE4EE')}
+  ${roundPetalRing(8, 0, 33, 23, '#D77FA1')}
+  ${roundPetalRing(8, 22.5, 25, 18, '#E9A3BF')}
+  ${roundPetalRing(6, 10, 16, 13, '#F3C6D9')}
+  ${roundPetalRing(5, 40, 8, 7, '#FBE4EE')}
   <circle cx="50" cy="50" r="3" fill="#E8B84B"/>
 `);
 
@@ -76,29 +94,37 @@ function floret(cx, cy, scale, light, dark) {
     <circle cx="0" cy="0" r="2.4" fill="${light}"/>
   </g>`;
 }
-const hydrangeaIcon = svg(`
-  ${floret(37, 35, 1, '#D3E4F1', '#6E9BC2')}
-  ${floret(63, 35, 1, '#D3E4F1', '#6E9BC2')}
-  ${floret(50, 50, 1.15, '#E2EDF6', '#7CA9CE')}
-  ${floret(34, 62, 0.95, '#D3E4F1', '#6E9BC2')}
-  ${floret(66, 62, 0.95, '#D3E4F1', '#6E9BC2')}
-  ${floret(50, 24, 0.8, '#D3E4F1', '#6E9BC2')}
-  ${floret(50, 76, 0.8, '#D3E4F1', '#6E9BC2')}
-`);
+// Real hydrangeas are dense, tightly packed clusters of dozens of tiny
+// florets forming a round pom-pom — this generates that packing using the
+// golden-angle spiral (the same distribution real flower heads grow in),
+// rather than a handful of hand-placed florets that read as scattered dots.
+function hydrangeaCluster() {
+  const n = 30, R = 36, golden = 137.508 * Math.PI / 180;
+  let out = '';
+  for (let i = 0; i < n; i++) {
+    const r = R * Math.sqrt(i / n);
+    const theta = i * golden;
+    const x = 50 + r * Math.cos(theta);
+    const y = 50 + r * Math.sin(theta);
+    const scale = 0.6 + (i % 3) * 0.07;
+    const isLight = i % 4 === 0;
+    out += floret(x, y, scale, isLight ? '#E2EDF6' : '#D3E4F1', isLight ? '#7CA9CE' : '#6E9BC2');
+  }
+  return out;
+}
+const hydrangeaIcon = svg(hydrangeaCluster());
 
 const ranunculusIcon = svg(`
-  ${petalRing(10, 0, 27, 15, '#E8865A', 50, 50, 0.6)}
-  ${petalRing(9, 18, 20, 12, '#F0A574', 50, 50, 0.6)}
-  ${petalRing(8, 5, 13.5, 9, '#F6C9B0', 50, 50, 0.6)}
-  ${petalRing(6, 30, 8, 6, '#FBE3D2', 50, 50, 0.6)}
+  ${roundPetalRing(10, 0, 27, 16, '#E8865A', 50, 50)}
+  ${roundPetalRing(9, 18, 20, 13, '#F0A574', 50, 50)}
+  ${roundPetalRing(8, 5, 13.5, 10, '#F6C9B0', 50, 50)}
+  ${roundPetalRing(6, 30, 8, 7, '#FBE3D2', 50, 50)}
   <circle cx="50" cy="50" r="2.8" fill="#B85A28"/>
 `);
 
 const poppyIcon = svg(`
-  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#E37B5D" ${STROKE} transform="translate(50,50) rotate(0)"/>
-  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#C1432E" ${STROKE} transform="translate(50,50) rotate(90)"/>
-  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#E37B5D" ${STROKE} transform="translate(50,50) rotate(180)"/>
-  <path d="M0,0 C -23,-16 -23,-38 0,-44 C 23,-38 23,-16 0,0 Z" fill="#C1432E" ${STROKE} transform="translate(50,50) rotate(270)"/>
+  ${petalRing(5, 0, 42, 34, '#E37B5D', 50, 52, 0.65)}
+  ${petalRing(5, 36, 38, 30, '#C1432E', 50, 52, 0.65)}
   <circle cx="50" cy="50" r="9" fill="#2A1B12" opacity="0.78"/>
   ${[0, 45, 90, 135, 180, 225, 270, 315].map((a) => {
     const r = a * Math.PI / 180;
@@ -108,8 +134,8 @@ const poppyIcon = svg(`
 
 function snapFloret(y, scale, fill) {
   return `<g transform="translate(50,${y}) scale(${scale})">
-    <ellipse cx="0" cy="4" rx="11" ry="7.5" fill="${fill}" ${STROKE}/>
-    <ellipse cx="0" cy="-3.5" rx="7.5" ry="6.5" fill="${fill}" opacity="0.82"/>
+    <path d="M-10,0 C-11,-7 -6,-11 0,-11 C6,-11 11,-7 10,0 C10,2.5 7,4.5 0,4 C-7,4.5 -10,2.5 -10,0 Z" fill="${fill}" ${STROKE}/>
+    <path d="M-9,1 C-9,6.5 -4,9.5 0,9.5 C4,9.5 9,6.5 9,1 C6,4 -6,4 -9,1 Z" fill="${fill}" opacity="0.78" ${STROKE}/>
   </g>`;
 }
 const snapdragonIcon = svg(`
@@ -179,9 +205,9 @@ const tulipIcon = svg(`
 `);
 
 const orchidIcon = svg(`
-  ${petalRing(5, 90, 25, 14, '#B57EC9', 50, 48, 0.7)}
-  <path d="M50,60 C 38,60 33,70 50,80 C 67,70 62,60 50,60 Z" fill="#F2D488" ${STROKE}/>
-  <circle cx="50" cy="62" r="2.3" fill="#8C5A1E"/>
+  ${petalRing(5, 90, 31, 17, '#B57EC9', 50, 45, 0.7)}
+  <path d="M50,58 C 36,58 30,70 50,82 C 70,70 64,58 50,58 Z" fill="#F2D488" ${STROKE}/>
+  <circle cx="50" cy="61" r="2.6" fill="#8C5A1E"/>
 `);
 
 // Cherry blossom petals have a small notch at the outer tip — the double
@@ -209,10 +235,10 @@ const dahliaIcon = svg(`
 `);
 
 const marigoldIcon = svg(`
-  ${petalRing(14, 0, 30, 8, '#E8A93E', 50, 50, 0.45)}
-  ${petalRing(13, 13.8, 23, 6.5, '#F2C230', 50, 50, 0.45)}
-  ${petalRing(11, 8, 16, 5, '#F6D466', 50, 50, 0.45)}
-  ${petalRing(8, 20, 9, 3.5, '#FBE79E', 50, 50, 0.45)}
+  ${roundPetalRing(14, 0, 30, 10, '#E8A93E', 50, 50)}
+  ${roundPetalRing(13, 13.8, 23, 8.5, '#F2C230', 50, 50)}
+  ${roundPetalRing(11, 8, 16, 7, '#F6D466', 50, 50)}
+  ${roundPetalRing(8, 20, 9, 5, '#FBE79E', 50, 50)}
   <circle cx="50" cy="50" r="2.5" fill="#B8791E"/>
 `);
 
@@ -220,12 +246,13 @@ const marigoldIcon = svg(`
 // petals — a genuinely different structure from the flat radial flowers
 // above, so this uses its own two petal shapes instead of petalRing.
 function irisUpright(angleDeg) {
-  const d = 'M0,0 C -6,-14 -6,-30 0,-38 C 6,-30 6,-14 0,0 Z';
-  return `<path d="${d}" fill="#6E5AA8" ${STROKE} transform="translate(50,50) rotate(${angleDeg})"/>`;
+  const d = 'M0,0 C -7,-16 -7,-34 0,-43 C 7,-34 7,-16 0,0 Z';
+  return `<path d="${d}" fill="#7A63B8" ${STROKE} transform="translate(50,50) rotate(${angleDeg})"/>`;
 }
 function irisFall(angleDeg) {
-  const d = 'M0,0 C -10,6 -16,20 -8,30 C -3,33 3,33 8,30 C 16,20 10,6 0,0 Z';
-  return `<path d="${d}" fill="#8A6FC2" ${STROKE} transform="translate(50,50) rotate(${angleDeg})"/>`;
+  const d = 'M0,0 C -10,6 -17,20 -9,31 C -4,34 4,34 9,31 C 17,20 10,6 0,0 Z';
+  const beard = '<ellipse cx="0" cy="18" rx="2.2" ry="9" fill="#F2D488" opacity="0.85"/>';
+  return `<g transform="translate(50,50) rotate(${angleDeg})"><path d="${d}" fill="#8A6FC2" ${STROKE}/>${beard}</g>`;
 }
 const irisIcon = svg(`
   ${[30, 150, 270].map((a) => irisFall(a)).join('')}
@@ -671,7 +698,16 @@ export function getPhotos(log) {
   return [];
 }
 
-export async function logTime(activity = '', dateStr = null, photos = [], location = null) {
+// The small dedicated thumbnail for meadow/list previews — falls back to the
+// full first photo for entries logged before thumbnails existed, so nothing
+// old ever shows blank.
+export function getThumb(log) {
+  if (log.thumb) return log.thumb;
+  const photos = getPhotos(log);
+  return photos.length ? photos[0] : null;
+}
+
+export async function logTime(activity = '', dateStr = null, photos = [], location = null, thumb = null) {
   const entryDate = dateStr || todayStr();
 
   const totalSize = photos.reduce((sum, p) => sum + p.length, 0);
@@ -682,7 +718,7 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
   if (!isConfigured) {
     DEMO_STATE.totalFlowers += 1;
     if (entryDate === todayStr()) DEMO_STATE.lastActiveDate = entryDate;
-    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, date: entryDate, photos, note: '', location });
+    DEMO_LOGS.unshift({ id: 'demo-' + Date.now(), activity, date: entryDate, photos, note: '', location, thumb });
     return DEMO_STATE;
   }
 
@@ -710,7 +746,7 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
     await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
       type: 'log', activity,
       date: entryDate, backfilled: entryDate !== today, location,
-      photos, note: '',
+      photos, thumb, note: '',
       createdAt: serverTimestamp()
     });
   } catch (err) {
@@ -952,6 +988,15 @@ export function computeHabitStats(entries) {
 // This is a complete, lossless snapshot — unlike watchLogs(), which caps at
 // a limited number for performance, this fetches everything, unlimited,
 // specifically so nothing is left out of a backup.
+// A full, uncapped fetch of every log — used by exportBackup and by the
+// one-time thumbnail backfill (adding thumbnails to entries logged before
+// that feature existed).
+export async function getAllLogsRaw() {
+  if (!isConfigured) return DEMO_LOGS;
+  const snap = await getDocs(collection(db, `couples/${COUPLE_ID}/logs`));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 export async function exportBackup() {
   if (!isConfigured) {
     return {
