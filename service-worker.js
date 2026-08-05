@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bloom-app-v20260804211008';
+const CACHE_NAME = 'bloom-app-v20260805164058';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,13 @@ const FIREBASE_CACHE_NAME = 'bloom-firebase-sdk-v1';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
+  // Deliberately NOT calling self.skipWaiting() here. A new version now waits
+  // until every open instance of the app has been fully closed before it
+  // takes over, rather than hijacking a page that might already be loading —
+  // that mid-transition handover is the most likely explanation for crashes
+  // that only happen right after an update or after being idle for hours
+  // (when Safari re-checks for an update on reopen), never on an immediate
+  // close-and-reopen.
 });
 
 self.addEventListener('activate', (event) => {
@@ -19,7 +25,9 @@ self.addEventListener('activate', (event) => {
       Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== FIREBASE_CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  // Deliberately NOT calling self.clients.claim() either, for the same
+  // reason — this worker only starts controlling pages opened after it's
+  // already fully active, never a page that was mid-load when it activated.
 });
 
 self.addEventListener('fetch', (event) => {
