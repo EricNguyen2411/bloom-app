@@ -1887,6 +1887,21 @@
     }
   };
 
+  // Whenever the app comes back to the foreground — reopened after being
+  // backgrounded, or switched back to from another app — nudge Firestore to
+  // reconnect right away instead of waiting on its own timing. This is the
+  // single biggest cause of "it didn't sync" complaints: the connection was
+  // silently dropped while the app sat in the background, and nothing was
+  // prompting it to actively retry until now.
+  let lastAutoSyncAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !isConfigured) return;
+    const now = Date.now();
+    if (now - lastAutoSyncAt < 20000) return; // avoid rapid app-switch spam
+    lastAutoSyncAt = now;
+    forceSyncNow().catch(() => {}); // silent — the manual button exists for when this isn't enough
+  });
+
   document.getElementById('backfillThumbsBtn').onclick = async () => {
     const btn = document.getElementById('backfillThumbsBtn');
     const status = document.getElementById('backfillStatus');
