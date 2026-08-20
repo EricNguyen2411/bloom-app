@@ -87,7 +87,7 @@
 
   .flower{ position:absolute; bottom:222px; left:50%; transform:translateX(-50%) scale(0.2); opacity:0;
     transition: all .8s cubic-bezier(.34,1.4,.4,1); width:90px; height:90px; }
-  .flower svg{ width:100%; height:100%; filter:drop-shadow(0 4px 8px rgba(20,30,15,0.3)); }
+  .flower svg{ width:100%; height:100%; }
   .petal{ position:absolute; width:34px; height:46px; border-radius:50%/60% 60% 40% 40%;
     background:linear-gradient(160deg,var(--petal-light,#EFAF95),var(--petal-dark,var(--coral))); top:22px; left:28px; transform-origin:50% 100%; }
   .petal:nth-child(1){ transform:rotate(0deg); }
@@ -204,6 +204,8 @@
   .photo-preview-cover{ position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%;
     background:rgba(20,20,20,0.5); color:var(--gold); border:none; font-size:13px; line-height:20px; padding:0;
     cursor:pointer; z-index:2; }
+  .photo-preview-save{ position:absolute; bottom:2px; left:2px; width:20px; height:20px; border-radius:50%;
+    background:rgba(20,20,20,0.5); border:none; font-size:11px; line-height:20px; padding:0; cursor:pointer; z-index:2; }
 
   .photo-count-badge{ position:absolute; bottom:-1px; right:-1px; min-width:13px; height:13px; border-radius:50%;
     background:rgba(20,20,20,0.75); color:#fff; display:flex; align-items:center;
@@ -1605,6 +1607,7 @@
   const photoDateNotice = document.getElementById('photoDateNotice');
   const MAX_PHOTOS = 5;
   let pendingPhotos = [];
+  let pendingOriginalFiles = []; // kept alongside, so "Save to Photos" can share full quality, not the compressed version
   let dateWasAutoSet = false;
 
   logDateInput.addEventListener('input', () => {
@@ -1615,17 +1618,21 @@
 
   function renderPhotoPreviews() {
     photoPreviewRow.innerHTML = '';
+    const canShareFiles = !!(navigator.canShare);
     pendingPhotos.forEach((src, i) => {
       const thumb = document.createElement('div');
       thumb.className = 'photo-preview-thumb' + (i === 0 ? ' is-cover' : '');
       thumb.innerHTML = `<img src="${src}">
         ${pendingPhotos.length > 1 ? `<button class="photo-preview-cover" data-i="${i}" title="${i === 0 ? 'Cover photo' : 'Set as cover photo'}">${i === 0 ? '★' : '☆'}</button>` : ''}
+        ${canShareFiles ? `<button class="photo-preview-save" data-i="${i}" title="Save to Photos">💾</button>` : ''}
         <button class="photo-preview-remove" data-i="${i}">✕</button>`;
       photoPreviewRow.appendChild(thumb);
     });
     photoPreviewRow.querySelectorAll('.photo-preview-remove').forEach((btn) => {
       btn.onclick = () => {
-        pendingPhotos.splice(parseInt(btn.dataset.i), 1);
+        const i = parseInt(btn.dataset.i);
+        pendingPhotos.splice(i, 1);
+        pendingOriginalFiles.splice(i, 1);
         renderPhotoPreviews();
         updatePhotoLabel();
       };
@@ -1634,8 +1641,25 @@
       btn.onclick = () => {
         const i = parseInt(btn.dataset.i);
         const [chosen] = pendingPhotos.splice(i, 1);
+        const [chosenFile] = pendingOriginalFiles.splice(i, 1);
         pendingPhotos.unshift(chosen); // move to the front — that's what shows on the flower
+        pendingOriginalFiles.unshift(chosenFile);
         renderPhotoPreviews();
+      };
+    });
+    photoPreviewRow.querySelectorAll('.photo-preview-save').forEach((btn) => {
+      btn.onclick = async () => {
+        const file = pendingOriginalFiles[parseInt(btn.dataset.i)];
+        if (!file) return;
+        try {
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file] });
+          } else {
+            alert("Your phone doesn't support quick-saving here — press and hold the photo above to save it instead.");
+          }
+        } catch (err) {
+          // the person cancelling the share sheet also lands here — not a real error, so stay quiet
+        }
       };
     });
   }
@@ -1666,6 +1690,7 @@
       for (const file of files) {
         const compressed = await compressImage(file);
         pendingPhotos.push(compressed);
+        pendingOriginalFiles.push(file);
       }
       if (isFirstBatch) {
         const exif = await extractExifData(files[0]);
@@ -1692,6 +1717,7 @@
     document.getElementById('logActivity').value = '';
     photoInput.value = '';
     pendingPhotos = [];
+    pendingOriginalFiles = [];
     pendingLocation = null;
     dateWasAutoSet = false;
     photoDateNotice.classList.remove('show');
