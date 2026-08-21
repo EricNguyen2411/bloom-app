@@ -3285,13 +3285,9 @@
         await signIn(loginUsername.value, loginPassword.value);
         loginPassword.value = '';
       } catch (err) {
-<<<<<<< HEAD
         loginError.textContent = err.message.includes('too long')
           ? err.message
           : "Couldn't sign in — check your username and password.";
-=======
-        loginError.textContent = "Couldn't sign in — check your username and password.";
->>>>>>> 8c2baf109ee9db0abd7121a3f943c5f695e3abd5
       } finally {
         loginSubmit.disabled = false;
         loginSubmit.textContent = 'Sign in';

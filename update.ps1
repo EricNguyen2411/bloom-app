@@ -14,7 +14,26 @@ if ([string]::IsNullOrWhiteSpace($message)) { $message = "update" }
 
 git add .
 git commit -m $message
+# $LASTEXITCODE only reflects the most recent native command, so check it
+# right after each git call — $ErrorActionPreference does NOT catch a
+# failed external command like a bad git push, which is exactly what let
+# this script print "Pushed" earlier even though the push was rejected.
+if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
+    # exit code 1 from `git commit` usually just means "nothing to commit" — fine to continue.
+    # Anything else from commit is worth stopping for.
+    Write-Host ""
+    Write-Host "git commit failed — nothing was pushed. Scroll up for the actual error." -ForegroundColor Red
+    exit 1
+}
+
 git push
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "PUSH FAILED — nothing new is live. Scroll up to the 'error:' line above for why." -ForegroundColor Red
+    Write-Host "This is very likely a non-fast-forward rejection (remote has commits your local copy doesn't)." -ForegroundColor Red
+    Write-Host "Fix: run  git pull  first to merge those in, then run .\update.ps1 again." -ForegroundColor Yellow
+    exit 1
+}
 
 Write-Host ""
 Write-Host "Pushed. GitHub Pages usually takes 1-2 minutes to go live." -ForegroundColor Green
