@@ -37,11 +37,11 @@ you set this app up before this change, you need to redo Step 1 below (parts
 1. Go to https://console.firebase.google.com → **Add project** → name it anything → skip Google Analytics.
 2. **Build → Firestore Database → Create database** → production mode → any region.
 3. **Build → Authentication → Get started** → enable the **Email/Password** sign-in method (not Anonymous).
-4. Still in **Authentication → Users** → **Add user** → do this twice, once for each of you, using your real email addresses and a password each of you picks. These are the only two accounts that will ever be able to open the app.
+4. Still in **Authentication → Users** → **Add user** → do this twice, once for each of you. In the "Email" field, don't use a real email — pick a plain username each (lowercase, no spaces) and enter it as `yourusername@bloom.local`, e.g. `amy@bloom.local` and `eric@bloom.local`. Set a password each of you picks. These are the only two accounts that will ever be able to open the app — when you actually log into the app, you'll just type `amy` (not the `@bloom.local` part), the app adds that automatically.
 5. **Project settings** (gear icon) → "Your apps" → **</> (Web)** icon → register an app → copy the `firebaseConfig` object.
 6. Paste those values into `firebase-config.js`, replacing the `REPLACE_ME` placeholders.
 7. In `firebase-config.js`, set `COUPLE_ID` to any made-up code — it no longer needs to be kept secret (that was never real protection to begin with), it's now just an internal label.
-8. Open `firestore.rules` and replace the two placeholder emails with the exact two email addresses you used in step 4.
+8. Open `firestore.rules` and replace the two placeholders with your two usernames from step 4, in the form `yourusername@bloom.local`.
 9. Firestore → **Rules** tab → paste in the edited `firestore.rules` → **Publish**.
 
 ## Step 2 — Deploy to GitHub Pages (free hosting)

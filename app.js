@@ -360,13 +360,24 @@ async function initFirebase() {
 
 let authModRef = null;
 
+// Firebase's email/password sign-in requires an email-*shaped* string, but
+// never actually sends anything to it (no verification email is triggered
+// anywhere in this app) — so a plain username can be turned into a fake,
+// fixed-domain email behind the scenes, and the person only ever sees/types
+// the username part. Lowercased and trimmed so "Amy", "amy ", and "AMY" all
+// resolve to the same account.
+const USERNAME_DOMAIN = '@bloom.local';
+function usernameToEmail(username) {
+  return username.trim().toLowerCase().replace(/\s+/g, '') + USERNAME_DOMAIN;
+}
+
 // Real, Firebase-checked login — replaces the old "anyone who opens the
 // link connects automatically" anonymous auth. The password is verified by
 // Firebase itself (not by any code running in the browser), so it actually
 // protects the database, not just the app's front door.
-export async function signIn(email, password) {
+export async function signIn(username, password) {
   if (!authInstance) throw new Error('Firebase not ready yet — try again in a moment.');
-  await authModRef.signInWithEmailAndPassword(authInstance, email.trim(), password);
+  await authModRef.signInWithEmailAndPassword(authInstance, usernameToEmail(username), password);
 }
 
 export function signOutUser() {
@@ -604,9 +615,9 @@ export async function toggleDecoration(decorId) {
 
 // ---- Live log/memory feed (for the photo gallery + weekly recap + flashback) ----
 export function watchLogs(renderFn, max = 1000) {
-  if (!isConfigured) { renderFn(DEMO_LOGS); return; }
+  if (!isConfigured) { renderFn(DEMO_LOGS); return () => {}; }
   const q = query(collection(db, `couples/${COUPLE_ID}/logs`), orderBy('date', 'desc'), limit(max));
-  onSnapshot(
+  return onSnapshot(
     q,
     (snap) => renderFn(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
     (err) => console.error('watchLogs listener error:', err)

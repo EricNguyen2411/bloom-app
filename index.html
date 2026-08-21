@@ -653,8 +653,8 @@
     <div class="welcome-emoji">🔒</div>
     <h2>Sign in</h2>
     <p>This garden is just for the two of you — sign in with the account you set up in Firebase.</p>
-    <label>Email</label>
-    <input type="email" id="loginEmail" autocomplete="username" placeholder="you@example.com">
+    <label>Username</label>
+    <input type="text" id="loginUsername" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="e.g. amy or eric">
     <label>Password</label>
     <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
     <div class="login-error" id="loginError"></div>
@@ -2363,6 +2363,7 @@
   document.getElementById('coupleBench').addEventListener('click', cycleBenchPose);
 
   document.getElementById('btnGarden').onclick = () => {
+    ensureFullHistory();
     document.getElementById('gardenScenePlaceholder').after(document.getElementById('sharedGardenScene'));
     applySceneTheme();
     gardenDetail.classList.remove('show');
@@ -2617,6 +2618,7 @@
     renderFlashback(logs);
     renderMemoryList(filteredLogs());
     renderGardenBed(logs); // garden always shows everything, unfiltered
+    if (document.getElementById('pathPage').classList.contains('open')) renderPathGarden(logs);
   }
 
   function filteredLogs() {
@@ -2922,6 +2924,7 @@
     });
   }
   document.getElementById('btnPath').onclick = () => {
+    ensureFullHistory();
     document.getElementById('pathSceneSlot').appendChild(document.getElementById('sharedGardenScene'));
     applySceneTheme();
     renderPathGarden(latestLogs);
@@ -3055,7 +3058,7 @@
     flashbackEl.onclick = () => openGardenToLog(log); // jump straight to that exact flower, not just the general list
   }
 
-  document.getElementById('btnMemories').onclick = () => memoriesBackdrop.classList.add('open');
+  document.getElementById('btnMemories').onclick = () => { ensureFullHistory(); memoriesBackdrop.classList.add('open'); };
   document.getElementById('memoriesClose').onclick = () => memoriesBackdrop.classList.remove('open');
 
   // ---- Bucket list (shared date ideas) ----
@@ -3238,7 +3241,7 @@
     };
 
     const loginOverlay = document.getElementById('loginOverlay');
-    const loginEmail = document.getElementById('loginEmail');
+    const loginUsername = document.getElementById('loginUsername');
     const loginPassword = document.getElementById('loginPassword');
     const loginError = document.getElementById('loginError');
     const loginSubmit = document.getElementById('loginSubmit');
@@ -3274,15 +3277,15 @@
     });
 
     const attemptSignIn = async () => {
-      if (!loginEmail.value || !loginPassword.value) return;
+      if (!loginUsername.value || !loginPassword.value) return;
       loginError.textContent = '';
       loginSubmit.disabled = true;
       loginSubmit.textContent = 'Signing in…';
       try {
-        await signIn(loginEmail.value, loginPassword.value);
+        await signIn(loginUsername.value, loginPassword.value);
         loginPassword.value = '';
       } catch (err) {
-        loginError.textContent = "Couldn't sign in — check your email and password.";
+        loginError.textContent = "Couldn't sign in — check your username and password.";
       } finally {
         loginSubmit.disabled = false;
         loginSubmit.textContent = 'Sign in';
@@ -3290,6 +3293,36 @@
     };
     loginSubmit.onclick = attemptSignIn;
     loginPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptSignIn(); });
+  }
+
+  // How many most-recent entries (full data — including their full-size
+  // photos, not just thumbnails) sync automatically the instant the app
+  // opens, before you've even asked to see anything. Kept deliberately
+  // small: with 100+ entries, most carrying photos, syncing everything
+  // automatically on every cold launch was pulling a genuinely large amount
+  // of image data into memory and into the phone's local cache at once —
+  // the likely real cause of the app crashing shortly after launch, even
+  // with nothing tapped. This is still comfortably enough for the
+  // dashboard (recent activity, "on this day" flashback, this week's
+  // stats). The full history loads on demand — see ensureFullHistory().
+  const LIGHT_LOG_LIMIT = 40;
+  let unwatchLogs = null;
+  let fullHistoryLoaded = false;
+  let fullHistoryLoading = false;
+
+  // Called right before showing Garden, Path, or Memories — the only
+  // places that actually need every entry, not just the recent ones. Swaps
+  // the light listener out for a full one, one time only; if it's already
+  // loading or loaded, this is a no-op, so it's safe to call on every open.
+  function ensureFullHistory() {
+    if (fullHistoryLoaded || fullHistoryLoading || !isConfigured) return;
+    fullHistoryLoading = true;
+    if (unwatchLogs) unwatchLogs();
+    unwatchLogs = watchLogs((logs) => {
+      fullHistoryLoaded = true;
+      fullHistoryLoading = false;
+      renderMemories(logs);
+    }, 100000);
   }
 
   function startApp() {
@@ -3304,7 +3337,7 @@
       document.getElementById('loadingScreen').classList.add('hide');
     };
     watchState((state) => { render(state); stateReady = true; revealIfReady(); });
-    watchLogs((logs) => { renderMemories(logs); logsReady = true; revealIfReady(); });
+    unwatchLogs = watchLogs((logs) => { renderMemories(logs); logsReady = true; revealIfReady(); }, LIGHT_LOG_LIMIT);
     // Safety net: reveal anyway after 2.5s even if something's still pending,
     // so a slow connection never leaves the screen stuck on the loading screen.
     setTimeout(() => {

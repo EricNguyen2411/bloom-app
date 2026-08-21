@@ -4,15 +4,20 @@ service cloud.firestore {
 
     // Only these two specific, real Firebase accounts can read or write —
     // not "anyone who knows the code," not "anyone who opened the link."
-    // Replace the two placeholder emails below with the exact email
-    // addresses of the two accounts you create in Firebase Console ->
-    // Authentication -> Users -> Add user. Anonymous sign-in is no longer
-    // used at all, so there's nothing left for a stranger to sign in as.
+    // The app lets you type a plain username, but Firebase itself only
+    // understands email/password, so the app quietly turns your username
+    // into "yourusername@bloom.local" before signing in — nothing is ever
+    // sent to that address, it's just an identifier. Replace the two
+    // placeholders below with your two usernames (lowercase, no spaces),
+    // matching exactly the two accounts you create in Firebase Console ->
+    // Authentication -> Users -> Add user (using "username@bloom.local" as
+    // that account's email). Anonymous sign-in is no longer used at all, so
+    // there's nothing left for a stranger to sign in as.
     match /couples/{coupleId}/{document=**} {
       allow read, write: if request.auth != null &&
         request.auth.token.email in [
-          'REPLACE_WITH_PARTNER_1_EMAIL@example.com',
-          'REPLACE_WITH_PARTNER_2_EMAIL@example.com'
+          'partner1username@bloom.local',
+          'partner2username@bloom.local'
         ];
     }
   }
