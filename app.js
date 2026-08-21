@@ -377,7 +377,11 @@ function usernameToEmail(username) {
 // protects the database, not just the app's front door.
 export async function signIn(username, password) {
   if (!authInstance) throw new Error('Firebase not ready yet — try again in a moment.');
-  await authModRef.signInWithEmailAndPassword(authInstance, usernameToEmail(username), password);
+  await withTimeout(
+    authModRef.signInWithEmailAndPassword(authInstance, usernameToEmail(username), password),
+    10000,
+    "That took too long — check your connection and try again."
+  );
 }
 
 export function signOutUser() {
