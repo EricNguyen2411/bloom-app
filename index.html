@@ -589,6 +589,17 @@
   .welcome-start{ margin-top:14px; padding:14px 28px; border-radius:999px; border:none; cursor:pointer;
     background:linear-gradient(135deg,var(--lime),var(--moss)); color:#fff; font-family:'Bricolage Grotesque',sans-serif;
     font-weight:700; font-size:15px; box-shadow:0 12px 24px -8px rgba(79,122,74,0.4); }
+
+  .login-overlay{ position:fixed; inset:0; background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom)); z-index:90;
+    display:flex; align-items:center; justify-content:center; padding:30px; }
+  .login-overlay.hide{ display:none; }
+  .login-card{ max-width:320px; width:100%; text-align:center; }
+  .login-card label{ display:block; text-align:left; font-size:11px; font-weight:700; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:0.5px; margin:14px 0 6px; }
+  .login-card input{ width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid #E4E1D6;
+    font-family:'Inter',sans-serif; font-size:15px; background:#fff; }
+  .login-card button{ width:100%; }
+  .login-error{ color:#C1432E; font-size:12.5px; margin-top:10px; min-height:1em; }
 </style>
 </head>
 <body>
@@ -635,6 +646,20 @@
     </g>
   </svg>
   <div class="loading-text">Growing your garden<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>
+</div>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="welcome-emoji">🔒</div>
+    <h2>Sign in</h2>
+    <p>This garden is just for the two of you — sign in with the account you set up in Firebase.</p>
+    <label>Email</label>
+    <input type="email" id="loginEmail" autocomplete="username" placeholder="you@example.com">
+    <label>Password</label>
+    <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+    <div class="login-error" id="loginError"></div>
+    <button class="welcome-start" id="loginSubmit" type="button">Sign in</button>
+  </div>
 </div>
 
 <div class="app">
@@ -1166,6 +1191,11 @@
       <input type="file" id="backupImportInput" accept="application/json" style="display:none;">
     </div>
 
+    <div id="signOutSection" style="display:none;">
+      <label>Account</label>
+      <button class="export-btn" id="signOutBtn" style="margin-top:0;">🔒 Sign out</button>
+    </div>
+
     <div class="sheet-actions">
       <button class="btn-confirm" id="menuClose">Close</button>
     </div>
@@ -1200,7 +1230,7 @@
 </div>
 
 <script type="module">
-  import { initFirebase, isConfigured, currentSpecies, todaysChallenge, watchState, watchLogs,
+  import { initFirebase, isConfigured, signIn, signOutUser, onAuthChange, currentSpecies, todaysChallenge, watchState, watchLogs,
            logTime, completeChallenge, addNoteToLog, deleteLog, editLog, compressImage, findFlashback,
            watchBucketList, addBucketItem, toggleBucketItem, deleteBucketItem, getPhotos, getThumb, exportBackup, importBackup,
            getAllLogsRaw,
@@ -3192,8 +3222,64 @@
 
   async function boot() {
     await initFirebase();
-    if (!isConfigured) document.getElementById('configBanner').classList.add('show');
 
+    if (!isConfigured) {
+      document.getElementById('configBanner').classList.add('show');
+      startApp();
+      return;
+    }
+
+    document.getElementById('signOutSection').style.display = '';
+    document.getElementById('signOutBtn').onclick = async () => {
+      await signOutUser();
+      document.querySelector('.app').classList.remove('ready');
+      logBackdrop.classList.remove('open');
+      document.getElementById('menuBackdrop')?.classList.remove('open');
+    };
+
+    const loginOverlay = document.getElementById('loginOverlay');
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginError = document.getElementById('loginError');
+    const loginSubmit = document.getElementById('loginSubmit');
+
+    let appStarted = false;
+    // onAuthChange fires immediately with the current state, then again on
+    // every sign-in/out — including a session restored from a previous
+    // visit, so returning users skip straight past the login screen.
+    onAuthChange((user) => {
+      if (user) {
+        loginOverlay.classList.add('hide');
+        if (!appStarted) { appStarted = true; startApp(); }
+      } else {
+        // Not signed in (or just signed out) — show the login screen
+        // instead of the loading spinner, which would otherwise sit on
+        // top of it and hide it.
+        document.getElementById('loadingScreen').classList.add('hide');
+        loginOverlay.classList.remove('hide');
+      }
+    });
+
+    const attemptSignIn = async () => {
+      if (!loginEmail.value || !loginPassword.value) return;
+      loginError.textContent = '';
+      loginSubmit.disabled = true;
+      loginSubmit.textContent = 'Signing in…';
+      try {
+        await signIn(loginEmail.value, loginPassword.value);
+        loginPassword.value = '';
+      } catch (err) {
+        loginError.textContent = "Couldn't sign in — check your email and password.";
+      } finally {
+        loginSubmit.disabled = false;
+        loginSubmit.textContent = 'Sign in';
+      }
+    };
+    loginSubmit.onclick = attemptSignIn;
+    loginPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptSignIn(); });
+  }
+
+  function startApp() {
     // The loading screen (gardener watering a seed) stays up until real data
     // has actually arrived, then cross-fades into the real dashboard — this
     // is what stops the "loads, then looks like it refreshes" effect, since

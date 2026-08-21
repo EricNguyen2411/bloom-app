@@ -322,6 +322,8 @@ let db, addDoc, deleteDoc, collection, doc, onSnapshot, serverTimestamp, setDoc,
     arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer,
     enableNetwork, disableNetwork;
 
+let authInstance = null;
+
 async function initFirebase() {
   if (!isConfigured) return false;
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -329,8 +331,12 @@ async function initFirebase() {
   const fsMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
   const app = initializeApp(firebaseConfig);
-  const auth = authMod.getAuth(app);
-  await authMod.signInAnonymously(auth);
+  authInstance = authMod.getAuth(app);
+  authModRef = authMod;
+  // No sign-in happens here anymore — see signIn() below. The app now waits
+  // for a real email/password login (checked by Firebase itself) before it
+  // ever touches Firestore, instead of the old signInAnonymously() call that
+  // let literally anyone who opened the link connect with zero credentials.
 
   // Persistent local cache: Firestore keeps a copy of your data in the
   // browser's IndexedDB, so on repeat opens the app can show what it already
@@ -350,6 +356,29 @@ async function initFirebase() {
      arrayUnion, arrayRemove, increment, query, orderBy, limit, writeBatch, getCountFromServer,
      enableNetwork, disableNetwork } = fsMod);
   return true;
+}
+
+let authModRef = null;
+
+// Real, Firebase-checked login — replaces the old "anyone who opens the
+// link connects automatically" anonymous auth. The password is verified by
+// Firebase itself (not by any code running in the browser), so it actually
+// protects the database, not just the app's front door.
+export async function signIn(email, password) {
+  if (!authInstance) throw new Error('Firebase not ready yet — try again in a moment.');
+  await authModRef.signInWithEmailAndPassword(authInstance, email.trim(), password);
+}
+
+export function signOutUser() {
+  if (!authInstance) return;
+  return authModRef.signOut(authInstance);
+}
+
+// Calls cb(user) immediately with the current auth state, then again on
+// every change (sign-in, sign-out, session restored from a previous visit).
+export function onAuthChange(cb) {
+  if (!authInstance) { cb(null); return () => {}; }
+  return authModRef.onAuthStateChanged(authInstance, cb);
 }
 
 // Firestore's write/read promises (setDoc, addDoc, getDoc, etc.) do not

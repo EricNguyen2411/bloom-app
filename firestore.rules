@@ -2,12 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Anyone signed in anonymously (i.e. anyone who has opened the app link)
-    // can read/write — the real privacy comes from COUPLE_ID being a private,
-    // made-up code that only the two of you know. Fine for a personal gift app,
-    // not bank-grade security — don't put anything in here you'd hate to have exposed.
+    // Only these two specific, real Firebase accounts can read or write —
+    // not "anyone who knows the code," not "anyone who opened the link."
+    // Replace the two placeholder emails below with the exact email
+    // addresses of the two accounts you create in Firebase Console ->
+    // Authentication -> Users -> Add user. Anonymous sign-in is no longer
+    // used at all, so there's nothing left for a stranger to sign in as.
     match /couples/{coupleId}/{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null &&
+        request.auth.token.email in [
+          'REPLACE_WITH_PARTNER_1_EMAIL@example.com',
+          'REPLACE_WITH_PARTNER_2_EMAIL@example.com'
+        ];
     }
   }
 }
