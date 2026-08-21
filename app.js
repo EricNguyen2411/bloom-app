@@ -99,7 +99,7 @@ function floret(cx, cy, scale, light, dark) {
 // golden-angle spiral (the same distribution real flower heads grow in),
 // rather than a handful of hand-placed florets that read as scattered dots.
 function hydrangeaCluster() {
-  const n = 30, R = 36, golden = 137.508 * Math.PI / 180;
+  const n = 16, R = 30, golden = 137.508 * Math.PI / 180;
   let out = '';
   for (let i = 0; i < n; i++) {
     const r = R * Math.sqrt(i / n);
@@ -352,6 +352,22 @@ async function initFirebase() {
   return true;
 }
 
+// Firestore's write/read promises (setDoc, addDoc, getDoc, etc.) do not
+// resolve or reject until the operation reaches the server — with offline
+// persistence enabled (which this app uses), a bad or dropped connection
+// means that promise can hang forever with no error. This wraps any such
+// call with a hard ceiling so a stalled save fails loudly instead of
+// leaving a button disabled and the app looking frozen. The underlying
+// Firestore operation isn't cancelled (Firestore has no cancel), just no
+// longer awaited — it'll still complete and sync whenever the connection
+// recovers, since it's already queued in the offline cache.
+function withTimeout(promise, ms = 10000, message = 'That took too long — check your connection and try again.') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
+  ]);
+}
+
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function mmdd(dateStr) { return dateStr.slice(5); }
 function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
@@ -523,7 +539,7 @@ export async function setSetting(key, value) {
   }
   try {
     const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
-    await setDoc(ref, { [key]: value }, { merge: true });
+    await withTimeout(setDoc(ref, { [key]: value }, { merge: true }));
   } catch (err) {
     console.error('setSetting failed:', err);
     alert('Could not save that setting: ' + err.message);
@@ -542,13 +558,13 @@ export async function toggleDecoration(decorId) {
   }
   try {
     const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
-    const snap = await getDoc(ref);
+    const snap = await withTimeout(getDoc(ref));
     const data = snap.exists() ? snap.data() : DEMO_STATE;
     const owned = data.unlockedDecorations || [];
     const isOwned = owned.includes(decorId);
-    await setDoc(ref, {
+    await withTimeout(setDoc(ref, {
       unlockedDecorations: isOwned ? arrayRemove(decorId) : arrayUnion(decorId)
-    }, { merge: true });
+    }, { merge: true }));
     return true;
   } catch (err) {
     console.error('toggleDecoration failed:', err);
@@ -724,7 +740,7 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
 
   try {
     const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
-    const snap = await getDoc(ref);
+    const snap = await withTimeout(getDoc(ref));
     const data = snap.exists() ? snap.data() : DEMO_STATE;
     const today = todayStr();
 
@@ -741,17 +757,17 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
       if (streak > (data.longestStreak || 0)) update.longestStreak = streak;
     }
 
-    await setDoc(ref, update, { merge: true });
+    await withTimeout(setDoc(ref, update, { merge: true }));
 
-    await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
+    await withTimeout(addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
       type: 'log', activity,
       date: entryDate, backfilled: entryDate !== today, location,
       photos, thumb, note: '',
       createdAt: serverTimestamp()
-    });
+    }));
   } catch (err) {
     console.error('logTime failed:', err);
-    alert('Could not save that entry: ' + err.message + '\n\nCheck that Anonymous auth is enabled and Firestore rules are published.');
+    alert('Could not save that entry: ' + err.message + (err.message.includes('too long') ? '\n\nThis is usually already queued locally and will sync on its own once you\'re back online — check the garden in a bit before logging it again, so you don\'t end up with it twice.' : '\n\nCheck that Anonymous auth is enabled and Firestore rules are published.'));
     throw err;
   }
 }
@@ -767,20 +783,20 @@ export async function completeChallenge(challengeText = '') {
   }
   try {
     const ref = doc(db, `couples/${COUPLE_ID}/state/current`);
-    const snap = await getDoc(ref);
+    const snap = await withTimeout(getDoc(ref));
     const data = snap.exists() ? snap.data() : DEMO_STATE;
     const today = todayStr();
     if (data.todayChallengeCompletedDate === today) return;
-    await setDoc(ref, {
+    await withTimeout(setDoc(ref, {
       totalFlowers: increment(1),
       todayChallengeCompletedDate: today
-    }, { merge: true });
+    }, { merge: true }));
 
-    await addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
+    await withTimeout(addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
       type: 'challenge', activity: 'Challenge: ' + challengeText,
       date: today, backfilled: false, photo: null, note: '',
       createdAt: serverTimestamp()
-    });
+    }));
   } catch (err) {
     console.error('completeChallenge failed:', err);
     alert('Could not save that: ' + err.message);
@@ -795,7 +811,7 @@ export async function addNoteToLog(logId, note) {
     return;
   }
   try {
-    await setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), { note }, { merge: true });
+    await withTimeout(setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), { note }, { merge: true }));
   } catch (err) {
     console.error('addNoteToLog failed:', err);
     alert('Could not save that note: ' + err.message);
@@ -813,7 +829,7 @@ export async function deleteLog(logId) {
     return;
   }
   try {
-    await deleteDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`));
+    await withTimeout(deleteDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`)));
   } catch (err) {
     console.error('deleteLog failed:', err);
     alert('Could not delete that entry: ' + err.message);
@@ -841,7 +857,7 @@ export async function editLog(logId, updates) {
     return;
   }
   try {
-    await setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), updates, { merge: true });
+    await withTimeout(setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), updates, { merge: true }));
   } catch (err) {
     console.error('editLog failed:', err);
     alert('Could not save that edit: ' + err.message);
@@ -866,7 +882,7 @@ export async function addBucketItem(text) {
     return;
   }
   try {
-    await addDoc(collection(db, `couples/${COUPLE_ID}/bucketlist`), { text, done: false, createdAt: serverTimestamp() });
+    await withTimeout(addDoc(collection(db, `couples/${COUPLE_ID}/bucketlist`), { text, done: false, createdAt: serverTimestamp() }));
   } catch (err) {
     console.error('addBucketItem failed:', err);
     alert('Could not add that idea: ' + err.message);
@@ -881,7 +897,7 @@ export async function toggleBucketItem(id, done) {
     return;
   }
   try {
-    await setDoc(doc(db, `couples/${COUPLE_ID}/bucketlist/${id}`), { done }, { merge: true });
+    await withTimeout(setDoc(doc(db, `couples/${COUPLE_ID}/bucketlist/${id}`), { done }, { merge: true }));
   } catch (err) {
     console.error('toggleBucketItem failed:', err);
   }
@@ -894,7 +910,7 @@ export async function deleteBucketItem(id) {
     return;
   }
   try {
-    await deleteDoc(doc(db, `couples/${COUPLE_ID}/bucketlist/${id}`));
+    await withTimeout(deleteDoc(doc(db, `couples/${COUPLE_ID}/bucketlist/${id}`)));
   } catch (err) {
     console.error('deleteBucketItem failed:', err);
   }
@@ -934,8 +950,8 @@ export async function logHabit(habitId, dateStr = null, photo = null) {
     return;
   }
   try {
-    await setDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${date}`),
-      { date, photo, createdAt: serverTimestamp() }, { merge: true });
+    await withTimeout(setDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${date}`),
+      { date, photo, createdAt: serverTimestamp() }, { merge: true }));
   } catch (err) {
     console.error('logHabit failed:', err);
     alert('Could not log that: ' + err.message);
@@ -950,7 +966,7 @@ export async function unlogHabit(habitId, dateStr = null) {
     return;
   }
   try {
-    await deleteDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${date}`));
+    await withTimeout(deleteDoc(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${date}`)));
   } catch (err) {
     console.error('unlogHabit failed:', err);
   }
