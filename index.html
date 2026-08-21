@@ -3248,6 +3248,19 @@
     // every sign-in/out — including a session restored from a previous
     // visit, so returning users skip straight past the login screen.
     onAuthChange((user) => {
+      // A device that opened this app before this update may still have a
+      // leftover anonymous session cached from the old signInAnonymously()
+      // code — that's a real signed-in Firebase user (user is non-null), so
+      // without this check it would sail past the login screen straight
+      // into startApp(), then get rejected by Firestore's rules (which now
+      // require a real email match) with "missing or insufficient
+      // permissions" — exactly the symptom of an account that was never
+      // actually asked to log in. Anonymous users have no email at all, so
+      // isAnonymous is the reliable way to tell the two apart.
+      if (user && user.isAnonymous) {
+        signOutUser();
+        return; // onAuthChange will fire again with user = null right after
+      }
       if (user) {
         loginOverlay.classList.add('hide');
         if (!appStarted) { appStarted = true; startApp(); }
