@@ -51,6 +51,16 @@
     text-align:center; padding:8px 16px; display:none; }
   .config-banner.show{ display:block; }
 
+  .offline-banner{ background:#8A5A2E; color:#fff; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    text-align:center; padding:8px 16px; display:none; }
+  .offline-banner.show{ display:block; }
+
+  .skeleton-shimmer{ padding:24px 20px; }
+  .skeleton-bar{ height:64px; border-radius:16px; margin-bottom:12px;
+    background:linear-gradient(90deg,#EDE6D2 25%,#F7F3E7 37%,#EDE6D2 63%);
+    background-size:400% 100%; animation:skeletonMove 1.4s ease infinite; }
+  @keyframes skeletonMove{ 0%{ background-position:100% 50%; } 100%{ background-position:0% 50%; } }
+
   .top{ padding:calc(env(safe-area-inset-top) + clamp(12px, 3vh, 22px)) 26px clamp(4px, 1vh, 8px); position:relative; }
   .settings-btn{ position:absolute; top:calc(env(safe-area-inset-top) + 16px); right:20px; background:#F1EEE3;
     border:none; width:38px; height:38px; border-radius:50%; font-size:16px; cursor:pointer; display:flex;
@@ -221,14 +231,20 @@
     display:flex; align-items:center; justify-content:center; font-size:20px; }
   .memory-body{ flex:1; min-width:0; }
   .memory-date{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--coral); letter-spacing:0.5px; }
+  .memory-syncing{ margin-left:6px; color:var(--ink-soft); font-style:italic; }
   .memory-activity{ font-size:14px; font-weight:600; margin-top:2px; }
   .memory-meta{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
   .memory-empty{ text-align:center; padding:30px 10px; color:var(--ink-soft); font-size:13px; }
 
   .celebrate-toast{ position:fixed; top:calc(env(safe-area-inset-top) + 16px); left:50%; transform:translateX(-50%) translateY(-20px);
     background:var(--ink); color:#fff; padding:12px 20px; border-radius:999px; font-family:'Bricolage Grotesque',sans-serif;
-    font-weight:700; font-size:14px; z-index:60; opacity:0; transition:all .4s cubic-bezier(.3,.9,.4,1); box-shadow:0 12px 24px -8px rgba(0,0,0,0.3); }
+    font-weight:700; font-size:14px; z-index:96; opacity:0; transition:all .4s cubic-bezier(.3,.9,.4,1); box-shadow:0 12px 24px -8px rgba(0,0,0,0.3);
+    display:flex; align-items:center; gap:12px; max-width:calc(100vw - 40px); }
   .celebrate-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .celebrate-toast.toast-error{ background:#C1432E; }
+  .celebrate-toast .toast-msg{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .celebrate-toast .toast-action{ background:none; border:none; color:inherit; font:inherit; font-weight:800;
+    text-decoration:underline; text-underline-offset:2px; cursor:pointer; padding:0; flex-shrink:0; }
 
   .flashback{ margin:0 22px 6px; background:linear-gradient(135deg,#FBF6E8,#F3ECD9); border-radius:18px; padding:12px 14px;
     display:none; gap:12px; align-items:center; cursor:pointer; border:1px solid #EDE6D2; }
@@ -570,8 +586,9 @@
   .export-btn{ width:100%; margin-top:14px; padding:12px; border-radius:14px; border:1.5px solid var(--moss); background:none;
     color:var(--moss); font-family:'Inter'; font-weight:700; font-size:13.5px; cursor:pointer; }
 
-  .memory-actions{ display:flex; gap:12px; margin-top:5px; }
-  .memory-actions button{ background:none; border:none; padding:0; font-size:11px; font-weight:700; cursor:pointer; }
+  .memory-actions{ display:flex; gap:4px; margin-top:5px; }
+  .memory-actions button{ background:none; border:none; padding:10px 6px; font-size:11px; font-weight:700; cursor:pointer;
+    min-height:44px; }
   .memory-edit-btn{ color:var(--ink-soft); }
   .memory-delete-btn{ color:#C1432E; }
   .memory-edit-input{ display:flex; gap:6px; margin-top:5px; }
@@ -664,6 +681,7 @@
 
 <div class="app">
   <div class="config-banner" id="configBanner">demo mode — connect Firebase in firebase-config.js to sync between phones</div>
+  <div class="offline-banner" id="offlineBanner">📡 You're offline — showing what's already saved on this device. New entries will sync once you're back online.</div>
 
   <div class="top">
     <button class="settings-btn" id="btnSettings">⚙️</button>
@@ -1246,6 +1264,63 @@
     return sp.icon.replace('<svg ', `<svg style="color:${sp.dark}" `);
   }
 
+  // Shared toast — used for the flower-of-the-day celebration, for surfacing
+  // errors (replacing the old native alert(), which blocks the whole screen
+  // and looks out of place in an installed PWA), and for undo-style actions
+  // like "Entry deleted · Undo". Returns a dismiss() function so a caller
+  // can close it early (e.g. once an undo actually happens).
+  function showToast(message, { variant = 'default', actionLabel = null, onAction = null, duration = 3200 } = {}) {
+    const toast = document.createElement('div');
+    toast.className = 'celebrate-toast' + (variant === 'error' ? ' toast-error' : '');
+    const msg = document.createElement('span');
+    msg.className = 'toast-msg';
+    msg.textContent = message;
+    toast.appendChild(msg);
+
+    let dismissTimer;
+    const dismiss = () => {
+      clearTimeout(dismissTimer);
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 500);
+    };
+
+    if (actionLabel && onAction) {
+      const btn = document.createElement('button');
+      btn.className = 'toast-action';
+      btn.type = 'button';
+      btn.textContent = actionLabel;
+      btn.onclick = () => { onAction(); dismiss(); };
+      toast.appendChild(btn);
+    }
+
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    dismissTimer = setTimeout(dismiss, duration);
+    return dismiss;
+  }
+
+  // Proactive offline indicator — shows the moment the browser detects no
+  // connection, rather than only finding out reactively when an action
+  // times out. navigator.onLine can occasionally be wrong in edge cases
+  // (e.g. connected to wifi with no real internet), but it's a reasonable,
+  // zero-cost first signal, and the 'online'/'offline' events keep it
+  // current without polling.
+  function updateOfflineBanner() {
+    document.getElementById('offlineBanner').classList.toggle('show', !navigator.onLine);
+  }
+  window.addEventListener('online', updateOfflineBanner);
+  window.addEventListener('offline', updateOfflineBanner);
+  updateOfflineBanner();
+
+  // Shown briefly in Garden/Path/Memories the first time each is opened in
+  // a session, while ensureFullHistory() is fetching everything beyond the
+  // light initial set — a placeholder shape instead of a blank pause.
+  function renderSkeleton(containerEl, count = 4) {
+    containerEl.innerHTML = `<div class="skeleton-shimmer">${
+      Array.from({ length: count }, () => '<div class="skeleton-bar"></div>').join('')
+    }</div>`;
+  }
+
   let latestState = { streak: 0, unlockedDecorations: [] };
   let liveFlowerCount = 0;
   // pendingPhotos array is declared near the photo picker setup below
@@ -1306,12 +1381,7 @@
     const step = () => {
       if (i >= sequence.length) {
         playChime(true);
-        const toast = document.createElement('div');
-        toast.className = 'celebrate-toast';
-        toast.textContent = `🌸 Today's flower: ${speciesName}!`;
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => toast.classList.add('show'));
-        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 3200);
+        showToast(`🌸 Today's flower: ${speciesName}!`);
 
         setTimeout(() => {
           sceneEl.setAttribute('data-stage', 'seed');
@@ -1685,7 +1755,7 @@
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file] });
           } else {
-            alert("Your phone doesn't support quick-saving here — press and hold the photo above to save it instead.");
+            showToast("Your phone doesn't support quick-saving here — press and hold the photo above to save it instead.", { duration: 4500 });
           }
         } catch (err) {
           // the person cancelling the share sheet also lands here — not a real error, so stay quiet
@@ -1737,7 +1807,7 @@
       renderPhotoPreviews();
       updatePhotoLabel();
     } catch (err) {
-      alert('Could not process that photo: ' + err.message);
+      showToast('Could not process that photo: ' + err.message, { variant: 'error', duration: 5000 });
       updatePhotoLabel();
     }
     photoInput.value = '';
@@ -1808,7 +1878,7 @@
       renderEditPhotoPreviews();
       updateEditPhotoLabel();
     } catch (err) {
-      alert('Could not process that photo: ' + err.message);
+      showToast('Could not process that photo: ' + err.message, { variant: 'error', duration: 5000 });
       updateEditPhotoLabel();
     }
     editPhotoInput.value = '';
@@ -1842,7 +1912,7 @@
       editEntryBackdrop.classList.remove('open');
       if (!isConfigured) { renderMemoryList(filteredLogs()); renderGardenBed(latestLogs); }
     } catch (err) {
-      // error already alerted inside editLog
+      showToast('Could not save that edit: ' + err.message, { variant: 'error', duration: 5000 });
     } finally {
       btn.disabled = false;
     }
@@ -1870,7 +1940,7 @@
       refreshFlowerCount();
       if (!isConfigured) render(latestState);
     } catch (err) {
-      // error already shown to the user inside logTime() — just leave the sheet open so they can retry
+      showToast('Could not save that entry: ' + err.message, { variant: 'error', duration: 5000 });
     } finally {
       btn.disabled = false;
     }
@@ -1892,6 +1962,8 @@
       plantBloomAnimation(speciesForThis.name);
       refreshFlowerCount();
       if (!isConfigured) render(latestState);
+    } catch (err) {
+      showToast('Could not save that: ' + err.message, { variant: 'error', duration: 5000 });
     } finally {
       btn.disabled = false;
     }
@@ -1934,6 +2006,7 @@
     btn.textContent = 'Syncing…';
     try {
       await forceSyncNow();
+      await ensureFullHistory();
       status.textContent = 'Synced just now ✓';
     } catch (err) {
       status.textContent = "Couldn't reconnect — check your connection and try again.";
@@ -2004,6 +2077,7 @@
       if (!isConfigured) render(latestState);
     } catch (err) {
       toggleChallengeBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false'); // revert on failure
+      showToast('Could not save that setting: ' + err.message, { variant: 'error', duration: 4000 });
     }
   };
 
@@ -2015,6 +2089,7 @@
       renderShop(latestState);
     } catch (err) {
       toggleShopBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
+      showToast('Could not save that setting: ' + err.message, { variant: 'error', duration: 4000 });
     }
   };
 
@@ -2026,6 +2101,7 @@
       if (!isConfigured) render(latestState);
     } catch (err) {
       togglePathBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
+      showToast('Could not save that setting: ' + err.message, { variant: 'error', duration: 4000 });
     }
   };
 
@@ -2037,6 +2113,7 @@
       if (!isConfigured) render(latestState);
     } catch (err) {
       toggleHabitsBtn.setAttribute('aria-checked', (!newValue) ? 'true' : 'false');
+      showToast('Could not save that setting: ' + err.message, { variant: 'error', duration: 4000 });
     }
   };
 
@@ -2068,7 +2145,7 @@
       funStatsBackdrop.classList.add('open');
     } catch (err) {
       console.error('Fun stats failed:', err);
-      alert('Could not load stats: ' + err.message);
+      showToast('Could not load stats: ' + err.message, { variant: 'error', duration: 5000 });
     } finally {
       btn.textContent = original;
       btn.disabled = false;
@@ -2173,7 +2250,7 @@
           await toggleDecoration(btn.dataset.id);
           playChime(false);
           if (!isConfigured) render(latestState);
-        } catch (err) { /* error already alerted */ }
+        } catch (err) { showToast('Could not update that: ' + err.message, { variant: 'error', duration: 5000 }); }
         finally { btn.disabled = false; }
       };
     });
@@ -2190,7 +2267,7 @@
           try {
             await toggleDecoration(btn.dataset.id);
             if (!isConfigured) render(latestState);
-          } catch (err) { /* error already alerted */ }
+          } catch (err) { showToast('Could not update that: ' + err.message, { variant: 'error', duration: 5000 }); }
         };
       });
     }
@@ -2363,6 +2440,7 @@
   document.getElementById('coupleBench').addEventListener('click', cycleBenchPose);
 
   document.getElementById('btnGarden').onclick = () => {
+    if (!fullHistoryLoaded && isConfigured) renderSkeleton(gardenBed);
     ensureFullHistory();
     document.getElementById('gardenScenePlaceholder').after(document.getElementById('sharedGardenScene'));
     applySceneTheme();
@@ -2508,7 +2586,7 @@
       docPdf.save('bloom-memories.pdf');
     } catch (err) {
       console.error('PDF export failed:', err);
-      alert('Could not build the PDF: ' + err.message);
+      showToast('Could not build the PDF: ' + err.message, { variant: 'error', duration: 5000 });
     } finally {
       btn.textContent = 'Export memories as PDF';
       btn.disabled = false;
@@ -2533,7 +2611,7 @@
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Backup export failed:', err);
-      alert('Could not create the backup: ' + err.message);
+      showToast('Could not create the backup: ' + err.message, { variant: 'error', duration: 5000 });
     } finally {
       btn.textContent = original;
       btn.disabled = false;
@@ -2553,10 +2631,10 @@
       const text = await file.text();
       const data = JSON.parse(text);
       const count = await importBackup(data);
-      alert(`Restored ${count} item(s) from the backup.`);
+      showToast(`Restored ${count} item(s) from the backup.`, { duration: 3500 });
     } catch (err) {
       console.error('Backup import failed:', err);
-      alert('Could not restore that backup: ' + err.message);
+      showToast('Could not restore that backup: ' + err.message, { variant: 'error', duration: 5000 });
     } finally {
       backupImportInput.value = '';
     }
@@ -2610,9 +2688,25 @@
     else if (dx > 0 && viewerIndex > 0) viewerIndex--;
     renderViewerPhoto();
   }, { passive: true });
+  let rawLatestLogs = [];
   let latestLogs = [];
+  // How long a deleted entry stays recoverable via the "Undo" toast before
+  // it's actually removed from Firestore.
+  const UNDO_WINDOW_MS = 5000;
+  // IDs currently in their post-delete undo window — hidden from view but
+  // not yet actually deleted from Firestore. See the delete button handler
+  // below for how entries enter/leave this set.
+  const pendingDeleteIds = new Set();
 
   function renderMemories(logs) {
+    rawLatestLogs = logs;
+    refreshVisibleLogs();
+  }
+
+  function refreshVisibleLogs() {
+    const logs = pendingDeleteIds.size
+      ? rawLatestLogs.filter((l) => !pendingDeleteIds.has(l.id))
+      : rawLatestLogs;
     latestLogs = logs;
     renderPhotoDots(logs);
     renderFlashback(logs);
@@ -2664,10 +2758,13 @@
     const loveNoteHtml = log.loveNote
       ? `<button class="love-note-btn" title="A private note">💌</button>`
       : '';
+    const syncingHtml = log._pendingSync
+      ? `<span class="memory-syncing" title="Saved on this device — still confirming with the server">· syncing…</span>`
+      : '';
     card.innerHTML = `
       ${thumb}
       <div class="memory-body">
-        <div class="memory-date">${dateStr} · ${species.name}</div>
+        <div class="memory-date">${dateStr} · ${species.name}${syncingHtml}</div>
         <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
         ${galleryHtml}
         <div class="note-slot">${noteHtml}</div>
@@ -2692,13 +2789,34 @@
 
     card.querySelector('.memory-edit-btn').onclick = () => openEditEntry(log);
 
-    card.querySelector('.memory-delete-btn').onclick = async () => {
-      if (!confirm('Delete this memory? This can\'t be undone. (The plant keeps the growth it already earned.)')) return;
-      try {
-        await deleteLog(log.id);
-        gardenDetail.classList.remove('show');
-        gardenBed.style.display = '';
-      } catch (err) { /* error already alerted */ }
+    card.querySelector('.memory-delete-btn').onclick = () => {
+      gardenDetail.classList.remove('show');
+      gardenBed.style.display = '';
+      pendingDeleteIds.add(log.id);
+      refreshVisibleLogs();
+
+      showToast('Entry deleted', {
+        actionLabel: 'Undo',
+        duration: UNDO_WINDOW_MS,
+        onAction: () => {
+          pendingDeleteIds.delete(log.id);
+          refreshVisibleLogs();
+        }
+      });
+
+      // Only actually removed from Firestore once the undo window has fully
+      // passed without being undone — up until then it's just hidden from
+      // view, still fully intact in the database.
+      setTimeout(async () => {
+        if (!pendingDeleteIds.has(log.id)) return; // was undone in the meantime
+        try {
+          await deleteLog(log.id);
+        } catch (err) {
+          pendingDeleteIds.delete(log.id);
+          refreshVisibleLogs(); // bring it back — the delete didn't actually happen
+          showToast('Could not delete that entry: ' + err.message, { variant: 'error', duration: 5000 });
+        }
+      }, UNDO_WINDOW_MS);
     };
 
     const addNoteBtn = card.querySelector('.memory-add-note');
@@ -2718,7 +2836,7 @@
           try {
             await addNoteToLog(log.id, note);
             slot.innerHTML = `<div class="memory-note">${note}</div>`;
-          } catch (err) { /* error already alerted */ }
+          } catch (err) { showToast('Could not save that note: ' + err.message, { variant: 'error', duration: 5000 }); }
         };
       };
     }
@@ -2924,11 +3042,16 @@
     });
   }
   document.getElementById('btnPath').onclick = () => {
-    ensureFullHistory();
     document.getElementById('pathSceneSlot').appendChild(document.getElementById('sharedGardenScene'));
     applySceneTheme();
-    renderPathGarden(latestLogs);
     document.getElementById('pathPage').classList.add('open');
+    if (!fullHistoryLoaded && isConfigured) {
+      renderSkeleton(document.getElementById('pathFlowers'));
+      ensureFullHistory(); // will call renderPathGarden itself once real data lands, via renderMemories' pathPage-open check
+    } else {
+      ensureFullHistory();
+      renderPathGarden(latestLogs);
+    }
   };
   document.getElementById('pathBack').onclick = () => document.getElementById('pathPage').classList.remove('open');
   document.getElementById('pathDetailBack').onclick = () => {
@@ -3058,7 +3181,11 @@
     flashbackEl.onclick = () => openGardenToLog(log); // jump straight to that exact flower, not just the general list
   }
 
-  document.getElementById('btnMemories').onclick = () => { ensureFullHistory(); memoriesBackdrop.classList.add('open'); };
+  document.getElementById('btnMemories').onclick = () => {
+    if (!fullHistoryLoaded && isConfigured) renderSkeleton(memoryList);
+    ensureFullHistory();
+    memoriesBackdrop.classList.add('open');
+  };
   document.getElementById('memoriesClose').onclick = () => memoriesBackdrop.classList.remove('open');
 
   // ---- Bucket list (shared date ideas) ----
@@ -3082,10 +3209,16 @@
       bucketListEl.appendChild(row);
     });
     bucketListEl.querySelectorAll('.bucket-check').forEach((el) => {
-      el.onclick = () => toggleBucketItem(el.dataset.id, !el.classList.contains('done'));
+      el.onclick = async () => {
+        try { await toggleBucketItem(el.dataset.id, !el.classList.contains('done')); }
+        catch (err) { showToast('Could not update that: ' + err.message, { variant: 'error', duration: 5000 }); }
+      };
     });
     bucketListEl.querySelectorAll('.bucket-delete').forEach((el) => {
-      el.onclick = () => deleteBucketItem(el.dataset.id);
+      el.onclick = async () => {
+        try { await deleteBucketItem(el.dataset.id); }
+        catch (err) { showToast('Could not delete that: ' + err.message, { variant: 'error', duration: 5000 }); }
+      };
     });
   }
 
@@ -3094,8 +3227,12 @@
   document.getElementById('bucketAddBtn').onclick = async () => {
     const text = bucketInput.value.trim();
     if (!text) return;
-    await addBucketItem(text);
-    bucketInput.value = '';
+    try {
+      await addBucketItem(text);
+      bucketInput.value = '';
+    } catch (err) {
+      showToast('Could not add that idea: ' + err.message, { variant: 'error', duration: 5000 });
+    }
   };
   bucketInput.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('bucketAddBtn').click(); };
 
@@ -3144,7 +3281,7 @@
           if (isDone) await unlogHabit(btn.dataset.id);
           else { await logHabit(btn.dataset.id); playChime(false); }
           if (!isConfigured) renderHabits();
-        } catch (err) { /* error already alerted */ }
+        } catch (err) { showToast('Could not log that: ' + err.message, { variant: 'error', duration: 5000 }); }
         finally { btn.disabled = false; }
       };
     });
@@ -3161,7 +3298,7 @@
           await logHabit(input.dataset.id, null, compressed);
           if (!isConfigured) renderHabits();
         } catch (err) {
-          alert('Could not add that photo: ' + err.message);
+          showToast('Could not add that photo: ' + err.message, { variant: 'error', duration: 5000 });
         }
       };
     });
@@ -3185,7 +3322,7 @@
         try {
           await logHabit(btn.dataset.id, input.value);
           if (!isConfigured) renderHabits();
-        } catch (err) { /* error already alerted */ }
+        } catch (err) { showToast('Could not log that: ' + err.message, { variant: 'error', duration: 5000 }); }
         finally { btn.disabled = false; }
       };
     });
@@ -3224,7 +3361,24 @@
   });
 
   async function boot() {
-    await initFirebase();
+    try {
+      await Promise.race([
+        initFirebase(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000))
+      ]);
+    } catch (err) {
+      // initFirebase() itself hung or threw — most likely explanation:
+      // offline, and the Firebase SDK hasn't been cached by the service
+      // worker yet (e.g. a genuinely first-ever offline session, or the
+      // cache got cleared). Once the SDK has loaded successfully at least
+      // once while online, this path shouldn't be hit again even offline —
+      // see FIREBASE_CACHE_NAME in service-worker.js. Nothing past this
+      // point can work without it, so fail visibly instead of leaving the
+      // loading screen spinning forever with no explanation.
+      document.getElementById('loadingScreen').classList.add('hide');
+      showToast("Can't load — no connection, and this device hasn't opened the app online before.", { variant: 'error', duration: 8000 });
+      return;
+    }
 
     if (!isConfigured) {
       document.getElementById('configBanner').classList.add('show');
@@ -3312,19 +3466,30 @@
   let fullHistoryLoaded = false;
   let fullHistoryLoading = false;
 
+  let fullHistoryLoadPromise = null;
+
   // Called right before showing Garden, Path, or Memories — the only
   // places that actually need every entry, not just the recent ones. Swaps
   // the light listener out for a full one, one time only; if it's already
   // loading or loaded, this is a no-op, so it's safe to call on every open.
+  // Returns a promise that resolves once the full set has actually arrived
+  // (or immediately, if it was already loaded) — used by the Sync Now
+  // button so "synced" actually means synced, not just "reconnected."
   function ensureFullHistory() {
-    if (fullHistoryLoaded || fullHistoryLoading || !isConfigured) return;
+    if (fullHistoryLoaded) return Promise.resolve();
+    if (fullHistoryLoading) return fullHistoryLoadPromise;
+    if (!isConfigured) return Promise.resolve();
     fullHistoryLoading = true;
     if (unwatchLogs) unwatchLogs();
-    unwatchLogs = watchLogs((logs) => {
-      fullHistoryLoaded = true;
-      fullHistoryLoading = false;
-      renderMemories(logs);
-    }, 100000);
+    fullHistoryLoadPromise = new Promise((resolve) => {
+      unwatchLogs = watchLogs((logs) => {
+        fullHistoryLoaded = true;
+        fullHistoryLoading = false;
+        renderMemories(logs);
+        resolve();
+      }, 100000);
+    });
+    return fullHistoryLoadPromise;
   }
 
   function startApp() {
