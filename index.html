@@ -1187,6 +1187,17 @@
       <button class="toggle-switch" id="toggleHabits" role="switch" aria-checked="true"><span class="toggle-knob"></span></button>
     </div>
 
+    <div class="setting-row">
+      <div>
+        <div class="setting-name">Hemisphere</div>
+        <div class="setting-desc">Controls which season the garden scene shows (e.g. September is spring in Australia, autumn in the US). Auto-detected from your device by default.</div>
+      </div>
+    </div>
+    <div class="log-mode-toggle" style="margin:0 0 16px;">
+      <button class="log-mode-btn" id="hemisphereNorthBtn" type="button">🧭 Northern</button>
+      <button class="log-mode-btn" id="hemisphereSouthBtn" type="button">🧭 Southern</button>
+    </div>
+
     <div id="decorSection">
       <label>Your decorations</label>
       <p style="margin:0 0 8px;">Tap one to remove it — you'll get a full refund.</p>
@@ -1994,9 +2005,26 @@
     togglePathBtn.setAttribute('aria-checked', latestState.pathEnabled !== false ? 'true' : 'false');
     toggleHabitsBtn.setAttribute('aria-checked', latestState.habitsEnabled !== false ? 'true' : 'false');
 
+    const currentHemisphere = latestState.hemisphere || guessHemisphere();
+    document.getElementById('hemisphereNorthBtn').classList.toggle('active', currentHemisphere === 'northern');
+    document.getElementById('hemisphereSouthBtn').classList.toggle('active', currentHemisphere === 'southern');
+
     menuBackdrop.classList.add('open');
   };
   document.getElementById('menuClose').onclick = () => menuBackdrop.classList.remove('open');
+
+  async function setHemisphere(value) {
+    document.getElementById('hemisphereNorthBtn').classList.toggle('active', value === 'northern');
+    document.getElementById('hemisphereSouthBtn').classList.toggle('active', value === 'southern');
+    try {
+      await setSetting('hemisphere', value);
+      applySceneTheme();
+    } catch (err) {
+      showToast('Could not save that setting: ' + err.message, { variant: 'error', duration: 4000 });
+    }
+  }
+  document.getElementById('hemisphereNorthBtn').onclick = () => setHemisphere('northern');
+  document.getElementById('hemisphereSouthBtn').onclick = () => setHemisphere('southern');
 
   document.getElementById('syncNowBtn').onclick = async () => {
     const btn = document.getElementById('syncNowBtn');
@@ -2279,11 +2307,30 @@
     autumn: { backHill: '#D9BE7C', frontHill: '#C79A56', canopy: '#D8934A', canopy2: '#C1702F', fruit: '#A8395C', meadow: ['#C9A85E', '#B58F4C', '#A17E42'] },
     winter: { backHill: '#CFE0DA', frontHill: '#AECABF', canopy: '#8FAE95', canopy2: '#9FBBA3', fruit: '#8C5A78', meadow: ['#AECABF', '#9BBCAE', '#8AAE9E'] }
   };
+  // Best-effort hemisphere guess from the device's timezone — used only to
+  // pick which 3-month block counts as "spring," "summer," etc. Doesn't
+  // need to be perfect (a manual override lives in Settings for anyone this
+  // gets wrong), just needs to get the common, clearly-one-hemisphere cases
+  // right without asking for location permission for something this minor.
+  function guessHemisphere() {
+    let tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* fall through to default */ }
+    const southernPrefixes = ['Australia/', 'Pacific/Auckland', 'Pacific/Fiji', 'Pacific/Chatham',
+      'Pacific/Norfolk', 'Pacific/Noumea', 'Pacific/Port_Moresby', 'Pacific/Guadalcanal',
+      'Indian/Antananarivo', 'Indian/Mauritius', 'Indian/Reunion',
+      'Africa/Johannesburg', 'Africa/Windhoek', 'Africa/Gaborone', 'Africa/Maputo', 'Africa/Harare', 'Africa/Lusaka',
+      'America/Argentina/', 'America/Santiago', 'America/Sao_Paulo', 'America/Montevideo', 'America/Asuncion',
+      'America/La_Paz', 'Antarctica/'];
+    return southernPrefixes.some((p) => tz.startsWith(p)) ? 'southern' : 'northern';
+  }
+
   function currentSeason() {
     const m = new Date().getMonth(); // 0=Jan
-    if (m >= 2 && m <= 4) return 'spring';
-    if (m >= 5 && m <= 7) return 'summer';
-    if (m >= 8 && m <= 10) return 'autumn';
+    const hemisphere = latestState.hemisphere || guessHemisphere();
+    const adjustedMonth = hemisphere === 'southern' ? (m + 6) % 12 : m;
+    if (adjustedMonth >= 2 && adjustedMonth <= 4) return 'spring';
+    if (adjustedMonth >= 5 && adjustedMonth <= 7) return 'summer';
+    if (adjustedMonth >= 8 && adjustedMonth <= 10) return 'autumn';
     return 'winter';
   }
 
