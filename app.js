@@ -514,7 +514,7 @@ export function watchState(renderFn) {
           try { await setDoc(ref, DEMO_STATE); }
           catch (err) {
             console.error('Could not create initial state doc:', err);
-            alert('Could not connect to your shared data. Check firebase-config.js / Firestore rules. (' + err.message + ')');
+            // Surfaced to the person via the UI layer's own listener-error handling, not here — app.js is a data layer and shouldn't own alert/toast UI.
           }
           return;
         }
@@ -524,7 +524,7 @@ export function watchState(renderFn) {
       },
       (err) => {
         console.error('watchState listener error:', err);
-        alert('Lost connection to synced data: ' + err.message);
+        // Surfaced to the person via the UI layer's own listener-error handling, not here.
       }
     );
   } else {
@@ -586,7 +586,7 @@ export async function setSetting(key, value) {
     await withTimeout(setDoc(ref, { [key]: value }, { merge: true }));
   } catch (err) {
     console.error('setSetting failed:', err);
-    alert('Could not save that setting: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -612,7 +612,7 @@ export async function toggleDecoration(decorId) {
     return true;
   } catch (err) {
     console.error('toggleDecoration failed:', err);
-    alert('Could not update that: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -623,7 +623,8 @@ export function watchLogs(renderFn, max = 1000) {
   const q = query(collection(db, `couples/${COUPLE_ID}/logs`), orderBy('date', 'desc'), limit(max));
   return onSnapshot(
     q,
-    (snap) => renderFn(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    { includeMetadataChanges: true },
+    (snap) => renderFn(snap.docs.map((d) => ({ id: d.id, ...d.data(), _pendingSync: d.metadata.hasPendingWrites }))),
     (err) => console.error('watchLogs listener error:', err)
   );
 }
@@ -811,7 +812,7 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
     }));
   } catch (err) {
     console.error('logTime failed:', err);
-    alert('Could not save that entry: ' + err.message + (err.message.includes('too long') ? '\n\nThis is usually already queued locally and will sync on its own once you\'re back online — check the garden in a bit before logging it again, so you don\'t end up with it twice.' : '\n\nCheck that Anonymous auth is enabled and Firestore rules are published.'));
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -843,7 +844,7 @@ export async function completeChallenge(challengeText = '') {
     }));
   } catch (err) {
     console.error('completeChallenge failed:', err);
-    alert('Could not save that: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -858,7 +859,7 @@ export async function addNoteToLog(logId, note) {
     await withTimeout(setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), { note }, { merge: true }));
   } catch (err) {
     console.error('addNoteToLog failed:', err);
-    alert('Could not save that note: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -876,7 +877,7 @@ export async function deleteLog(logId) {
     await withTimeout(deleteDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`)));
   } catch (err) {
     console.error('deleteLog failed:', err);
-    alert('Could not delete that entry: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -904,7 +905,7 @@ export async function editLog(logId, updates) {
     await withTimeout(setDoc(doc(db, `couples/${COUPLE_ID}/logs/${logId}`), updates, { merge: true }));
   } catch (err) {
     console.error('editLog failed:', err);
-    alert('Could not save that edit: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -929,7 +930,7 @@ export async function addBucketItem(text) {
     await withTimeout(addDoc(collection(db, `couples/${COUPLE_ID}/bucketlist`), { text, done: false, createdAt: serverTimestamp() }));
   } catch (err) {
     console.error('addBucketItem failed:', err);
-    alert('Could not add that idea: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -998,7 +999,7 @@ export async function logHabit(habitId, dateStr = null, photo = null) {
       { date, photo, createdAt: serverTimestamp() }, { merge: true }));
   } catch (err) {
     console.error('logHabit failed:', err);
-    alert('Could not log that: ' + err.message);
+    // Left for the caller to handle/display — see catch block at the call site in index.html.
     throw err;
   }
 }
@@ -1063,20 +1064,38 @@ export async function exportBackup() {
       exportedAt: new Date().toISOString(),
       state: DEMO_STATE,
       logs: DEMO_LOGS,
-      bucketlist: DEMO_BUCKET
+      bucketlist: DEMO_BUCKET,
+      habits: DEMO_HABITS,
+      approxSizeBytes: 0
     };
   }
   const stateSnap = await getDoc(doc(db, `couples/${COUPLE_ID}/state/current`));
   const logsSnap = await getDocs(collection(db, `couples/${COUPLE_ID}/logs`));
   const bucketSnap = await getDocs(collection(db, `couples/${COUPLE_ID}/bucketlist`));
 
-  return {
+  // Habits live in their own per-habit subcollections (couples/{id}/habits/{habitId}/entries),
+  // entirely separate from the main logs collection — easy to miss, and previously
+  // was missed: this used to silently back up everything except your habit streaks.
+  const habits = {};
+  for (const h of HABITS_LIST) {
+    const entriesSnap = await getDocs(collection(db, `couples/${COUPLE_ID}/habits/${h.id}/entries`));
+    habits[h.id] = entriesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  }
+
+  const result = {
     exportedAt: new Date().toISOString(),
     coupleId: COUPLE_ID,
     state: stateSnap.exists() ? stateSnap.data() : {},
     logs: logsSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
-    bucketlist: bucketSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    bucketlist: bucketSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+    habits
   };
+  // A rough proxy for actual Firestore storage — not exact (Firestore has its
+  // own per-field/per-document overhead this doesn't account for), but close
+  // enough to give a sense of where you stand against the free tier's 1 GiB
+  // ceiling, which otherwise has no visibility anywhere in the app.
+  result.approxSizeBytes = new Blob([JSON.stringify(result)]).size;
+  return result;
 }
 
 // Restores a backup produced by exportBackup(). Uses each item's original ID
@@ -1108,6 +1127,16 @@ export async function importBackup(data) {
     batch.set(doc(db, `couples/${COUPLE_ID}/bucketlist/${id}`), rest, { merge: true });
     opCount++;
   });
+  if (data.habits && typeof data.habits === 'object') {
+    for (const habitId of Object.keys(data.habits)) {
+      (data.habits[habitId] || []).forEach((entry) => {
+        if (!entry.id) return;
+        const { id, ...rest } = entry;
+        batch.set(doc(db, `couples/${COUPLE_ID}/habits/${habitId}/entries/${id}`), rest, { merge: true });
+        opCount++;
+      });
+    }
+  }
 
   if (opCount === 0) throw new Error('That backup file had nothing in it to restore.');
   await batch.commit();

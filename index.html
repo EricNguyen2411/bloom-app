@@ -311,6 +311,11 @@
 
   .search-input{ width:100%; padding:11px 14px; border:1.5px solid #E4E1D6; border-radius:12px; font-family:'Inter'; font-size:14px; background:#FBFAF6; margin-bottom:10px; }
 
+  .filter-chip{ display:inline-flex; align-items:center; gap:5px; padding:7px 14px; border-radius:999px;
+    border:1.5px solid #E4E1D6; background:#fff; color:var(--ink-soft); font-family:'Inter'; font-size:12.5px;
+    font-weight:600; cursor:pointer; margin-bottom:10px; }
+  .filter-chip[aria-checked="true"]{ background:var(--moss); border-color:var(--moss); color:#fff; }
+
   .view-toggle{ display:flex; gap:6px; margin-bottom:10px; }
   .view-toggle button{ flex:1; padding:9px; border-radius:10px; border:1.5px solid #E4E1D6; background:#FBFAF6;
     font-family:'Inter'; font-weight:700; font-size:12.5px; color:var(--ink-soft); cursor:pointer; }
@@ -1091,7 +1096,11 @@
     <h3>Your memories</h3>
     <p>Every logged moment, newest first.</p>
     <input type="text" class="search-input" id="memorySearch" placeholder="Search memories…">
-    <div class="memory-list" id="memoryList"></div>
+    <button class="filter-chip" id="photosOnlyFilter" type="button" role="switch" aria-checked="false">📷 Photos only</button>
+    <div style="position:relative;">
+      <div class="memory-list" id="memoryList"></div>
+      <div class="meadow-scrubber" id="memoryScrubber" style="top:0;"></div>
+    </div>
     <div class="sheet-actions">
       <button class="btn-confirm" id="memoriesClose">Close</button>
     </div>
@@ -1213,12 +1222,13 @@
     <button class="export-btn" id="exportBtn">Export memories as PDF</button>
 
     <label>Data backup</label>
-    <p style="margin:0 0 8px;">A full backup of everything — streak, every memory, notes, photos, bucket list. Keep this somewhere safe; it's the real way to make sure nothing's ever lost, separate from the pretty PDF above.</p>
+    <p style="margin:0 0 8px;">A full backup of everything — streak, every memory, notes, photos, bucket list, habit streaks. Keep this somewhere safe; it's the real way to make sure nothing's ever lost, separate from the pretty PDF above.</p>
     <div style="display:flex; gap:10px;">
       <button class="export-btn" id="backupExportBtn" style="margin-top:0;">⬇️ Backup (JSON)</button>
       <button class="export-btn" id="backupImportBtn" style="margin-top:0;">⬆️ Restore</button>
       <input type="file" id="backupImportInput" accept="application/json" style="display:none;">
     </div>
+    <p id="backupStatus" style="margin:8px 0 0; font-size:11.5px; color:var(--ink-soft);"></p>
 
     <div id="signOutSection" style="display:none;">
       <label>Account</label>
@@ -1280,6 +1290,18 @@
   // and looks out of place in an installed PWA), and for undo-style actions
   // like "Entry deleted · Undo". Returns a dismiss() function so a caller
   // can close it early (e.g. once an undo actually happens).
+  // Any user-typed text (activity names, notes, bucket list items) gets
+  // inserted into innerHTML throughout this app for styling flexibility —
+  // without this, typing something containing '<', '>', '&', or a quote
+  // (e.g. "watched <Stranger Things>" or "cost $10 & worth it") would get
+  // silently mangled, since the browser tries to parse it as markup instead
+  // of displaying it as plain text.
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
   function showToast(message, { variant = 'default', actionLabel = null, onAction = null, duration = 3200 } = {}) {
     const toast = document.createElement('div');
     toast.className = 'celebrate-toast' + (variant === 'error' ? ' toast-error' : '');
@@ -2486,14 +2508,29 @@
   }
   document.getElementById('coupleBench').addEventListener('click', cycleBenchPose);
 
+  let pendingGardenScrollToRecent = false;
+  let pendingPathScrollToRecent = false;
+  // Scrolls a just-populated scroll container to its end, on the next
+  // frame so layout has actually settled first (scrollHeight can be stale
+  // immediately after an innerHTML swap in some browsers otherwise).
+  function scrollToRecent(containerEl) {
+    requestAnimationFrame(() => {
+      containerEl.scrollTop = containerEl.scrollHeight;
+    });
+  }
+
   document.getElementById('btnGarden').onclick = () => {
-    if (!fullHistoryLoaded && isConfigured) renderSkeleton(gardenBed);
+    if (!fullHistoryLoaded && isConfigured) {
+      renderSkeleton(gardenBed);
+      pendingGardenScrollToRecent = true; // consumed once renderGardenBed actually runs with the full set
+    }
     ensureFullHistory();
     document.getElementById('gardenScenePlaceholder').after(document.getElementById('sharedGardenScene'));
     applySceneTheme();
     gardenDetail.classList.remove('show');
     gardenBed.style.display = '';
     gardenPage.classList.add('open');
+    if (fullHistoryLoaded) scrollToRecent(document.querySelector('.garden-page-content'));
   };
 
   // ---- Jump to a date — a real calendar, only logged days are tappable.
@@ -2643,6 +2680,7 @@
   // ---- Full data backup (export/import) — the real "nothing is lost" safety net ----
   document.getElementById('backupExportBtn').onclick = async () => {
     const btn = document.getElementById('backupExportBtn');
+    const status = document.getElementById('backupStatus');
     const original = btn.textContent;
     btn.textContent = '⏳ Gathering…';
     btn.disabled = true;
@@ -2656,6 +2694,13 @@
       a.href = url; a.download = `bloom-backup-${stamp}.json`;
       a.click();
       URL.revokeObjectURL(url);
+
+      if (isConfigured && data.approxSizeBytes) {
+        const mb = data.approxSizeBytes / (1024 * 1024);
+        const pctOfFreeTier = (data.approxSizeBytes / (1024 * 1024 * 1024) * 100);
+        const sizeLabel = mb < 1 ? `${(data.approxSizeBytes / 1024).toFixed(0)} KB` : `${mb.toFixed(1)} MB`;
+        status.textContent = `Backed up ✓ — roughly ${sizeLabel}, about ${pctOfFreeTier < 0.1 ? '<0.1' : pctOfFreeTier.toFixed(1)}% of Firestore's free 1 GiB storage limit. (Approximate — Firestore has its own overhead this doesn't fully capture.)`;
+      }
     } catch (err) {
       console.error('Backup export failed:', err);
       showToast('Could not create the backup: ' + err.message, { variant: 'error', duration: 5000 });
@@ -2762,13 +2807,19 @@
     if (document.getElementById('pathPage').classList.contains('open')) renderPathGarden(logs);
   }
 
+  let photosOnlyActive = false;
   function filteredLogs() {
     const filterText = memorySearch.value.trim().toLowerCase();
-    return filterText
-      ? latestLogs.filter((l) =>
-          (l.activity || '').toLowerCase().includes(filterText) ||
-          (l.note || '').toLowerCase().includes(filterText))
-      : latestLogs;
+    let logs = latestLogs;
+    if (filterText) {
+      logs = logs.filter((l) =>
+        (l.activity || '').toLowerCase().includes(filterText) ||
+        (l.note || '').toLowerCase().includes(filterText));
+    }
+    if (photosOnlyActive) {
+      logs = logs.filter((l) => getPhotos(l).length > 0);
+    }
+    return logs;
   }
 
   // Builds a single memory card (used by both the list view and the garden's tap-to-reveal detail).
@@ -2800,7 +2851,7 @@
       ? `<div class="memory-gallery">${photos.map((p) => `<img src="${p}">`).join('')}</div>`
       : '';
     const noteHtml = log.note
-      ? `<div class="memory-note">${log.note}</div>`
+      ? `<div class="memory-note">${escapeHtml(log.note)}</div>`
       : `<button class="memory-add-note" data-id="${log.id}">+ Add a note</button>`;
     const loveNoteHtml = log.loveNote
       ? `<button class="love-note-btn" title="A private note">💌</button>`
@@ -2812,7 +2863,7 @@
       ${thumb}
       <div class="memory-body">
         <div class="memory-date">${dateStr} · ${species.name}${syncingHtml}</div>
-        <div class="memory-activity" data-id="${log.id}">${log.activity || 'Time together'}</div>
+        <div class="memory-activity" data-id="${log.id}">${escapeHtml(log.activity) || 'Time together'}</div>
         ${galleryHtml}
         <div class="note-slot">${noteHtml}</div>
         ${loveNoteHtml}
@@ -2882,7 +2933,7 @@
           if (!note) return;
           try {
             await addNoteToLog(log.id, note);
-            slot.innerHTML = `<div class="memory-note">${note}</div>`;
+            slot.innerHTML = `<div class="memory-note">${escapeHtml(note)}</div>`;
           } catch (err) { showToast('Could not save that note: ' + err.message, { variant: 'error', duration: 5000 }); }
         };
       };
@@ -2891,9 +2942,12 @@
     return card;
   }
 
+  let currentMemoriesOrder = [];
   function renderMemoryList(logs) {
+    currentMemoriesOrder = logs;
     if (!logs.length) {
-      memoryList.innerHTML = `<div class="memory-empty">${memorySearch.value.trim() ? 'No memories match that search.' : 'Nothing logged yet — your first memory will show up here.'}</div>`;
+      const hasActiveFilter = memorySearch.value.trim() || photosOnlyActive;
+      memoryList.innerHTML = `<div class="memory-empty">${hasActiveFilter ? 'No memories match that.' : 'Nothing logged yet — your first memory will show up here.'}</div>`;
       return;
     }
     memoryList.innerHTML = '';
@@ -2940,6 +2994,7 @@
   }
   wireScrubber(document.getElementById('meadowScrubber'), '.garden-page-content', () => currentMeadowOrder);
   wireScrubber(document.getElementById('pathScrubber'), '.path-page-content', () => currentPathOrder);
+  wireScrubber(document.getElementById('memoryScrubber'), '#memoryList', () => currentMemoriesOrder);
 
   // ---- The Path: an experimental winding-path layout, kept entirely
   // separate from the grid meadow above so the two can be compared. ----
@@ -2957,6 +3012,7 @@
       container.style.height = '';
       svg.setAttribute('height', 0);
       currentPathOrder = [];
+      pendingPathScrollToRecent = false;
       return;
     }
 
@@ -3062,7 +3118,7 @@
         : '';
       const d2 = new Date(log.date + 'T00:00:00');
       const shortDate = d2.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
-      const activityText = log.activity || (log.type === 'challenge' ? 'Challenge' : 'Time together');
+      const activityText = escapeHtml(log.activity) || (log.type === 'challenge' ? 'Challenge' : 'Time together');
 
       const el = document.createElement('div');
       el.className = 'path-flower';
@@ -3087,6 +3143,11 @@
       };
       container.appendChild(el);
     });
+
+    if (pendingPathScrollToRecent) {
+      pendingPathScrollToRecent = false;
+      scrollToRecent(document.getElementById('pathPageContent'));
+    }
   }
   document.getElementById('btnPath').onclick = () => {
     document.getElementById('pathSceneSlot').appendChild(document.getElementById('sharedGardenScene'));
@@ -3094,10 +3155,12 @@
     document.getElementById('pathPage').classList.add('open');
     if (!fullHistoryLoaded && isConfigured) {
       renderSkeleton(document.getElementById('pathFlowers'));
+      pendingPathScrollToRecent = true; // consumed once renderPathGarden actually runs with the full set
       ensureFullHistory(); // will call renderPathGarden itself once real data lands, via renderMemories' pathPage-open check
     } else {
       ensureFullHistory();
       renderPathGarden(latestLogs);
+      scrollToRecent(document.getElementById('pathPageContent'));
     }
   };
   document.getElementById('pathBack').onclick = () => document.getElementById('pathPage').classList.remove('open');
@@ -3112,6 +3175,7 @@
     gardenBed.style.display = '';
     if (!logs.length) {
       gardenBed.innerHTML = `<div class="garden-empty">${memorySearch.value.trim() ? 'No memories match that search.' : 'Your garden is empty — log your first date to plant a flower here.'}</div>`;
+      pendingGardenScrollToRecent = false;
       return;
     }
     // Oldest first, so the garden reads like a row of flowers planted over time.
@@ -3199,6 +3263,11 @@
       row.appendChild(flower);
       rowCount++;
     });
+
+    if (pendingGardenScrollToRecent) {
+      pendingGardenScrollToRecent = false;
+      scrollToRecent(document.querySelector('.garden-page-content'));
+    }
   }
 
   document.getElementById('gardenDetailBack').onclick = () => {
@@ -3208,6 +3277,12 @@
   };
 
   memorySearch.oninput = () => renderMemoryList(filteredLogs());
+
+  document.getElementById('photosOnlyFilter').onclick = () => {
+    photosOnlyActive = !photosOnlyActive;
+    document.getElementById('photosOnlyFilter').setAttribute('aria-checked', String(photosOnlyActive));
+    renderMemoryList(filteredLogs());
+  };
 
   // ---- "On this day" flashback ----
   const flashbackEl = document.getElementById('flashback');
@@ -3240,6 +3315,15 @@
   const bucketListEl = document.getElementById('bucketList');
   const bucketInput = document.getElementById('bucketInput');
 
+  let rawBucketItems = [];
+  const pendingBucketDeleteIds = new Set();
+  function refreshBucketView() {
+    const items = pendingBucketDeleteIds.size
+      ? rawBucketItems.filter((i) => !pendingBucketDeleteIds.has(i.id))
+      : rawBucketItems;
+    renderBucket(items);
+  }
+
   function renderBucket(items) {
     if (!items.length) {
       bucketListEl.innerHTML = '<div class="bucket-empty">No ideas yet — add the first one below.</div>';
@@ -3251,7 +3335,7 @@
       row.className = 'bucket-item';
       row.innerHTML = `
         <div class="bucket-check ${item.done ? 'done' : ''}" data-id="${item.id}">${item.done ? '✓' : ''}</div>
-        <div class="bucket-text ${item.done ? 'done' : ''}">${item.text}</div>
+        <div class="bucket-text ${item.done ? 'done' : ''}">${escapeHtml(item.text)}</div>
         <button class="bucket-delete" data-id="${item.id}">✕</button>`;
       bucketListEl.appendChild(row);
     });
@@ -3262,9 +3346,25 @@
       };
     });
     bucketListEl.querySelectorAll('.bucket-delete').forEach((el) => {
-      el.onclick = async () => {
-        try { await deleteBucketItem(el.dataset.id); }
-        catch (err) { showToast('Could not delete that: ' + err.message, { variant: 'error', duration: 5000 }); }
+      el.onclick = () => {
+        const id = el.dataset.id;
+        pendingBucketDeleteIds.add(id);
+        refreshBucketView();
+        showToast('Idea deleted', {
+          actionLabel: 'Undo',
+          duration: UNDO_WINDOW_MS,
+          onAction: () => { pendingBucketDeleteIds.delete(id); refreshBucketView(); }
+        });
+        setTimeout(async () => {
+          if (!pendingBucketDeleteIds.has(id)) return; // was undone
+          try {
+            await deleteBucketItem(id);
+          } catch (err) {
+            pendingBucketDeleteIds.delete(id);
+            refreshBucketView();
+            showToast('Could not delete that: ' + err.message, { variant: 'error', duration: 5000 });
+          }
+        }, UNDO_WINDOW_MS);
       };
     });
   }
@@ -3559,7 +3659,7 @@
       document.getElementById('loadingScreen').classList.add('hide');
     }, 2500);
 
-    watchBucketList(renderBucket);
+    watchBucketList((items) => { rawBucketItems = items; refreshBucketView(); });
     watchHabits((habitId, entries) => {
       latestHabits[habitId] = entries;
       const habitModeVisible = logBackdrop.classList.contains('open') && document.getElementById('logHabitMode').style.display !== 'none';
