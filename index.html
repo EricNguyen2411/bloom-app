@@ -2056,7 +2056,7 @@
     btn.textContent = 'Syncing…';
     try {
       await forceSyncNow();
-      await ensureFullHistory();
+      await forceReloadLogs(true);
       status.textContent = 'Synced just now ✓';
     } catch (err) {
       status.textContent = "Couldn't reconnect — check your connection and try again.";
@@ -2079,6 +2079,7 @@
     if (now - lastAutoSyncAt < 20000) return; // avoid rapid app-switch spam
     lastAutoSyncAt = now;
     forceSyncNow().catch(() => {}); // silent — the manual button exists for when this isn't enough
+    forceReloadLogs(false).catch(() => {}); // false = keep current scope (light stays light, full stays full), just make it genuinely fresh instead of trusting a possibly-stale connection to catch up on its own
   });
 
   document.getElementById('backfillThumbsBtn').onclick = async () => {
@@ -3626,15 +3627,32 @@
     if (fullHistoryLoaded) return Promise.resolve();
     if (fullHistoryLoading) return fullHistoryLoadPromise;
     if (!isConfigured) return Promise.resolve();
+    return forceReloadLogs(true);
+  }
+
+  // Actually tears down and recreates the logs listener — never a no-op,
+  // unlike ensureFullHistory(). Toggling Firestore's network on/off
+  // (forceSyncNow in app.js) is supposed to make an active listener
+  // reconnect and refetch on its own, but in practice that wasn't reliably
+  // bringing in missed updates after the app had sat backgrounded for a
+  // while — the listener object itself needs to be recreated to guarantee
+  // a genuinely fresh request, not just a network nudge hoping the
+  // existing stream recovers. fullReload=true always fetches everything;
+  // fullReload=false keeps whatever scope (light or full) was already
+  // active, so the automatic foreground nudge doesn't silently upgrade
+  // someone to a full load they never asked for.
+  function forceReloadLogs(fullReload) {
+    if (!isConfigured) return Promise.resolve();
+    const useFullLimit = fullReload || fullHistoryLoaded;
     fullHistoryLoading = true;
     if (unwatchLogs) unwatchLogs();
     fullHistoryLoadPromise = new Promise((resolve) => {
       unwatchLogs = watchLogs((logs) => {
-        fullHistoryLoaded = true;
+        if (useFullLimit) fullHistoryLoaded = true;
         fullHistoryLoading = false;
         renderMemories(logs);
         resolve();
-      }, 100000);
+      }, useFullLimit ? 100000 : LIGHT_LOG_LIMIT);
     });
     return fullHistoryLoadPromise;
   }
