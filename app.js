@@ -342,9 +342,20 @@ async function initFirebase() {
   // browser's IndexedDB, so on repeat opens the app can show what it already
   // has instantly while it syncs any changes in the background — instead of
   // showing an empty garden until a fresh network round-trip finishes.
+  //
+  // Uses persistentSingleTabManager, not persistentMultipleTabManager.
+  // Multi-tab coordination is for multiple browser tabs open on the SAME
+  // device at once — this app is a single-instance PWA (one person, one
+  // device, never more than one tab), so it was never actually needed here.
+  // It was also a real, documented source of exactly the bug this app hit
+  // (new entries not showing up until a full restart): there's a known
+  // Firebase SDK issue where multi-tab mode can re-listen using a stale
+  // persisted "resume token" from IndexedDB, serving outdated data until
+  // something forces a genuinely fresh start. Single-tab mode has no
+  // cross-tab coordination layer at all, so that failure mode can't happen.
   try {
     db = fsMod.initializeFirestore(app, {
-      localCache: fsMod.persistentLocalCache({ tabManager: fsMod.persistentMultipleTabManager() }),
+      localCache: fsMod.persistentLocalCache({ tabManager: fsMod.persistentSingleTabManager() }),
       experimentalAutoDetectLongPolling: true // falls back automatically on networks (some cafe/hotel wifi, certain carriers) that block Firestore's default connection method
     });
   } catch (err) {
