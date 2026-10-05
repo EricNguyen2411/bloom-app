@@ -2048,22 +2048,21 @@
   document.getElementById('hemisphereNorthBtn').onclick = () => setHemisphere('northern');
   document.getElementById('hemisphereSouthBtn').onclick = () => setHemisphere('southern');
 
-  document.getElementById('syncNowBtn').onclick = async () => {
+  document.getElementById('syncNowBtn').onclick = () => {
     const btn = document.getElementById('syncNowBtn');
     const status = document.getElementById('syncStatus');
     if (!isConfigured) { status.textContent = "You're in demo mode — nothing to sync yet."; return; }
     btn.disabled = true;
-    btn.textContent = 'Syncing…';
-    try {
-      await forceSyncNow();
-      await forceReloadLogs(true);
-      status.textContent = 'Synced just now ✓';
-    } catch (err) {
-      status.textContent = "Couldn't reconnect — check your connection and try again.";
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '🔄 Sync now';
-    }
+    btn.textContent = 'Reloading…';
+    status.textContent = 'Getting a fresh connection…';
+    // A real reload, not a lighter in-place reconnect — toggling the
+    // network and fully recreating the data listener were both tried and,
+    // confirmed by real testing, neither reliably cleared a connection
+    // that had gotten stuck after the app sat backgrounded for a while.
+    // A genuine restart (same as force-closing and reopening) is the one
+    // thing that's actually worked every time, so this does exactly that
+    // without needing you to leave the app yourself.
+    setTimeout(() => window.location.reload(), 400);
   };
 
   // Whenever the app comes back to the foreground — reopened after being
@@ -2792,6 +2791,9 @@
   const pendingDeleteIds = new Set();
 
   function renderMemories(logs) {
+    // TEMPORARY DIAGNOSTIC — remove once the "new entry doesn't show up"
+    // issue is actually solved.
+    console.log('[bloom-debug] renderMemories called with', logs.length, 'logs | newest activity:', logs[0]?.activity, '| newest date:', logs[0]?.date);
     rawLatestLogs = logs;
     refreshVisibleLogs();
   }

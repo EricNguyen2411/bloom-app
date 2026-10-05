@@ -635,7 +635,12 @@ export function watchLogs(renderFn, max = 1000) {
   return onSnapshot(
     q,
     { includeMetadataChanges: true },
-    (snap) => renderFn(snap.docs.map((d) => ({ id: d.id, ...d.data(), _pendingSync: d.metadata.hasPendingWrites }))),
+    (snap) => {
+      // TEMPORARY DIAGNOSTIC — remove once the "new entry doesn't show up"
+      // issue is actually solved. Shows every time this listener fires.
+      console.log('[bloom-debug] watchLogs snapshot fired:', snap.docs.length, 'docs | fromCache:', snap.metadata.fromCache, '| hasPendingWrites:', snap.metadata.hasPendingWrites, '| newest activity:', snap.docs[0]?.data()?.activity, '| newest date:', snap.docs[0]?.data()?.date);
+      renderFn(snap.docs.map((d) => ({ id: d.id, ...d.data(), _pendingSync: d.metadata.hasPendingWrites })));
+    },
     (err) => console.error('watchLogs listener error:', err)
   );
 }
@@ -815,12 +820,15 @@ export async function logTime(activity = '', dateStr = null, photos = [], locati
 
     await withTimeout(setDoc(ref, update, { merge: true }));
 
-    await withTimeout(addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
+    const newDocRef = await withTimeout(addDoc(collection(db, `couples/${COUPLE_ID}/logs`), {
       type: 'log', activity,
       date: entryDate, backfilled: entryDate !== today, location,
       photos, thumb, note: '',
       createdAt: serverTimestamp()
     }));
+    // TEMPORARY DIAGNOSTIC — remove once the "new entry doesn't show up"
+    // issue is actually solved.
+    console.log('[bloom-debug] logTime save completed, new doc id:', newDocRef.id, '| activity:', activity, '| date:', entryDate);
   } catch (err) {
     console.error('logTime failed:', err);
     // Left for the caller to handle/display — see catch block at the call site in index.html.
