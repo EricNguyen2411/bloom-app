@@ -2791,9 +2791,6 @@
   const pendingDeleteIds = new Set();
 
   function renderMemories(logs) {
-    // TEMPORARY DIAGNOSTIC — remove once the "new entry doesn't show up"
-    // issue is actually solved.
-    console.log('[bloom-debug] renderMemories called with', logs.length, 'logs | newest activity:', logs[0]?.activity, '| newest date:', logs[0]?.date);
     rawLatestLogs = logs;
     refreshVisibleLogs();
   }
@@ -3612,6 +3609,16 @@
   // dashboard (recent activity, "on this day" flashback, this week's
   // stats). The full history loads on demand — see ensureFullHistory().
   const LIGHT_LOG_LIMIT = 40;
+  // Firestore hard-caps any query's limit() at 10000 — exceeding it doesn't
+  // get silently clamped, it makes the backend reject the listener outright
+  // with "Limit value in the structured query is over the maximum value of
+  // 10000," which kills that listener permanently with no retry. This was
+  // previously set to 100000, ten times over that ceiling — the real root
+  // cause behind new entries never showing up once the full history had
+  // been loaded, confirmed directly in the console (watchLogs listener
+  // error). 5000 is still far more than this app will ever realistically
+  // need, with comfortable headroom under the actual limit.
+  const FULL_LOG_LIMIT = 5000;
   let unwatchLogs = null;
   let fullHistoryLoaded = false;
   let fullHistoryLoading = false;
@@ -3654,7 +3661,7 @@
         fullHistoryLoading = false;
         renderMemories(logs);
         resolve();
-      }, useFullLimit ? 100000 : LIGHT_LOG_LIMIT);
+      }, useFullLimit ? FULL_LOG_LIMIT : LIGHT_LOG_LIMIT);
     });
     return fullHistoryLoadPromise;
   }
